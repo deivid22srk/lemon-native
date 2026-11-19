@@ -1542,7 +1542,6 @@ public final class Library {
         // that can start a build (the sheet's Build/Build anyway/Rebuild, and Resume below): GameSheet already disables its Build button for the same
         // reason, so this is only a last line of defense, never a per-build re-validation against the importer.
         if (!PeanutsPrefs.hasKeys(a)) return "Add your keys first (Settings › Library), then build.";
-        if (!PeanutsPrefs.hasFonts(a)) return "Add your firmware first (Settings › Library), then build.";
         BuildRequest r = new BuildRequest();
         r.titleId = s.titleId; r.name = s.name; r.base = s.base; r.update = s.update;
         r.dlcs = new ArrayList<>(s.dlcs);

@@ -189,7 +189,7 @@ public final class GameSheet {
         // re-validated against the importer here) before any build starts — not just an NSP/XCI import. A missing firmware font can crash some games at
         // boot (dm/games/01008CF01BAAC000/README.md). This chip and the two buttons below stop appearing anywhere once both are in the app.
         boolean needKeys = !PeanutsPrefs.hasKeys(a);
-        boolean needFonts = !PeanutsPrefs.hasFonts(a);
+        boolean needFonts = false;  // fork: no firmware fonts gate (Hogwarts Legacy profile/font comes from the pack)
         boolean missingSetup = needKeys || needFonts;
         if (missingSetup) {
             String what = needKeys && needFonts ? "Keys and firmware are needed before building."
