@@ -1,0 +1,83 @@
+name: build-apk
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'dm/**'
+      - 'peanuts/**'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: GPL APK (on-device packer)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            zsh cmake ninja-build patch libdigest-sha-perl \
+            libcapstone-dev liblz4-dev
+          sudo snap install --classic dotnet-sdk-10.0 || true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Android SDK, build-tools and NDK 28.2
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SDKM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKM" ]; then SDKM="$(command -v sdkmanager)"; fi
+          yes | "$SDKM" --sdk_root="$SDK" --licenses >/dev/null || true
+          "$SDKM" --sdk_root="$SDK" --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "platform-tools" \
+            "ndk;28.2.13676358" \
+            "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$SDK/ndk/28.2.13676358" >> "$GITHUB_ENV"
+
+      - name: .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the on-device packer stage
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          chmod +x android/ondevice/build.sh
+          zsh android/ondevice/build.sh "$RUNNER_TEMP/packstage" all
+          test -f "$RUNNER_TEMP/packstage/stage/lib/libdmsh_xlate.so"
+
+      - name: Build the APK
+        run: |
+          cd android/app
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew --no-daemon -PnxPackStage="$RUNNER_TEMP/packstage/stage" \
+            -PnxGames=0100F7E00C70E000 apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hogwarts-legacy-apk
+          path: android/app/out/*.apk
+          if-no-files-found: error
