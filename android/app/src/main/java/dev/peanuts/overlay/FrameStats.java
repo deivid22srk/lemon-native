@@ -67,7 +67,12 @@ public final class FrameStats {
         return 1;
     }
 
-    /** The label colours by group: FPS (and THR, FT, 1%L), GPU, CPU, SOC and BAT, GAME and RAM, DRV; any other label is grey */
+    /**
+     * The label colours by group: FPS (and THR, FT, 1%L), GPU, CPU, SOC and BAT, GAME and RAM, DRV; any other label is grey. Deliberate literals, not palette
+     * tokens: these are category hues that tell the row groups apart — none of them means success, caution or danger, so none of them maps to an overlay
+     * token (this class is pure Java and holds no resources). The grey default is drawn as bn_overlay_text_2, the overlay's secondary text, by Hud — the same
+     * grey the throttle dot uses when nothing was read.
+     */
     public static final int LABEL_FPS = 0xFF7FD4FF, LABEL_GPU = 0xFFA5E37A, LABEL_CPU = 0xFF5FA8FF, LABEL_SOC = 0xFFFF9E5E, LABEL_MEM = 0xFFE58CFF,
             LABEL_DEFAULT = 0xFFB0B0B0;
 

@@ -5,7 +5,7 @@
     <color name="bn_card">#FF141A24</color>          <!-- cards, dialogs, sheets (text on card 14.8:1, secondary text on card 7.3:1) -->
     <color name="bn_card_stroke">#FF2B3543</color>   <!-- hairline card edge, dividers, progress track -->
     <color name="bn_tint">#FF1B2330</color>          <!-- tonal chips, icon tiles (text on tint 13.4:1, secondary text 6.6:1, accent 6.2:1) -->
-    <color name="bn_accent">#FF58A6F5</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (7.5:1 on bg, 6.8:1 on card, 5.7:1 on accent_tint, 4.2:1 vs stroke) -->
+    <color name="bn_accent">#FF58A6F5</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (7.5:1 on bg, 6.8:1 on card, 5.7:1 on accent_tint, 4.84:1 vs stroke) -->
     <color name="bn_on_accent">#FF06101D</color>     <!-- label on accent fill (7.5:1) -->
     <color name="bn_accent_tint">#FF17293F</color>   <!-- tonal accent container: selected segments, chips (accent on it 5.7:1) -->
     <color name="bn_banana">#FFF2BA49</color>        <!-- secondary accent, brand moments only (the header badge's glyph, the empty state): never a button fill -->
@@ -14,7 +14,7 @@
     <color name="bn_text">#FFE8EDF4</color>          <!-- body text (14.8:1 on card, 16.4:1 on bg, 13.4:1 on tint) -->
     <color name="bn_text_2">#FF9DA9B8</color>        <!-- secondary text (7.3:1 on card, 8.1:1 on bg, 6.6:1 on tint) -->
     <color name="bn_leaf">#FF67C795</color>          <!-- success text, bn_ok shares it (8.5:1 on card, 6.9:1 on ok_tint) -->
-    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle stays the launcher icon's deep green in both modes (the amber glyph reads on it, 4.6:1; see values/colors.xml) -->
+    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle stays the launcher icon's deep green in both modes (the badge glyph, ic_banana_happy's #FFD43B banana, reads on it: 5.64:1; see values/colors.xml) -->
     <color name="bn_on_leaf">#FF0C2317</color>       <!-- text on leaf green (8.0:1) -->
     <color name="bn_danger">#FFFF8A76</color>        <!-- error text, danger button label (7.6:1 on card, 6.4:1 on danger_tint, 5.7:1 on warn_tint) -->
     <color name="bn_danger_tint">#FF3D211C</color>   <!-- danger button container (text on it 6.4:1) -->
@@ -23,4 +23,7 @@
     <color name="bn_warn">#FFF2C341</color>          <!-- warning text (10.5:1 on card, 7.9:1 on warn_tint) -->
     <color name="bn_ok_tint">#FF16301F</color>       <!-- success container (text on it 6.9:1); no call site yet, see values/colors.xml -->
     <color name="bn_control_ripple">#33E8EDF4</color><!-- theme widget highlight/ripple (20% text, Ui.ripple) -->
+
+    <!-- The library's building-cover progress strip track (Library.strip): the dark slate at 70 % alpha, the strip runs over cover art (see values/colors.xml) -->
+    <color name="bn_track">#B30B0E14</color>
 </resources>

@@ -46,7 +46,7 @@ final class GitHubTextStyle {
         t.setFocusable(true);
         int r = PUi.dp(c, 14), w = PUi.dp(c, 3), p = PUi.dp(c, 10);
         StateListDrawable ring = new StateListDrawable();
-        ring.addState(new int[] {android.R.attr.state_focused}, PUi.round(Color.TRANSPARENT, r, PUi.col(c, R.color.bn_banana), w));
+        ring.addState(new int[] {android.R.attr.state_focused}, PUi.round(Color.TRANSPARENT, r, PUi.col(c, R.color.bn_accent), w));   // focus is the accent, like every control's edge
         t.setBackground(ring);
         t.setPadding(p, p, p, p);
         return t;

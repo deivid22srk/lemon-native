@@ -20,6 +20,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 /**
  * A game on its way: its cover in a breathing ring, name, step and a gliding light.
@@ -61,12 +62,12 @@ public final class StartView extends FrameLayout implements Choreographer.FrameC
         info = new LinearLayout(c);
         info.setOrientation(LinearLayout.VERTICAL);
         info.setGravity(Gravity.CENTER_HORIZONTAL);
-        name = PUi.text(c, "", wide ? 26 : 22, R.color.bn_text, 800);
+        name = PUi.text(c, "", wide ? Tokens.TYPE_DISPLAY : Tokens.TYPE_TITLE, R.color.bn_text, 800);   // the display tier on a wide screen (one hero string), the page title's size otherwise
         name.setGravity(Gravity.CENTER);
         name.setMaxLines(2);
         name.setEllipsize(TextUtils.TruncateAt.END);
         info.addView(name, PUi.wrap());
-        status = PUi.text(c, "", 14, R.color.bn_text_2, 600);
+        status = PUi.text(c, "", Tokens.TYPE_BODY, R.color.bn_text_2, 600);
         status.setGravity(Gravity.CENTER);
         status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         PUi.add(info, status, 6, PUi.wrap());

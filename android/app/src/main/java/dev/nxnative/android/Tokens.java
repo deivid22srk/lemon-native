@@ -18,8 +18,9 @@ public final class Tokens {
     // (a row's touch ripple, a card inside a card and a game tile). RADIUS_PILL (999) stays a literal in Ui: a fully rounded pill, not a tier
     public static final int RADIUS_SM = 8, RADIUS_ROW = 12, RADIUS_MD = 14, RADIUS_INNER = 16, RADIUS_LG = 20;
 
-    // Type scale (sp): the five sizes every text is set in (section labels and tags, secondary text, body and buttons, headings, page titles)
-    public static final float TYPE_CAPTION = 12, TYPE_SMALL = 13, TYPE_BODY = 15, TYPE_HEADING = 18, TYPE_TITLE = 24;
+    // Type scale (sp): the six sizes every text is set in (section labels and tags, secondary text, body and buttons, headings, page titles, and the display
+    // tier: the launch screen's game name — one string alone on its own screen, a step above the page title)
+    public static final float TYPE_CAPTION = 12, TYPE_SMALL = 13, TYPE_BODY = 15, TYPE_HEADING = 18, TYPE_TITLE = 24, TYPE_DISPLAY = 26;
 
     // Touch targets (dp): the smallest tappable area of a control (buttons and icon buttons size themselves to it, so a finger never misses and a
     // screen reader's cursor has something to land on)

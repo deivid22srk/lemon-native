@@ -30,12 +30,14 @@ import android.widget.TextView;
 
 /**
  * PEANUTS: a verbatim copy of dev.nxnative.android.Ui (package-private upstream) on the same resources, so Peanuts screens look the same without an upstream edit.
- * Check against upstream: diff Ui.java PUi.java | grep -v "^[<>] *\(package\|import dev\|public\)". The Feel lines marked PEANUTS there are not copied here;
- * the PUi-only bits below are marked PEANUTS too.
+ * Check against upstream (DESIGN-ui.md §6.1): run diff Ui.java PUi.java and confirm every differing line is a documented exception — the package line, the
+ * import dev.* lines here, the public modifiers (each such line's counterpart in Ui is unchanged), and the lines marked PEANUTS (the Feel hooks Ui carries that
+ * are not copied here, and the PUi-only bits below, marked PEANUTS too).
  * The launcher's building blocks, in code like the rest of the launcher (no layouts, no AndroidX), in the Slate & Signal palette (res/values/colors.xml, values-night for dark
  * mode; themes.xml's Theme.Banana). One small design system so every screen looks the same:
  * <ul>
- * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line.</li>
+ * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line. The launch screen's
+ * game name is the one display-tier text (26 sp, Tokens.TYPE_DISPLAY), alone on its own screen.</li>
  * <li>Shapes: cards 20 dp corners with a hairline edge; buttons and icon buttons 14 dp corners (a card's big action 16 dp).</li>
  * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 16 dp inside,
  * 12 dp between cards, 24 dp before a section label.</li>
@@ -48,7 +50,7 @@ import android.widget.TextView;
 public final class PUi {
     private PUi() {}
 
-    public enum Kind { PRIMARY, TONAL, SOFT, DANGER, QUIET }   // SOFT: an outlined button for use on a tinted surface
+    public enum Kind { PRIMARY, TONAL, SOFT, DANGER, QUIET, TONAL_ACCENT }   // SOFT: an outlined button for use on a tinted surface; TONAL_ACCENT: the tonal selection (the accent container and label), for a chosen chip or cell — selection is never a filled accent
 
     public static final int GAP = Tokens.SPACE_3, SECTION_GAP = Tokens.SPACE_6;
 
@@ -288,7 +290,7 @@ public final class PUi {
 
     // ---- Containers ----
 
-    /** A card: rounded, a hairline peel edge, vertical, 16 dp inside */
+    /** A card: rounded, a hairline edge, vertical, 16 dp inside */
     public static LinearLayout card(Context c) {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
@@ -348,7 +350,7 @@ public final class PUi {
 
     /**
      * A page's scrolling column, added to a frame: the same gutter and top spacing on every screen, clear of the status bar, the navigation bar and a cutout (edge
-     * to edge, targetSdk 35), at a readable width centered on a wide window, with a cream scrim under the status bar so scrolled cards never run under the clock.
+     * to edge, targetSdk 35), at a readable width centered on a wide window, with a bg scrim under the status bar so scrolled cards never run under the clock.
      * Returns the column to fill.
      */
     public static LinearLayout page(Activity a, FrameLayout frame, int maxWidthDp) { return page(a, frame, maxWidthDp, false); }
@@ -496,6 +498,7 @@ public final class PUi {
             case TONAL: fill = col(c, R.color.bn_tint); break;
             case SOFT: fill = Color.TRANSPARENT; stroke = col(c, R.color.bn_card_stroke); break;
             case DANGER: fill = col(c, R.color.bn_danger_tint); break;
+            case TONAL_ACCENT: fill = col(c, R.color.bn_accent_tint); break;   // the tonal selection: the accent container, never a filled accent
             default: fill = Color.TRANSPARENT; break;
         }
         GradientDrawable shape = round(fill, dp(c, radiusDp), stroke, stroke != 0 ? dp(c, Tokens.HAIRLINE_DP) : 0);
@@ -515,6 +518,7 @@ public final class PUi {
             case PRIMARY: return R.color.bn_on_accent;
             case DANGER: return R.color.bn_danger;
             case QUIET: return R.color.bn_accent;
+            case TONAL_ACCENT: return R.color.bn_accent;   // the tonal selection's label: the accent on the accent container (Ui.Segmented's pairing)
             default: return R.color.bn_text;
         }
     }
@@ -527,8 +531,9 @@ public final class PUi {
 
     /**
      * A button: 48 dp high, 14 dp corners, one line (labels are kept short; the button grows to fit its label, and a half-width one ellipsizes rather than wraps).
-     * PRIMARY the accent with its on-accent label, TONAL the soft tint, SOFT an outline, DANGER the danger red on its tint, QUIET text only in the accent. Disabled ones fade to the muted
-     * fill and label (style, textColorList); focused ones get a hairline accent edge
+     * PRIMARY the accent with its on-accent label, TONAL the soft tint, SOFT an outline, DANGER the danger red on its tint, QUIET text only in the accent, and
+     * TONAL_ACCENT the tonal selection (the accent container, its label the accent) for a chosen chip or cell — never a filled accent. Disabled ones fade to the
+     * muted fill and label (style, textColorList); focused ones get a hairline accent edge
      */
     public static Button button(Context c, CharSequence s, Kind k, View.OnClickListener l) {
         Button b = new Button(c);

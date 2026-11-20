@@ -71,7 +71,7 @@ public final class ReadinessActivity extends Activity {
         // The verdict: a mark, one line, the counts; then Run again and the report. Each check below shows its details on a tap (failures and warnings open)
         LinearLayout top = Ui.add(content, Ui.card(this), 16);
         LinearLayout vr = Ui.row(this);
-        mark = Ui.text(this, "…", 26, R.color.bn_on_banana, 900);
+        mark = Ui.text(this, "…", 26, R.color.bn_warn, 900);   // the checking state's colour (setMark recolours it on every show: the mark never shows in the amber-fill ink)
         mark.setGravity(android.view.Gravity.CENTER);
         mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         vr.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
@@ -218,11 +218,11 @@ public final class ReadinessActivity extends Activity {
         }
     }
 
-    /** The verdict's mark: ✓ on leaf green, ! on banana, ✕ on red-orange; … while checking */
+    /** The verdict's mark: ✓ on leaf green, ! in the warning colour on its tint, ✕ on red-orange; … while checking */
     private void setMark(int level) {
         mark.setText(level == 0 ? "✓" : level == 1 ? "!" : level == 2 ? "✕" : "…");
-        int fill = level == 0 ? R.color.bn_ok : level == 2 ? R.color.bn_danger : R.color.bn_banana;   // the pass mark: the success resource (bn_ok, the leaf green's semantic name)
-        mark.setTextColor(Ui.col(this, level == 0 ? R.color.bn_on_leaf : level == 2 ? R.color.bn_card : R.color.bn_on_banana));
+        int fill = level == 0 ? R.color.bn_ok : level == 2 ? R.color.bn_danger : R.color.bn_warn_tint;   // the pass mark: the success resource (bn_ok); the caution mark: the warning container (bn_warn_tint), like every warn pill
+        mark.setTextColor(Ui.col(this, level == 0 ? R.color.bn_on_leaf : level == 2 ? R.color.bn_card : R.color.bn_warn));
         mark.setBackground(Ui.round(Ui.col(this, fill), Ui.dp(this, 999), 0, 0));
     }
 

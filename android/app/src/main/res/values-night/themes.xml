@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Banana" parent="android:Theme.Material.NoActionBar">
-        <item name="android:colorPrimary">@color/bn_banana</item>
+        <item name="android:colorPrimary">@color/bn_accent</item>
         <item name="android:colorPrimaryDark">@color/bn_bg</item>
         <item name="android:colorAccent">@color/bn_accent</item>
         <item name="android:colorControlActivated">@color/bn_accent</item>
@@ -14,7 +14,7 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <!-- Edge to edge without the system's own contrast scrims: the page draws its night scrim over the clock itself (Ui.page) -->
+        <!-- Edge to edge without the system's own contrast scrims: the page draws its bg scrim over the clock itself (Ui.page) -->
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:alertDialogTheme">@style/Theme.Banana.Dialog</item>

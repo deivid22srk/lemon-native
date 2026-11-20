@@ -41,9 +41,10 @@ import java.util.ArrayList;
 final class Motion {
     private Motion() {}
 
-    /** SNAP: a focus lost, a press, things settling back. FOCUS: a focus gained. ENTER: something appears. EXIT: something leaves. EMPHASIS: once per event
-     *  (a build's end). PROGRESS: a progress value changes. STAGGER: between two rows that enter */
-    static final int SNAP = 90, FOCUS = 130, ENTER = 180, EXIT = 120, EMPHASIS = 320, PROGRESS = 300, STAGGER = 24;
+    /** SNAP: a focus lost, a press, things settling back (150, the design system's floor). FOCUS: a focus gained. ENTER: something appears. EXIT: something
+     *  leaves. EMPHASIS: once per event (a build's end). PROGRESS: a progress value changes. STAGGER: between two rows that enter — the tokens stay inside
+     *  the design contract's 150–300 ms band (DESIGN-ui.md §4): short enough to answer, long enough to be seen */
+    static final int SNAP = 150, FOCUS = 150, ENTER = 180, EXIT = 150, EMPHASIS = 300, PROGRESS = 300, STAGGER = 24;
     static final Interpolator OUT = new PathInterpolator(0.2f, 0f, 0f, 1f), IN = new PathInterpolator(0.3f, 0f, 1f, 1f),
             OVERSHOOT = new OvershootInterpolator(1.6f), LINEAR = new LinearInterpolator();
 

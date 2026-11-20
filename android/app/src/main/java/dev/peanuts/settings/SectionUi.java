@@ -149,7 +149,7 @@ final class SectionUi {
             b.setText(label);
             b.setAllCaps(false);
             b.setOnClickListener(l);
-            if (kindName.equals(DANGER)) b.setTextColor(c.getColor(R.color.bn_overlay_danger));   // the fallback's plain button: the overlay's danger (bn_overlay_danger)
+            if (kindName.equals(DANGER)) b.setTextColor(c.getColor(R.color.bn_danger));   // the fallback's plain button: the danger text resource (bn_danger — an in-app settings page, so the mode's danger, not the overlay-stable one)
             return b;
         }
     }

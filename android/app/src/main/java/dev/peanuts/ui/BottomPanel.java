@@ -34,6 +34,7 @@ import java.util.Locale;
 import dev.nxnative.android.BananaBackgroundView;
 import dev.nxnative.android.BuildConfig;
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 /**
  * The bottom screen's window: logo, game card, build and start pages, built once and updated in place.
@@ -320,9 +321,8 @@ final class BottomPanel extends Presentation {
     /** With a controller its face button; without, the app's icon for the action (none: the label alone) */
     private static void setKey(PUi.Action b, String key, int iconRes) {
         Context c = b.getContext();
-        boolean primary = b.kind == PUi.Kind.PRIMARY;
         Drawable d = null;
-        if (key != null) d = new KeyGlyph(c, key, PUi.col(c, primary ? R.color.bn_on_banana : R.color.bn_text), PUi.col(c, primary ? R.color.bn_banana : R.color.bn_tint));
+        if (key != null) d = new KeyGlyph(c, key, PUi.col(c, R.color.bn_text), PUi.col(c, R.color.bn_tint));   // the same neutral glyph on the tint for every kind: the primary action keeps its blue, and no amber competes beside it
         else if (iconRes != 0) { d = c.getDrawable(iconRes).mutate(); d.setTint(b.label.getCurrentTextColor()); }
         b.icon.setImageDrawable(d);
         b.icon.setVisibility(d == null ? View.GONE : View.VISIBLE);
@@ -561,7 +561,7 @@ final class BottomPanel extends Presentation {
         cardMark.removeAllViews();
         if (cardState.getParent() != null) ((ViewGroup) cardState.getParent()).removeView(cardState);
         if (k.kind == BottomScreen.Card.K_READY) {
-            TextView ok = PUi.text(c, "✓", 12, R.color.bn_on_leaf, 700);
+            TextView ok = PUi.text(c, "✓", Tokens.TYPE_CAPTION, R.color.bn_on_leaf, 700);
             ok.setGravity(Gravity.CENTER);
             ok.setIncludeFontPadding(false);
             ok.setBackground(PUi.round(PUi.col(c, R.color.bn_ok), PUi.dp(c, 999), 0, 0));   // the ready check mark: the success resource
@@ -573,9 +573,10 @@ final class BottomPanel extends Presentation {
             cardMark.addView(cardState, lp);
         } else {
             boolean danger = k.kind == BottomScreen.Card.K_NO_PROFILE || !"Build needed".equals(k.state);
-            TextView pill = PUi.text(c, k.state, 12, danger ? R.color.bn_danger : R.color.bn_on_banana, 700);
+            // the caution pill: the warning container and text (bn_warn on bn_warn_tint), the danger pair only for a real failure
+            TextView pill = PUi.text(c, k.state, Tokens.TYPE_CAPTION, danger ? R.color.bn_danger : R.color.bn_warn, 700);
             pill.setSingleLine(true);
-            pill.setBackground(PUi.round(PUi.col(c, danger ? R.color.bn_danger_tint : R.color.bn_banana), PUi.dp(c, 999), 0, 0));
+            pill.setBackground(PUi.round(PUi.col(c, danger ? R.color.bn_danger_tint : R.color.bn_warn_tint), PUi.dp(c, 999), 0, 0));
             pill.setPadding(PUi.dp(c, 10), PUi.dp(c, 5), PUi.dp(c, 10), PUi.dp(c, 5));
             cardMark.addView(pill, PUi.wrap());
         }

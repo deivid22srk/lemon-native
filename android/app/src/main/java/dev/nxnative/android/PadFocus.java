@@ -16,7 +16,7 @@ import java.util.ArrayList;
 /**
  * A controller in the launcher, in the style of the in-game panel (SidePanel): the D-pad moves the View focus (Android's own focus search, so the tile grid moves in
  * two dimensions), A presses what has the focus (Android's confirm), B goes back one level (a dialog cancels, a page returns to the list: MainActivity.dispatchKeyEvent,
- * the dialogs through {@link Builder}), L1 / R1 switch a game page's tabs. The focus is drawn as a frame in the palette's two tones (not touch mode, where nothing has the
+ * the dialogs through {@link Builder}), L1 / R1 switch a game page's tabs. The focus is drawn as an accent frame (not touch mode, where nothing has the
  * focus): {@link #watch} for a window, the list of a choice dialog through {@link Builder}. Touch is unchanged.
  * Public (like R and Tokens) so dev.peanuts.ui.PUi, the verbatim copy of Ui, can build the same dialogs.
  */
@@ -26,22 +26,16 @@ public final class PadFocus {
     /** The faint accent wash under the ring's fill (an alpha, like Ui.page's scrim): the tone comes from bn_accent */
     private static final int FILL_ALPHA = 0x26;
 
-    /** The focus frame: a two-tone ring (the accent outside, the on-banana brown inside) over a faint accent fill, rounded. Two tones so it shows on anything,
-     *  the yellow primary buttons and the dark and cream pages alike: the accent is the deep gold on cream but the banana itself in dark mode, where only the
-     *  inner brown still separates the ring from a yellow button. Both tones are palette resources (Ui.style's focus edge is the same accent), so the ring reads
-     *  the same on every screen. The same look in a row, a tile, a tab, a button and a dialog's list */
+    /** The focus frame: the accent, edge-only, over a faint accent wash, rounded — the same accent Ui.style and Ui.touchable draw for focus, so a controller's
+     *  focus reads the same on every view, on every screen, in both modes (the golden-era two-tone ring is gone: its inner on-banana tone belonged to the old
+     *  amber palette and sat near 1.1:1 against it anyway). Views that draw their own focused edge (Ui.style / Ui.touchable's StateListDrawable) never get
+     *  this frame, so the two never show together. The same look in a row, a tile, a tab, a button and a dialog's list */
     static Drawable frame(Context c) {
-        int ring = Ui.dp(c, 3);   // the outer stroke's width, and the inset it leaves around the inner one
-        GradientDrawable outer = new GradientDrawable();
-        outer.setColor((c.getColor(R.color.bn_accent) & 0x00FFFFFF) | (FILL_ALPHA << 24));
-        outer.setStroke(ring, c.getColor(R.color.bn_accent));
-        outer.setCornerRadius(Ui.dp(c, Tokens.RADIUS_MD));
-        GradientDrawable inner = new GradientDrawable();
-        inner.setStroke(Ui.dp(c, Tokens.FOCUS_EDGE_DP), c.getColor(R.color.bn_on_banana));
-        inner.setCornerRadius(Ui.dp(c, Tokens.RADIUS_ROW));
-        android.graphics.drawable.LayerDrawable d = new android.graphics.drawable.LayerDrawable(new Drawable[] {outer, inner});
-        d.setLayerInset(1, ring, ring, ring, ring);
-        return d;
+        GradientDrawable frame = new GradientDrawable();
+        frame.setColor((c.getColor(R.color.bn_accent) & 0x00FFFFFF) | (FILL_ALPHA << 24));
+        frame.setStroke(Ui.dp(c, 3), c.getColor(R.color.bn_accent));   // the edge, and the wash above: the accent, like every focus indicator
+        frame.setCornerRadius(Ui.dp(c, Tokens.RADIUS_MD));
+        return frame;
     }
 
     /** Whether a key is the controller's back button */

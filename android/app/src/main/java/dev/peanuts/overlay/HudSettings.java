@@ -12,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -96,11 +97,13 @@ public final class HudSettings {
         row.setBackgroundResource(bg.resourceId);
         row.setClickable(true);
         row.setFocusable(true);
+        row.setMinimumHeight(Math.round(Tokens.TOUCH_MIN * dp));   // a row that opens a dialog is a full touch target, like every control (Tokens.TOUCH_MIN = 48 dp)
         int pv = Math.round(10 * dp);
         row.setPadding(0, pv, 0, pv);
-        // the title's colour and size are the master switch's, found at runtime, so the rows read as active like the switches above them (bn_overlay_text until then)
+        // the title's colour and size are the master switch's, found at runtime, so the rows read as active like the switches above them; until it is found the
+        // fallback is the palette's own values: bn_overlay_text at the small size of the type scale (Tokens.TYPE_SMALL, in sp — never a px figure)
         int textColor = c.getColor(R.color.bn_overlay_text);
-        float textPx = 14 * dp;
+        float textPx = 0;   // the master switch's label size in px, found below; 0: not found, the sp fallback runs
         for (int i = 0; i < box.getChildCount(); i++) {
             View v = box.getChildAt(i);
             if (v instanceof CheckBox && String.valueOf(((CheckBox) v).getText()).startsWith(MASTER)) {
@@ -112,12 +115,14 @@ public final class HudSettings {
         row.setEnabled(true);
         TextView name = new TextView(c);
         name.setTextColor(textColor);
-        name.setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx);
+        if (textPx > 0) name.setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx);
+        else name.setTextSize(TypedValue.COMPLEX_UNIT_SP, Tokens.TYPE_SMALL);
         name.setSingleLine(true);
         name.setText(title);
         row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView val = new TextView(c);
-        val.setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx);
+        if (textPx > 0) val.setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx);
+        else val.setTextSize(TypedValue.COMPLEX_UNIT_SP, Tokens.TYPE_SMALL);
         val.setSingleLine(true);
         val.setGravity(Gravity.END);
         row.addView(val, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));

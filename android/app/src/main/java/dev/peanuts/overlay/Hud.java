@@ -32,8 +32,8 @@ public final class Hud {
     static final String[] CORNERS = {"tl", "tr", "bl", "br"};
     private static int sentCorner = -1;
 
-    /** The throttle's traffic light (the dot's levels — upstream Overlay.DOT's own trio, and HistogramSpan's bars): no overlay token exists for its middle, so it stays whole and literal */
-    private static final int[] LEVEL = {0xFF4CAF50, 0xFFFFC107, 0xFFF44336};
+    /** The throttle's traffic light: the dot's levels (upstream Overlay.DOT's own trio, and HistogramSpan's bars) in the overlay's own tokens — bn_overlay_ok, bn_overlay_warn, bn_overlay_danger — stable over the game in both modes */
+    private static int[] levels(Context c) { return new int[] {c.getColor(R.color.bn_overlay_ok), c.getColor(R.color.bn_overlay_warn), c.getColor(R.color.bn_overlay_danger)}; }
     /** LABEL: the widest label ("GAME") and the column every label is padded to; MIN_VALUE: the narrowest value column */
     private static final int BARS = 48, WINDOW = 512, LABEL = 4, MIN_VALUE = 10;
     private static final float GIB = 1024f * 1024f * 1024f;
@@ -70,6 +70,7 @@ public final class Hud {
         sendCorner(p);
         int scale = p.getInt(SCALE, 100);
         int ink = c.getColor(R.color.bn_overlay_text), grey = c.getColor(R.color.bn_overlay_text_2);   // the overlay's text colours (bn_overlay_*): stable over the game in both modes
+        int[] LEVEL = levels(c);   // the traffic light's three tokens, resolved once per table
         if ("classic".equals(p.getString(STYLE, "table"))) { graphOff(); return scaled(classic, scale); }
         List<Row> rows = new ArrayList<>();
         boolean fps = item(c, "fps"), dot = item(c, "throttle");
@@ -85,7 +86,7 @@ public final class Hud {
             if (dot) r.dot = level >= 0 && level <= 2 ? level : -1;
             rows.add(r);
         }
-        if (item(c, "graph")) graph(rows, n, target);
+        if (item(c, "graph")) graph(rows, n, target, LEVEL);
         if (fps && fresh) {
             Row r = new Row("FT", String.format(Locale.ROOT, "%.1f ms", rate[2]));
             if (!Float.isNaN(target) && !Float.isNaN(rate[2])) r.color = warn(c, FrameStats.level(rate[2], target));
@@ -127,7 +128,7 @@ public final class Hud {
         for (Row r : rows) hasGraph |= r.hist != null;
         if (!hasGraph) graphOff();   // no bars in this block: the host paints none
         if (rows.isEmpty()) return null;
-        return scaled(build(rows, ink, grey), scale);
+        return scaled(build(rows, ink, grey, LEVEL), scale);
     }
 
     /** The whole block at scale percent of its size (a span over all of it, so the histogram's paint is scaled too); null stays null */
@@ -155,12 +156,13 @@ public final class Hud {
         try { return Math.min(Bridge.frameTimes(frames), WINDOW); } catch (UnsatisfiedLinkError e) { return 0; }
     }
 
-    /** A value's colour from its status: 0 the overlay's text (normal), 1 yellow, 2 red */
+    /** A value's colour from its status: 0 the overlay's text (normal), 1 the warning amber, 2 the danger red (the overlay's tokens) */
     private static int warn(Context c, int level) {
-        return level == 2 ? LEVEL[2] : level == 1 ? LEVEL[1] : c.getColor(R.color.bn_overlay_text);
+        if (level <= 0) return c.getColor(R.color.bn_overlay_text);
+        return levels(c)[level];
     }
 
-    private static void graph(List<Row> rows, int n, float target) {
+    private static void graph(List<Row> rows, int n, float target, int[] LEVEL) {
         if (n < 10) return;
         int shown = Math.min(BARS, n);
         Row h = new Row("", "");
@@ -174,7 +176,7 @@ public final class Hud {
         }
     }
 
-    private static CharSequence build(List<Row> rows, int ink, int grey) {
+    private static CharSequence build(List<Row> rows, int ink, int grey, int[] LEVEL) {
         int w = MIN_VALUE;
         for (Row r : rows) w = Math.max(w, valueLength(r));
         SpannableStringBuilder s = new SpannableStringBuilder();
@@ -182,11 +184,13 @@ public final class Hud {
             if (s.length() > 0) s.append('\n');
             int ls = s.length();
             s.append(pad(r.label, LABEL)).append(' ');
-            if (!r.label.isEmpty()) s.setSpan(new ForegroundColorSpan(FrameStats.labelColor(r.label)), ls, ls + r.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            int label = FrameStats.labelColor(r.label);
+            if (label == FrameStats.LABEL_DEFAULT) label = grey;   // the plain label's grey is the overlay's secondary text (bn_overlay_text_2), like the throttle dot's
+            if (!r.label.isEmpty()) s.setSpan(new ForegroundColorSpan(label), ls, ls + r.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             if (r.hist != null) {
                 int hs = s.length();
                 s.append(r.hist);
-                s.setSpan(new HistogramSpan(w), hs, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                s.setSpan(new HistogramSpan(w, LEVEL), hs, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 continue;
             }
             int len = valueLength(r);

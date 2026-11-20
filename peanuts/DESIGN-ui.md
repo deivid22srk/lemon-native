@@ -29,7 +29,7 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
 | `bn_card` | `#141A24` | cards, dialogs, sheets (text 14.8:1, text_2 7.3:1) |
 | `bn_card_stroke` | `#2B3543` | hairline edges, dividers, progress track |
 | `bn_tint` | `#1B2330` | tonal chips, icon tiles (text 13.4:1, text_2 6.6:1, accent 6.2:1) |
-| `bn_accent` | `#58A6F5` | primary accent: fills, focus ring, links, quiet buttons (7.5:1 on bg, 6.8:1 on card, 5.7:1 on accent_tint, 4.2:1 vs stroke) |
+| `bn_accent` | `#58A6F5` | primary accent: fills, focus ring, links, quiet buttons (7.5:1 on bg, 6.8:1 on card, 5.7:1 on accent_tint, 4.84:1 vs stroke) |
 | `bn_on_accent` | `#06101D` | label on accent fill (7.5:1) |
 | `bn_accent_tint` | `#17293F` | tonal accent container (selected states) |
 | `bn_banana` | `#F2BA49` | secondary accent, brand moments only |
@@ -38,7 +38,7 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
 | `bn_text` | `#E8EDF4` | body text |
 | `bn_text_2` | `#9DA9B8` | secondary text |
 | `bn_leaf` / `bn_ok` | `#67C795` | success text (8.5:1 on card, 6.9:1 on ok_tint) |
-| `bn_badge` | `#1E5B3A` | header badge circle, both modes (banana glyph 4.6:1 on it) |
+| `bn_badge` | `#1E5B3A` | header badge circle, both modes (the badge glyph — ic_banana_happy's `#FFD43B` banana — reads 5.64:1 on it) |
 | `bn_on_leaf` | `#0C2317` | text on leaf (8.0:1) |
 | `bn_danger` | `#FF8A76` | error text (7.6:1 on card, 6.4:1 on danger_tint, 5.7:1 on warn_tint) |
 | `bn_danger_tint` | `#3D211C` | danger container |
@@ -64,7 +64,7 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
 | `bn_text` | `#171F2B` | body text |
 | `bn_text_2` | `#526175` | secondary text |
 | `bn_leaf` / `bn_ok` | `#0F7A40` | success text (5.4:1 on card, 4.5:1 on ok_tint) |
-| `bn_badge` | `#1E5B3A` | header badge circle (banana glyph 4.8:1 on it) |
+| `bn_badge` | `#1E5B3A` | header badge circle (the badge glyph — ic_banana_happy's `#FFD43B` banana — reads 5.64:1 on it) |
 | `bn_on_leaf` | `#FFFFFF` | text on leaf (5.4:1) |
 | `bn_danger` | `#B23517` | error text (6.2:1 on card, 5.0:1 on danger_tint, 5.0:1 on warn_tint) |
 | `bn_danger_tint` | `#FAE3DB` | danger container |
@@ -86,7 +86,7 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
 - **In-game/companion overlays** render over the game in both modes, so they use the dark slate
   values; overlay-only tokens live in `values/colors.xml` with no night override and say so in their
   comment. Accent drift (`0xFFFFD54F`) is a bug: overlays use the same Signal blue.
-- Progress: `bn_accent` fill on `bn_card_stroke` track (4.2:1).
+- Progress: `bn_accent` fill on `bn_card_stroke` track (4.2:1 light, 4.84:1 dark — a UI shape needs 3:1, both clear it).
 - Type floor is `Tokens.TYPE_CAPTION` (12 sp). Documented exception: `Tokens.PANEL_TAB_MIN_SP` (10 sp)
   for the resizable panel's four tabs only. Anything else below 12 sp is a defect.
 
@@ -113,8 +113,11 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
 
 ## 6. Invariants (breaking any of these fails the round)
 
-1. `Ui.java` and `PUi.java` stay in sync:
-   `diff Ui.java PUi.java | grep -v '^[<>] *(package|import dev|public)'` must print nothing.
+1. `Ui.java` and `PUi.java` stay in sync: the only lines that may differ between the two files are the documented exceptions — the `package` line, PUi's
+   `import dev.*` lines, the `public` modifiers (and each such line's unchanged counterpart in the other file), and the lines PUi marks PEANUTS (the Feel
+   hooks it drops or adds, and PUi-only helpers such as `joined`). Run
+   `cd android/app/src/main/java && diff dev/nxnative/android/Ui.java dev/peanuts/ui/PUi.java`
+   and confirm every differing line is one of those.
 2. UI work touches only UI: no `dm/` (native), no gradle deps, no manifest logic, no import/build
    engine changes (`PackImport`, `PackZip`, `PackCheck` logic untouched).
 3. `peanuts/tests/test_*.py` stay green — several assert exact UI strings/wiring

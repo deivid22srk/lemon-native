@@ -19,7 +19,7 @@
     <color name="bn_text">#FF171F2B</color>          <!-- body text (16.6:1 on card, 15.1:1 on bg) -->
     <color name="bn_text_2">#FF526175</color>        <!-- secondary text (6.3:1 on card, 5.7:1 on bg) -->
     <color name="bn_leaf">#FF0F7A40</color>          <!-- success text, bn_ok shares it (5.4:1 on card, 4.5:1 on ok_tint) -->
-    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — the amber glyph reads on it (4.8:1) -->
+    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — the badge glyph (ic_banana_happy's #FFD43B banana) reads on it (5.64:1) -->
     <color name="bn_on_leaf">#FFFFFFFF</color>       <!-- text on leaf green (5.4:1) -->
     <color name="bn_danger">#FFB23517</color>        <!-- error text, danger button label (6.2:1 on card, 5.0:1 on danger_tint, 5.0:1 on warn_tint) -->
     <color name="bn_danger_tint">#FFFAE3DB</color>   <!-- danger button container (text on it 5.0:1) -->
@@ -38,5 +38,10 @@
     <color name="bn_overlay_text_2">#FF9DA9B8</color> <!-- overlay-stable: renders over the game in both modes — secondary text (7.3:1 on the card) -->
     <color name="bn_overlay_accent">#FF58A6F5</color> <!-- overlay-stable: renders over the game in both modes — the same Signal blue: selection edges, values, focus (6.8:1 on the card) -->
     <color name="bn_overlay_ok">#FF67C795</color>     <!-- overlay-stable: renders over the game in both modes — success (8.5:1 on the card) -->
+    <color name="bn_overlay_warn">#FFF2C341</color>  <!-- overlay-stable: renders over the game in both modes — the throttle trio's middle (Hud.LEVEL, HistogramSpan, Overlay.DOT): the same amber as bn_warn, kept here because the overlay carries no values-night override (10.5:1 on the overlay card, 12.7:1 on black) -->
     <color name="bn_overlay_danger">#FFFF8A76</color> <!-- overlay-stable: renders over the game in both modes — danger (7.6:1 on the card) -->
+
+    <!-- The library's building-cover progress strip track (Library.strip): the strip runs over cover art, so its track carries alpha like the in-code composite it
+         replaces (the mode's slate at 70 % alpha) — a resource so no helper holds the hex, with the night value in values-night -->
+    <color name="bn_track">#B3CFD8E3</color>
 </resources>

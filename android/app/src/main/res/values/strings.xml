@@ -42,4 +42,10 @@
     <string name="cheats_refused">Not imported: %1$s</string>
     <string name="cheats_zip_done">Imported %1$d cheat files and the cheat switches.</string>
     <string name="cheats_exported">Cheats exported.</string>
+    <!-- Import pack… (the game sheet\'s pack .zip import, GameSheet.pickedPack over dev.nxnative.android.PackImport): the progress surface\'s words -->
+    <string name="import_pack_title">Import pack</string>
+    <string name="import_pack_stage_staging">Reading the zip…</string>
+    <string name="import_pack_stage_checking">Validating the pack…</string>
+    <string name="import_pack_stage_installing">Installing…</string>
+    <string name="import_pack_hide">Hide</string>
 </resources>

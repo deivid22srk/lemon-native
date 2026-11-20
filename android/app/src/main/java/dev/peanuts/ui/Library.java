@@ -821,7 +821,7 @@ public final class Library {
         chip(chipRow, "All " + all, ALL);
         if (building > 0) {
             SpannableString s = new SpannableString("Building " + building);
-            if (filter != BUILDING) s.setSpan(new ForegroundColorSpan(PUi.col(a, R.color.bn_banana)), 9, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);   // the count in banana: something runs
+            if (filter != BUILDING) s.setSpan(new ForegroundColorSpan(PUi.col(a, R.color.bn_accent)), 9, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);   // the count in the accent: something runs (focus and selected states are the accent; the amber stays for brand moments)
             chip(chipRow, s, BUILDING);
         }
         chip(chipRow, "Ready " + ready, READY);
@@ -965,20 +965,20 @@ public final class Library {
 
     private void chip(LinearLayout row, CharSequence label, int which) {
         boolean on = filter == which;
-        Button c = PUi.button(a, label, on ? PUi.Kind.PRIMARY : PUi.Kind.TONAL, v -> { Haptics.play(v, Haptics.Word.CLICK); filter = which; animateNext = true; render(); });
+        Button c = PUi.button(a, label, on ? PUi.Kind.TONAL_ACCENT : PUi.Kind.TONAL, v -> { Haptics.play(v, Haptics.Word.CLICK); filter = which; animateNext = true; render(); });   // the selected chip in the tonal accent (the accent container, its label the accent), never a filled accent
         c.setSelected(on);
         c.setOnKeyListener(shoulders);
-        focusRing(c, PUi.col(a, on ? R.color.bn_banana : R.color.bn_tint));
+        focusRing(c, PUi.col(a, on ? R.color.bn_accent_tint : R.color.bn_tint));
         track(c, "chip:" + which, null);
         LinearLayout.LayoutParams lp = PUi.wrap();
         if (row.getChildCount() > 0) lp.leftMargin = PUi.dp(a, 8);
         row.addView(c, lp);
     }
 
-    /** The covers' focus ring on a filter-row button, at its edge; a filled button's fill steps inside it */
+    /** The covers' focus ring on a filter-row button, at its edge (the accent, like every focus indicator); the kind's fill steps inside it */
     private void focusRing(View v, int fill) {
         int r = PUi.dp(a, 14), w = PUi.dp(a, 3), gap = PUi.dp(a, 2);
-        LayerDrawable focused = new LayerDrawable(new Drawable[] {PUi.round(Color.TRANSPARENT, r, PUi.col(a, R.color.bn_banana), w),
+        LayerDrawable focused = new LayerDrawable(new Drawable[] {PUi.round(Color.TRANSPARENT, r, PUi.col(a, R.color.bn_accent), w),
                 PUi.round(fill, r - w - gap, 0, 0)});
         focused.setLayerInset(1, w + gap, w + gap, w + gap, w + gap);   // layer insets, not an InsetDrawable: those would become the button's padding
         StateListDrawable s = new StateListDrawable();
@@ -1103,7 +1103,7 @@ public final class Library {
             if (stopped) coverStrip.setVisibility(View.GONE); else if (ownBuild) coverStrip.setProgress(Math.max(0, Math.min(100, b.percent)));
             cover.addView(coverStrip);
         } else if (st == READY) {
-            TextView ok = PUi.text(a, "✓", 12, R.color.bn_on_leaf, 700);
+            TextView ok = PUi.text(a, "✓", Tokens.TYPE_CAPTION, R.color.bn_on_leaf, 700);
             if (popReady != null && popReady.equalsIgnoreCase(r.id())) {   // its build ended a moment ago, in front of the user: the check is new
                 if (android.os.SystemClock.uptimeMillis() - popReadyAt < 60_000L) Motion.popIn(ok);
                 popReady = null;
@@ -1117,8 +1117,8 @@ public final class Library {
             cover.addView(ok, lp);
         } else if (st == BUILD) {
             String pill = fileGone ? "File gone" : wrongVersion ? "Wrong version" : "Build";
-            int fill = fileGone || wrongVersion ? R.color.bn_danger_tint : R.color.bn_banana;
-            int text = fileGone || wrongVersion ? R.color.bn_danger : R.color.bn_on_banana;
+            int fill = fileGone || wrongVersion ? R.color.bn_danger_tint : R.color.bn_warn_tint;   // the caution pill: the warning container and text (bn_warn on bn_warn_tint), like every warn pill
+            int text = fileGone || wrongVersion ? R.color.bn_danger : R.color.bn_warn;
             cover.addView(mark(pill, PUi.col(a, fill), text, false, Gravity.TOP | Gravity.START));
         } else {
             cover.addView(mark(a.getString(R.string.not_supported_yet), PUi.col(a, R.color.bn_danger_tint), R.color.bn_danger, false, Gravity.TOP | Gravity.START));
@@ -1127,7 +1127,7 @@ public final class Library {
 
         // the name
         int nameColor = !building && st == NO_PROFILE ? R.color.bn_text_2 : R.color.bn_text;
-        TextView n = PUi.text(a, name, 14, nameColor, 600);
+        TextView n = PUi.text(a, name, Tokens.TYPE_SMALL, nameColor, 600);   // the cover's name in the small size: the grid is dense and the name sits under the tile
         n.setMaxLines(2);
         n.setEllipsize(TextUtils.TruncateAt.END);
         n.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
@@ -1190,9 +1190,9 @@ public final class Library {
         });
     }
 
-    /** A pill on the cover, 8 dp in from its corner: 12 sp 700, a 1 dp shadow so it reads on any art */
+    /** A pill on the cover, 8 dp in from its corner: caption size 700, a 1 dp shadow so it reads on any art */
     private TextView mark(CharSequence s, int fill, int textRes, boolean stroke, int gravity) {
-        TextView t = PUi.text(a, s, 12, textRes, 700);
+        TextView t = PUi.text(a, s, Tokens.TYPE_CAPTION, textRes, 700);
         t.setSingleLine(true);
         t.setBackground(PUi.round(fill, PUi.dp(a, 999), stroke ? PUi.col(a, R.color.bn_card_stroke) : 0, stroke ? Math.max(1, PUi.dp(a, 1)) : 0));
         t.setPadding(PUi.dp(a, 10), PUi.dp(a, 5), PUi.dp(a, 10), PUi.dp(a, 5));
@@ -1205,12 +1205,12 @@ public final class Library {
         return t;
     }
 
-    /** The building cover's 6 dp progress strip along the bottom edge, 8 dp inset: banana deep on 70 % of the screen's colour; indeterminate for upstream's Prepare */
+    /** The building cover's 6 dp progress strip along the bottom edge, 8 dp inset: the amber heritage fill on the bn_track slate; indeterminate for upstream's Prepare */
     private ProgressBar strip(boolean indeterminate) {
         ProgressBar p = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
         p.setMax(100);
         p.setIndeterminate(indeterminate);
-        int track = (PUi.col(a, R.color.bn_bg) & 0x00FFFFFF) | 0xB3000000;
+        int track = PUi.col(a, R.color.bn_track);   // the mode's slate at 70 % alpha, as a resource (bn_track): the strip runs over cover art
         GradientDrawable fill = PUi.round(PUi.col(a, R.color.bn_banana_deep), PUi.dp(a, 3), 0, 0);
         LayerDrawable ld = new LayerDrawable(new Drawable[] {PUi.round(track, PUi.dp(a, 3), 0, 0), new ClipDrawable(fill, Gravity.START, ClipDrawable.HORIZONTAL)});
         ld.setId(0, android.R.id.background);

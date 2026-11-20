@@ -175,7 +175,7 @@ final class Overlay {
         return k.capKHz > 0 ? (float) k.capKHz / k.maxKHz : Float.NaN;
     }
 
-    /** 0 green, 1 yellow, 2 red, -1 nothing read (class comment) */
+    /** 0 green, 1 yellow, 2 red, -1 nothing read (class comment); the dot draws them from the overlay's tokens (bn_overlay_ok / bn_overlay_warn / bn_overlay_danger) */
     private int level() {
         float cap = mainCap();
         if (thermal < 0 && Float.isNaN(headroom) && Float.isNaN(cap)) return -1;
@@ -198,8 +198,6 @@ final class Overlay {
         else s.append(" GHz");
     }
 
-    private static final int[] DOT = {0xFF4CAF50, 0xFFFFC107, 0xFFF44336};
-
     /** The text for the top-right view, or null when no item there is on */
     CharSequence tick() {
         ticks++;
@@ -214,6 +212,8 @@ final class Overlay {
         boolean fresh = (fps || gpu) && Native.fps(rate);
 
         // One short item a line, so that the block fits in the black bar right of the game's 16:9 picture on a wide phone and stays off the game's own HUD
+        // the throttle dot in the overlay's own tokens (bn_overlay_ok / bn_overlay_warn / bn_overlay_danger), stable over the game in both modes
+        int[] DOT = {ctx.getColor(R.color.bn_overlay_ok), ctx.getColor(R.color.bn_overlay_warn), ctx.getColor(R.color.bn_overlay_danger)};
         SpannableStringBuilder s = new SpannableStringBuilder();
         if (dot) {
             s.append("●");
@@ -231,7 +231,7 @@ final class Overlay {
         if (fps && rate[3] < 0) line(s, "no LSFG");
         if (gpu && fresh && rate[5] >= 0) line(s, String.format(Locale.ROOT, "GPU %.1f ms", rate[5]));
         if (cpu) caps(s);
-        if (soc) dev.peanuts.overlay.SocTemp.append(s);   // PEANUTS: SoC temperature line (SocTemp)
+        if (soc) dev.peanuts.overlay.SocTemp.append(ctx, s);   // PEANUTS: SoC temperature line (SocTemp)
         if (bat && batLevel >= 0)
             line(s, (Float.isNaN(batTemp) ? "" : String.format(Locale.ROOT, "%.0f°C ", batTemp)) + batLevel + (charging ? "% ⚡\uFE0E" : "%"));
         if (mem && memTotal > 0) {   // two short lines, as the others: the game process's resident set, then the phone's RAM in use / total, "low" in red when Android says so

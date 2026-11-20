@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +36,9 @@ import java.util.Map;
  */
 public final class GameSheet {
     static final int REQ_UPDATE = LibrarySettings.REQ_SHEET_UPDATE, REQ_DLC = LibrarySettings.REQ_SHEET_DLC;
+
+    /** The stage lines of the import's progress surface, by PackImport's stage id (STAGE_STAGING/CHECKING/INSTALLING = 0/1/2) */
+    private static final int[] IMPORT_STAGE_TEXTS = {R.string.import_pack_stage_staging, R.string.import_pack_stage_checking, R.string.import_pack_stage_installing};
 
     /** What the pipeline gets: the files to import, where the .nup and the pack go, the companion to install. Public: dev.peanuts.build reads it */
     public static final class State {
@@ -258,7 +262,18 @@ public final class GameSheet {
         File game = packGame();
         if (game == null) { Haptics.play(box, Haptics.Word.REJECT); Toast.makeText(a, "The game's files are not where the library found them. Rescan, or pick the game folder again.", Toast.LENGTH_LONG).show(); return; }
         if (lib.building(title.titleId)) { Haptics.play(box, Haptics.Word.REJECT); Toast.makeText(a, "Building now: wait for it to finish, then import.", Toast.LENGTH_LONG).show(); return; }
-        AlertDialog wait = new AlertDialog.Builder(a).setTitle("Import pack").setMessage("Importing " + title.name + "'s pack…").setCancelable(false).create();
+        // The import's progress surface (DESIGN-ui.md §4): an indeterminate bar in the accent and the stage as it moves, with Hide, which only dismisses the
+        // wait — the import keeps running and its result still reports through PackImport.Done (the REJECT haptic + explain, or DONE + explain, below)
+        TextView stage = PUi.small(a, a.getString(R.string.import_pack_stage_staging));
+        ProgressBar bar = PUi.progress(a);
+        bar.setIndeterminate(true);
+        bar.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(PUi.col(a, R.color.bn_accent)));   // the accent, like the determinate fill (Ui.progress)
+        LinearLayout waitView = new LinearLayout(a);
+        waitView.setOrientation(LinearLayout.VERTICAL);
+        waitView.addView(bar, PUi.fill());
+        PUi.add(waitView, stage, 12);
+        AlertDialog wait = PUi.sheet(a, a.getString(R.string.import_pack_title), waitView)
+                .setNeutralButton(a.getString(R.string.import_pack_hide), null).create();   // Hide dismisses the wait only; the import is not cancellable
         wait.show();
         dev.nxnative.android.PackImport.importZip(a, title.titleId, game, zip, (packDir, error) -> {
             if (wait.isShowing()) wait.dismiss();
@@ -277,6 +292,8 @@ public final class GameSheet {
                             .setPositiveButton("OK", null).show();
                 });
             }, "peanuts-pack-add").start();
+        }, which -> {   // PackImport.Stages: the stage line follows the import (staging → checking → installing)
+            if (wait.isShowing() && which >= 0 && which < IMPORT_STAGE_TEXTS.length) stage.setText(a.getString(IMPORT_STAGE_TEXTS[which]));
         });
     }
 

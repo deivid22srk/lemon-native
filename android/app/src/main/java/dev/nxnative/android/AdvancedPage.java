@@ -181,8 +181,9 @@ final class AdvancedPage {
         for (int i = 1; i < chips.size(); i++) if (chips.get(i)[1].equals(own)) sel = i;
         for (int i = 0; i < cells.length; i++) {
             boolean on = i == sel;
-            cells[i].setBackground(Ui.ripple(a, Ui.round(Ui.col(a, on ? R.color.bn_banana : R.color.bn_tint), Ui.dp(a, 12), 0, 0)));
-            cells[i].setTextColor(Ui.col(a, on ? R.color.bn_on_banana : R.color.bn_text));
+            // the picked cell in the tonal accent (bn_accent_tint fill, bn_accent label — Ui.Segmented's pairing); selection is never a filled accent
+            cells[i].setBackground(Ui.ripple(a, Ui.round(Ui.col(a, on ? R.color.bn_accent_tint : R.color.bn_tint), Ui.dp(a, 12), 0, 0)));
+            cells[i].setTextColor(Ui.col(a, on ? R.color.bn_accent : R.color.bn_text));
         }
     }
 

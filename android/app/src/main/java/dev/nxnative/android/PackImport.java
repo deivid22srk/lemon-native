@@ -24,6 +24,16 @@ public final class PackImport {
     /** Called on the UI thread: packDir is the imported pack, error why nothing was imported (null on success) */
     public interface Done { void done(File packDir, String error); }
 
+    /**
+     * Optional progress callback, called on the UI thread between the import's already-existing stages: 0 staging the zip into a partial folder (PackZip.stage),
+     * 1 checking it against the game (PackCheck.blocking), 2 installing it (PackZip.swapIn). The import itself cannot be cancelled or paused — the listener only
+     * drives progress UI (GameSheet's import dialog); the result still arrives through {@link Done} whatever the listener does
+     */
+    public interface Stages { void onStage(int stage); }
+
+    /** The stage ids {@link Stages} receives, in the order they fire */
+    public static final int STAGE_STAGING = 0, STAGE_CHECKING = 1, STAGE_INSTALLING = 2;
+
     private static final Handler UI = new Handler(Looper.getMainLooper());
     private static final Set<String> busy = Collections.synchronizedSet(new HashSet<>());
 
@@ -36,9 +46,14 @@ public final class PackImport {
 
     /**
      * Imports a pack .zip made by Export pack… for titleId into the app's pack folder, after checking it against the game. Runs off the UI thread; done is
-     * called on it.
+     * called on it. The same without a progress listener (all existing call sites)
      */
     public static void importZip(Context c, String titleId, File game, File source, Done done) {
+        importZip(c, titleId, game, source, done, null);
+    }
+
+    /** The same, with an optional stage listener fired between the stages (null: none); see {@link Stages} */
+    public static void importZip(Context c, String titleId, File game, File source, Done done, Stages stages) {
         String id = titleId == null ? "" : titleId.toUpperCase(java.util.Locale.ROOT);
         if (!id.matches("[0-9A-F]{16}")) { post(done, null, "That game has no title ID to import a pack for."); return; }
         if (game == null || !game.exists()) { post(done, null, "The game's files are not where the library found them. Rescan, or pick the game folder again."); return; }
@@ -60,10 +75,13 @@ public final class PackImport {
                         throw new IOException("a Prepare job of this game writes to " + target + " (" + j.statusText(false)
                                 + "): let it finish, or forget it in its ⋯ Manage, first");
                 }
+                fire(stages, STAGE_STAGING);
                 Pack p = PackZip.stage(source, packs, id);
                 try {
+                    fire(stages, STAGE_CHECKING);
                     String bad = PackCheck.blocking(c, p, game);
                     if (bad != null) throw new IOException(bad);
+                    fire(stages, STAGE_INSTALLING);
                     PackZip.swapIn(p.dir, target);
                 } finally {
                     if (p.dir.exists()) SaveStore.deleteTree(p.dir);
@@ -98,5 +116,10 @@ public final class PackImport {
 
     private static void post(Done done, File pack, String error) {
         UI.post(() -> done.done(pack, error));
+    }
+
+    /** A stage moved: said on the UI thread, so the listener never sees a background thread */
+    private static void fire(Stages stages, int stage) {
+        if (stages != null) UI.post(() -> stages.onStage(stage));
     }
 }
