@@ -13,22 +13,32 @@
 // Tried on 2026-11-15 and dropped: a direct draw of at most 6 vertices (full-screen passes), since a 2D game draws its whole scene that way (OCTOPATH TRAVELER 0 on
 // the AYN Thor: 99 pipelines held on the frame by it, frames up to 564 ms); and a draw into a target the game does not draw into every frame (a cube map drawn
 // once), which no game was found to need and which held 36 more there (3.2 s of frame time for the two together).
+// Hogwarts Legacy (0100F7E00C70E000, provisional profile with no prewarm seed yet) hit the third, still-open kind on its first run: a profile key,
+// pso_sync_all (vka_draw.c passes DM_GAME_PSO_SYNC_ALL), makes every missing pipeline wait on the frame path instead (VKPS_ALL), so nothing is skipped and no
+// target the game keeps holds what a skipped draw never wrote. Its Motorola Edge 30 Fusion capture (2026-11-20, first run, empty cache, "prewarm list 0 keys",
+// "draws skipped waiting 759" by frame 2400) shows the kept-result look on both screens a first run leaves behind: the character creator's model in a flat bright
+// green coat with a green bloom and black skin, and the Professor Fig cutscene in dark silhouettes with a blown-out white region — what undefined targets the game
+// keeps (reflection probes, once-drawn captures) hold on Adreno. Later runs have the pipeline cache and wait for none of it; the key is to come off once the
+// profile records a prewarm seed (dm/games/README.md vk_prewarm.bin).
 #ifndef VKA_PSOSYNC_H
 #define VKA_PSOSYNC_H
 #include <stdint.h>
 
 enum { VKPS_SMALL = 1, VKPS_WRITES = 2,   // the reason vkps_why returns
+       VKPS_ALL = 4,                      // the profile's pso_sync_all: every missing pipeline waits (no draw skipped)
        VKPS_SMALL_PX = 64 };              // a small target's side at most
 
 // The draw as draw_body knows it where the pipeline is looked up. w, h: the pass's target in the game's own pixels (0: not known); writes: the shaders write
 // memory, or the rasterizer is off
 typedef struct { int writes; uint32_t w, h; } vkps_draw;
 
-// The reason this draw's pipeline is made on the frame path (VKPS_SMALL before VKPS_WRITES), 0 = none: the draw is skipped until the pipeline is made
-static inline int vkps_why(const vkps_draw *d) {
+// The reason this draw's pipeline is made on the frame path (VKPS_SMALL before VKPS_WRITES before VKPS_ALL), 0 = none: the draw is skipped until the pipeline is
+// made. sync_all: the game profile's pso_sync_all key (Hogwarts Legacy until its profile records a seed)
+static inline int vkps_why(const vkps_draw *d, int sync_all) {
     if (d->w && d->h && d->w <= VKPS_SMALL_PX && d->h <= VKPS_SMALL_PX) return VKPS_SMALL;
     if (d->writes) return VKPS_WRITES;
+    if (sync_all) return VKPS_ALL;
     return 0;
 }
-static inline const char *vkps_name(int why) { return why == VKPS_SMALL ? "a small target" : why == VKPS_WRITES ? "it writes memory" : "none"; }
+static inline const char *vkps_name(int why) { return why == VKPS_SMALL ? "a small target" : why == VKPS_WRITES ? "it writes memory" : why == VKPS_ALL ? "the profile's sync-all rule" : "none"; }
 #endif

@@ -2792,11 +2792,26 @@ static void draw_body(vka_dstate *d, const p_set_rt *rt, int has_rt, const p_sci
     if (!p && !mesh) {
         float rf = R.rsf > 0.f ? R.rsf : 1.f;   // (the target in the game's own pixels: DM_RES_SCALE)
         vkps_draw q = {.writes = d->rast_discard || draw_writes(sh, d), .w = (uint32_t)(R.full_w / rf + 0.5f), .h = (uint32_t)(R.full_h / rf + 0.5f)};
-        int why = vkps_why(&q);
+        // PEANUTS: the profile's pso_sync_all (DM_GAME_PSO_SYNC_ALL, Hogwarts Legacy until its profile records a prewarm seed) makes every missing pipeline wait on
+        // the frame path, so no draw is skipped into a target the game keeps (a probe, a texture drawn once: docs/reference/rendering.md, the kept-result entry)
+        int why = vkps_why(&q, DM_GAME_PSO_SYNC_ALL);
         if (why) p = vka_gfx_pipeline_now(sh, why, ind != 0 || mdi != 0 ? -1 : (long long)(dw ? dw->count : di->count), q.w, q.h);
     }
     // PEANUTS end
-    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++; return; }   // the driver refused it (logged when it was made)
+    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++;
+        // PEANUTS: the targets a skipped draw was going into, the first N of a run (DM_VK_PSO_SKIPLOG, default 8): with the kept-result entry open, what a game
+        // keeps from a target (a probe, a texture drawn once) whose pipeline was missing is what its screen then shows for the session; these lines name them
+        static _Atomic int nskiplog; int lim = VKA_ENV("DM_VK_PSO_SKIPLOG", 8);
+        if (lim > 0 && atomic_fetch_add(&nskiplog, 1) < lim) {
+            char tg[384] = {0}; int o = 0;
+            for (int i = 0; R.has_rt && i < R.rt.n && i < 8 && o < (int)sizeof tg - 1; i++) if (R.rt.color[i]) { const tex_t *t = R.rt.color[i];
+                o += snprintf(tg + o, sizeof tg - o, "%sc%d serial %llu %ux%u format %#x target %d levels %u", o ? ", " : "", i, (unsigned long long)t->serial, t->d.width, t->d.height, t->d.format, t->d.target, t->d.levels); }
+            if (R.has_rt && R.rt.depth && o < (int)sizeof tg - 1) { const tex_t *t = R.rt.depth;
+                snprintf(tg + o, sizeof tg - o, "%sdepth serial %llu %ux%u format %#x target %d", o ? ", " : "", (unsigned long long)t->serial, t->d.width, t->d.height, t->d.format, t->d.target); }
+            VLOG("draw skipped, its pipeline not made yet, into target%s: %s (vertex %016llx pixel %016llx, %ux%u of the game's pixels)", R.has_rt ? "" : "s (none bound)", tg,
+                 (unsigned long long)(sh[0] ? sh[0]->key : 0), (unsigned long long)(sh[1] ? sh[1]->key : 0), R.full_w, R.full_h);
+        }
+        return; }   // the driver refused it (logged when it was made)
     // DM_VK_INSTANCE: a direct indexed draw of one instance with only vertex and pixel shaders, their base modules and no retyped inputs may join the open run (its
     // instanced pipeline stays bound) or start one (decided at the sets, below)
     VkBuffer i_ib = VK_NULL_HANDLE; VkDeviceSize i_io = 0; VkIndexType i_it = VK_INDEX_TYPE_UINT16;
