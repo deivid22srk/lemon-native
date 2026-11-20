@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
     printf("ue_fps_cvar=%s\n", p->ue_fps_cvar);
     printf("present_snap=%d\n", (int)p->present_snap);
     printf("pso_mtl4=%d\n", (int)p->pso_mtl4);
+    printf("pso_sync_all=%d\n", (int)p->pso_sync_all);
     printf("enc_thread=%d\n", (int)p->enc_thread);
     printf("has_shared_font_ttf=%d\n", (int)p->has_shared_font_ttf);
     printf("shared_font_ttf=%d\n", (int)p->shared_font_ttf);
