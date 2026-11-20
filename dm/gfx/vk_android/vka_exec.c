@@ -97,14 +97,16 @@ uint64_t vka_frame_start_ns(uint64_t f) { unsigned k = f % 64; return atomic_loa
 // VKS_WINDOW frames in a row for causes of the device (refused pipelines and shaders, a missing feature), the [RED] line below and nxhost_skip_status (the launcher's notice)
 static vkskip g_skipw; static _Atomic int g_skipw_pct;
 extern void vka_draw_skips(uint64_t dev[VKS_N], uint64_t *work, uint64_t *other);
+extern void vka_draw_skip_pipes(char *b, size_t n);   // PEANUTS: the shader pairs skipped most (vka_draw.c skip_pipe)
 static void skipwarn_frame(uint64_t f) {
     static int th = -1; if (th < 0) th = VKA_ENV("DM_VK_SKIP_WARN", VKS_DEFAULT_PCT);
     if (th <= 0 || g_skipw.fired) return;
     uint64_t dev[VKS_N], work, other; vka_draw_skips(dev, &work, &other);
     if (!vkskip_step(&g_skipw, f, work, dev, other, th)) return;
     int mesh = !strncmp(g_skipw.causes, vks_name[VKS_MESH], strlen(vks_name[VKS_MESH]));   // (the largest cause: this device has no mesh shading, which no driver choice here changes)
-    VRED("%d %% of draws skipped over the last %d frames (causes: %s): %s", g_skipw.pct, VKS_WINDOW, g_skipw.causes,
-         mesh ? "this GPU has no mesh shading, so some models are missing" : "the GPU driver may not suit this game");
+    char pb[600]; vka_draw_skip_pipes(pb, sizeof pb);   // PEANUTS: which shaders the missing pipelines belong to (the materials the GPU has not drawn yet)
+    VRED("%d %% of draws skipped over the last %d frames (causes: %s): %s%s", g_skipw.pct, VKS_WINDOW, g_skipw.causes,
+         mesh ? "this GPU has no mesh shading, so some models are missing" : "the GPU driver may not suit this game", pb);
     atomic_store_explicit(&g_skipw_pct, g_skipw.pct, memory_order_release);
 }
 // The launcher's notice (Native.skipStatus): "<percent> <causes>" once the warning fired, "" before; the buffer ends with a NUL
@@ -1087,6 +1089,8 @@ static VkImage sconv_image_not(VkFormat f, uint32_t w, uint32_t h, VkImage not) 
     return img;
 }
 static VkImage sconv_image(VkFormat f, uint32_t w, uint32_t h) { return sconv_image_not(f, w, h, VK_NULL_HANDLE); }
+// PEANUTS: for the callers outside this file (vka_dlss.c's last stores into an output whose image has another format: dlss_eval passes df)
+VkImage vka_sconv_image(VkFormat f, uint32_t w, uint32_t h, VkImage not) { return sconv_image_not(f, w, h, not); }
 
 // A scaled or mirrored depth copy into a format the driver has no blit destination for (vka_t2tpath.h T2T_DEPTH_DRAW): per layer, a full-viewport triangle over the destination
 // rectangle (the present's rot.vert, its texture coordinates an affine map onto the source rectangle, so a mirror is a negative scale) whose fragment shader samples the source
@@ -1361,8 +1365,13 @@ static void dlss_eval(const p_dlss *o) {
     vka_fmt cf, of;
     if (!vka_fmt_of(ct->d.format, &cf)) cf = s->f;
     if (!vka_fmt_of(ot->d.format, &of)) of = d->f;
-    const VkFormat sfmt = cf.vk == s->f.vk ? cf.view : VK_FORMAT_UNDEFINED;   // the texture's view format over its image (a format of its own: the image's view)
-    const int in_srgb = sfmt != VK_FORMAT_UNDEFINED ? cf.srgb : s->f.srgb, enc = of.vk == d->f.vk ? of.srgb : d->f.srgb;
+    // PEANUTS: the textures' own formats, not their images': an image is shared by the textures of one memory and shape (vka_tex.c same_shape), and judged by the images the
+    // evaluation read the colour in the image's format and stored the output in the image's encoding, where the textures' are meant (copy_t2t's fix, above). sfmt is the
+    // input texture's view format: a view of the shared image in it exists once the pair is learned (sharing took it into the list), so the compute paths sample the colour
+    // in the texture's format; in_srgb / enc are the textures' encodings, and fd says the output texture's image has another format, so its writes go through a scratch of
+    // the texture's format (df below) and the stand-in's encode must run on that store, not in the shaders (enc 0)
+    const VkFormat sfmt = cf.view;
+    const int in_srgb = cf.srgb, enc = of.srgb, fd = of.vk != d->f.vk;
     {   // once per change: what the game hands DLSS (NGX's feature flags: 1 IsHDR, 2 MVLowRes, 4 MVJittered, 8 DepthInverted, 0x20 DoSharpening, 0x40 AutoExposure)
         static uint64_t last; uint64_t sig = (uint64_t)ct->d.format << 48 | (uint64_t)ot->d.format << 32 | o->flags;
         if (sig != last) { last = sig;
@@ -1379,15 +1388,55 @@ static void dlss_eval(const p_dlss *o) {
         if (!o->base[DLSS_DEPTH][0] && !o->base[DLSS_DEPTH][1] && !o->base[DLSS_MOTION][0] && !o->base[DLSS_MOTION][1] && vka_dlss_fsr3(g_cb, s, sfmt, d, enc, z, m, &f)) { vka_img_written(d); g_stat_ops++; return; }
         mode = 2;
     }
-    if (mode >= 2 && vka_dlss_run(g_cb, o, mode, s, sl, sfmt, sx, sy, iw, ih, d, dl, enc, dx, dy, ow, oh)) { vka_img_written(d); g_stat_ops++; return; }
+    if (mode >= 2 && vka_dlss_run(g_cb, o, mode, s, sl, sfmt, sx, sy, iw, ih, d, dl, fd ? 0 : enc, dx, dy, ow, oh, fd ? of.view : VK_FORMAT_UNDEFINED)) { vka_img_written(d); g_stat_ops++; return; }
     if (in_srgb != enc) {   // the bilinear scale through the decoding view, encoded for an sRGB output: a blit would carry one texture's encoding into the other
-        VkImageView v = (s->usage & VK_IMAGE_USAGE_SAMPLED_BIT) && s->samples == 1 && !s->f.kind ? vka_view(s, sfmt ? sfmt : s->f.view, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, sl, 1, 0, 1, NULL) : VK_NULL_HANDLE;
+        VkImageView v = (s->usage & VK_IMAGE_USAGE_SAMPLED_BIT) && s->samples == 1 && !s->f.kind ? vka_view(s, sfmt, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, sl, 1, 0, 1, NULL) : VK_NULL_HANDLE;
         uint32_t tw = s->w >> sl ? s->w >> sl : 1, th = s->h >> sl ? s->h >> sl : 1;
-        if (vka_dlss_scale(g_cb, v, sx, sy, iw, ih, tw, th, d, dl, dx, dy, ow, oh, enc)) { vka_img_written(d); g_stat_ops++; return; }
+        if (vka_dlss_scale(g_cb, v, sx, sy, iw, ih, tw, th, d, dl, dx, dy, ow, oh, fd ? 0 : enc, fd ? of.view : VK_FORMAT_UNDEFINED)) { vka_img_written(d); g_stat_ops++; return; }
         VRED_ONCE("DLSS stand-in: input and output differ in sRGB (NVN formats %#x → %#x) and the encoding copy cannot run: a blit, whose picture is off in brightness", ct->d.format, ot->d.format);
     }
     if ((s->f.kind && s->f.kind < 3) || s->f.kind != d->f.kind || s->f.bw > 1 || s->samples > 1) {
         VRED_ONCE("DLSS stand-in: formats %#x → %#x cannot be blitted (integer, compressed or multisampled): the output stays unwritten", ct->d.format, ot->d.format); return; }
+    // PEANUTS: a blit converts by the formats of the two images: with a side whose image has another format than its texture (a shared image of two formats, vka_tex.c
+    // same_shape) it converted where the textures' formats are meant (copy_t2t's fix, above). It then goes through scratch images of the textures' formats (sconv_image):
+    // the source's rectangle copied raw into one, the blit made into another, whose bytes are copied raw into the output's rectangle. One layer of a 2D colour texture
+    // (the evaluation's shapes above); anything else is logged and blitted between the images as before
+    if (cf.vk != s->f.vk || fd) {
+        VkImage t1 = VK_NULL_HANDLE, t2 = VK_NULL_HANDLE; int ok = s->depth <= 1 && d->depth <= 1;
+        VkFormatProperties p1;
+        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, cf.view, &p1); ok = (p1.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT) != 0; }
+        VkFormatProperties p2;
+        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, of.view, &p2); ok = (p2.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0; }
+        if (ok && cf.vk != s->f.vk) ok = (t1 = sconv_image(cf.view, (uint32_t)iw, (uint32_t)ih)) != VK_NULL_HANDLE;
+        if (ok && fd) ok = (t2 = sconv_image_not(of.view, (uint32_t)ow, (uint32_t)oh, t1)) != VK_NULL_HANDLE;
+        if (ok) {
+            VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+            VkImage si = t1 ? t1 : s->img, di = t2 ? t2 : d->img;
+            VkImageSubresourceLayers ss2 = t1 ? ts : (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, sl, 0, 1}, ds2 = t2 ? ts : (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1};
+            if (t1) {
+                VkImageCopy cp = {{VK_IMAGE_ASPECT_COLOR_BIT, sl, 0, 1}, {sx, sy, 0}, ts, {0, 0, 0}, {(uint32_t)iw, (uint32_t)ih, 1}};
+                vk.vkCmdCopyImage(g_cb, s->img, VK_IMAGE_LAYOUT_GENERAL, t1, VK_IMAGE_LAYOUT_GENERAL, 1, &cp);
+                vka_barrier(g_cb);
+            }
+            VkImageBlit b = {ss2, t1 ? (VkOffset3D){0, 0, 0} : (VkOffset3D){sx, sy, 0}, t1 ? (VkOffset3D){iw, ih, 1} : (VkOffset3D){sx + iw, sy + ih, 1},
+                             ds2, t2 ? (VkOffset3D){0, 0, 0} : (VkOffset3D){dx, dy, 0}, t2 ? (VkOffset3D){ow, oh, 1} : (VkOffset3D){dx + ow, dy + oh, 1}};
+            vk.vkCmdBlitImage(g_cb, si, VK_IMAGE_LAYOUT_GENERAL, di, VK_IMAGE_LAYOUT_GENERAL, 1, &b,
+                              p1.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT ? VK_FILTER_LINEAR : VK_FILTER_NEAREST);
+            if (t2) {
+                vka_barrier(g_cb);
+                VkImageCopy cp = {ts, {0, 0, 0}, ds2, {dx, dy, 0}, {(uint32_t)ow, (uint32_t)oh, 1}};
+                vk.vkCmdCopyImage(g_cb, t2, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &cp);
+            }
+            VRED_ONCE("DLSS stand-in: blit %#x → %#x between textures whose images have other formats (Vulkan %u in a %u image → %u in a %u image): converted through scratch images of the textures' formats",
+                      ct->d.format, ot->d.format, cf.vk, s->f.vk, of.vk, d->f.vk);
+            vka_img_written(d); g_stat_ops++; vka_barrier(g_cb);
+            n++;
+            return;
+        }
+        static _Atomic int note_;
+        if (!atomic_exchange(&note_, 1)) VLOG("DLSS stand-in: blit %#x → %#x between textures whose images have other formats (Vulkan %u in a %u image → %u in a %u image): no scratch image or blit feature for it: blitted between the images as before",
+                                              ct->d.format, ot->d.format, cf.vk, s->f.vk, of.vk, d->f.vk);
+    }
     VkImageBlit r = {{VK_IMAGE_ASPECT_COLOR_BIT, sl, 0, 1}, {{sx, sy, 0}, {sx + iw, sy + ih, 1}}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {{dx, dy, 0}, {dx + ow, dy + oh, 1}}};
     VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, s->f.vk, &fp);
     VkFilter fl = (fp.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;

@@ -124,6 +124,27 @@ static VkImageView src_view(vka_img *im, uint32_t lv, VkImageAspectFlags asp, Vk
     if (im->samples > 1 || !(im->usage & VK_IMAGE_USAGE_SAMPLED_BIT)) return VK_NULL_HANDLE;
     return vka_view(im, fmt ? fmt : im->f.view ? im->f.view : im->f.vk, VK_IMAGE_VIEW_TYPE_2D, asp, lv, 1, 0, 1, NULL);
 }
+// The stand-in's last store: the blit from the RGBA16F work image r converts into the image's format, so with an output texture whose image has another format (a shared
+// image of two formats, df: vka_tex.c same_shape) it converted where the texture's format is meant (copy_t2t's fix, vka_exec.c). The blit then converts into the texture's
+// format through a scratch image of it (vka_sconv_image), whose bytes are copied raw into the image's rectangle; the caller has passed enc 0, so the store does the
+// encoding. Returns 1 when routed, 0 on the plain blit between the images (no df, no blit destination in the texture's format, no scratch image left)
+static int out_store(VkCommandBuffer cb, vka_img *d, uint32_t dl, int dx, int dy, int ow, int oh, VkFormat df) {
+    VkImageBlit bl = {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {{0, 0, 0}, {ow, oh, 1}}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {{dx, dy, 0}, {dx + ow, dy + oh, 1}}};
+    if (!df || df == d->f.vk) { vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST); vka_barrier(cb); return 0; }
+    VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, df, &fp);
+    VkImage t = (fp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) ? vka_sconv_image(df, (uint32_t)ow, (uint32_t)oh, VK_NULL_HANDLE) : VK_NULL_HANDLE;
+    if (!t) { vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST); vka_barrier(cb); return 0; }
+    VRED_ONCE("DLSS stand-in: the output's store into an image of VkFormat %d whose texture is VkFormat %u: converted through a scratch of the texture's format", d->f.vk, df);
+    vka_barrier(cb);
+    VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    VkImageBlit b = {ts, {{0, 0, 0}, {ow, oh, 1}}, ts, {{0, 0, 0}, {ow, oh, 1}}};
+    vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, t, VK_IMAGE_LAYOUT_GENERAL, 1, &b, VK_FILTER_NEAREST);
+    vka_barrier(cb);
+    VkImageCopy cp = {ts, {0, 0, 0}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {dx, dy, 0}, {(uint32_t)ow, (uint32_t)oh, 1}};
+    vk.vkCmdCopyImage(cb, t, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &cp);
+    vka_barrier(cb);
+    return 1;
+}
 static int blit_dst_ok(vka_img *d) {
     if (D.blit_fmt != d->f.vk) {
         VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, d->f.vk, &fp); D.blit_fmt = d->f.vk; D.blit_ok = (fp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0;
@@ -135,20 +156,18 @@ static int blit_dst_ok(vka_img *d) {
 // The scaling copy (fsr/dlss_copy.comp): the rectangle sx, sy, iw x ih of the colour view in (an image of tw x th) scaled bilinearly to ow x oh, sRGB-encoded when enc,
 // through the RGBA16F work image r into d's rectangle dx, dy (level dl). For an input and an output texture that differ in sRGB, where a blit would move the encoded
 // values as they are (vka_exec.c dlss_eval), and for FSR 3.1's linear result into an sRGB output (vka_fsr3.c). 0 = not done
-int vka_dlss_scale(VkCommandBuffer cb, VkImageView in, int sx, int sy, int iw, int ih, uint32_t tw, uint32_t th, vka_img *d, uint32_t dl, int dx, int dy, int ow, int oh, int enc) {
+int vka_dlss_scale(VkCommandBuffer cb, VkImageView in, int sx, int sy, int iw, int ih, uint32_t tw, uint32_t th, vka_img *d, uint32_t dl, int dx, int dy, int ow, int oh, int enc, VkFormat df) {
     if (!in || !dl_ready() || d->f.kind || !blit_dst_ok(d) || !wimg_get(cb, &D.r, ow, oh)) return 0;
     vka_barrier(cb);
     struct { float base[2], scale[2], rcp[2]; int32_t size[2], enc; int32_t pad[23]; } pc = {{(float)sx, (float)sy}, {(float)iw / ow, (float)ih / oh}, {1.0f / tw, 1.0f / th}, {ow, oh}, enc, {0}};
     _Static_assert(sizeof pc == 128, "push constants");
     { VkImageView v[4] = {in}; VkSampler sm[4] = {D.ls}; dpass(cb, P_COPY, v, sm, D.r.view, VK_NULL_HANDLE, &pc, ow, oh); }
-    VkImageBlit bl = {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {{0, 0, 0}, {ow, oh, 1}}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {{dx, dy, 0}, {dx + ow, dy + oh, 1}}};
-    vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST);
-    vka_barrier(cb);
+    out_store(cb, d, dl, dx, dy, ow, oh, df);   // PEANUTS: the output texture's image may have another format (df): converted through a scratch of the texture's format
     return 1;
 }
 int vka_dlss_ready(void) { return dl_ready(); }
 
-int vka_dlss_run(VkCommandBuffer cb, const p_dlss *o, int mode, vka_img *s, uint32_t sl, VkFormat sfmt, int sx, int sy, int iw, int ih, vka_img *d, uint32_t dl, int enc, int dx, int dy, int ow, int oh) {
+int vka_dlss_run(VkCommandBuffer cb, const p_dlss *o, int mode, vka_img *s, uint32_t sl, VkFormat sfmt, int sx, int sy, int iw, int ih, vka_img *d, uint32_t dl, int enc, int dx, int dy, int ow, int oh, VkFormat df) {
     if (mode < 2 || mode > 3 || !dl_ready()) return 0;
     if (d->f.kind) { VRED_ONCE("DLSS stand-in: an integer or depth output (VkFormat %d): the bilinear path instead", d->f.vk); return 0; }
     if (!blit_dst_ok(d)) return 0;
@@ -231,9 +250,7 @@ int vka_dlss_run(VkCommandBuffer cb, const p_dlss *o, int mode, vka_img *s, uint
         struct { uint32_t con0[4]; int32_t size[2], itm, enc; int32_t pad[24]; } pr = {{fbits(sharp), 0, 0, 0}, {ow, oh}, 1, enc, {0}};
         VkImageView in[4] = {D.e.view}; VkSampler sm[4] = {D.ns}; dpass(cb, P_RCAS, in, sm, D.r.view, VK_NULL_HANDLE, &pr, ow, oh);
     }
-    VkImageBlit bl = {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {{0, 0, 0}, {ow, oh, 1}}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {{dx, dy, 0}, {dx + ow, dy + oh, 1}}};
-    vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST);
-    vka_barrier(cb);
+    out_store(cb, d, dl, dx, dy, ow, oh, df);   // PEANUTS: the output texture's image may have another format (df): converted through a scratch of the texture's format
     D.lmode = mode; D.n++;
     if (D.n == 1 || (!(D.n & (D.n - 1)) && D.n <= 4096) || D.n % 18000 == 0)
         VLOG("DLSS stand-in (%s): %dx%d → %dx%d, reset %u, jitter %.3f %.3f (%llu evaluations)", how, iw, ih, ow, oh, o->reset, o->jitter[0], o->jitter[1], (unsigned long long)D.n);

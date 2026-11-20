@@ -307,7 +307,8 @@ static int same_shape(const vka_img *a, const tex_t *t, const vka_fmt *f, int le
     static struct { VkFormat a, b; } seen[16]; static int ns; int k = 0;   // (under g_tmu)
     while (k < ns && !(seen[k].a == a->f.vk && seen[k].b == f->vk)) k++;
     if (k == ns && ns < 16) { seen[ns].a = a->f.vk; seen[ns++].b = f->vk;
-        VLOG("textures of VkFormat %d and %d over the same memory (%ux%u): separate images, the first's format list cannot take the second%s", a->f.vk, f->vk, a->w, a->h,
+        VLOG("textures of VkFormat %d and %d over the same memory (%ux%u, NVN %#x ↔ %#x): separate images, the first's format list cannot take the second%s", a->f.vk, f->vk, a->w, a->h,
+             a->d.format, t->d.format,
              learned ? " (learned: images of the first format and this size made from now on, and in the next runs, take it and are shared)" : ""); }
     return 0;
 }
@@ -361,8 +362,13 @@ static void vl_load(void) {   // caller holds g_vlmu
         g_vl[g_nvl++] = (vlearn){(VkFormat)a, (VkFormat)b, w, h};
     }
     fclose(f);
-    if (g_nvl || dropped) VLOG("learned view formats %s: %d pairs (images of those formats and sizes take the second format in their format list)%s", g_vl_path, g_nvl,
-                               dropped ? "; dropped lines that are not a pair of uncompressed colour formats of one texel size, duplicates and those past 4 for one format and size (the file is written again without them)" : "");
+    if (g_nvl || dropped) {
+        char ls[520]; size_t lo = 0;   // the pairs, so a log says which shared images the file has already taught this run (the ones learned in it log at same_shape)
+        for (int i = 0; i < g_nvl && lo < sizeof ls - 36; i++)
+            lo += (size_t)snprintf(ls + lo, sizeof ls - lo, "%s%d ↔ %d %ux%u", lo ? ", " : "", (int)g_vl[i].a, (int)g_vl[i].b, g_vl[i].w, g_vl[i].h);
+        VLOG("learned view formats %s: %d pairs%s%s (images of those formats and sizes take the second format in their format list)%s", g_vl_path, g_nvl, g_nvl ? ": " : "", ls,
+             dropped ? "; dropped lines that are not a pair of uncompressed colour formats of one texel size, duplicates and those past 4 for one format and size (the file is written again without them)" : "");
+    }
     if (dropped) vl_save();
 }
 // img: the texture has image intent (NVN_TEXTURE_FLAGS_IMAGE, or bound to an image slot): it also takes the pairs learned from shader-image views, which are kept for every

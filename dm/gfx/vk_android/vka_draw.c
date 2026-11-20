@@ -34,6 +34,33 @@ static int g_vattr_clear = 1;   // DM_VK_VATTR_CLEAR: a BindVertexAttribState re
 uint64_t vka_n_rp;   // render passes the draws opened (vka_exec.c replay statistics)
 static uint64_t g_draws, g_skipped, g_dispatches;
 static uint64_t g_skip_dev[VKS_N];   // the skips whose cause is the device or its driver (vka_skipwarn.h), also counted in g_skipped; read by vka_draw_skips
+// PEANUTS begin: the shader pairs of the draws and dispatches skipped for a pipeline not made (VKS_PIPELINE), the most skipped first: the skipped-work warning names them
+// (vka_exec.c skipwarn_frame), so the next log says which materials the GPU has not drawn. At most SKP_N entries; when full, a new pair takes the smallest count's place
+// (and none when that count is one: a pair skipped thousands of times is worth keeping over a new one skipped once)
+enum { SKP_N = 8 };
+static struct { uint64_t n, k0, k1; } g_skp[SKP_N]; static int g_nskp;
+static void skip_pipe(uint64_t k0, uint64_t k1) {
+    if (!k0) return;
+    int worst = 0;
+    for (int i = 0; i < g_nskp; i++) {
+        if (g_skp[i].k0 == k0 && g_skp[i].k1 == k1) { g_skp[i].n++; return; }
+        if (g_skp[i].n < g_skp[worst].n) worst = i;
+    }
+    if (g_nskp < SKP_N) { g_skp[g_nskp++] = (typeof(g_skp[0])){1, k0, k1}; return; }
+    if (g_skp[worst].n > 1) g_skp[worst] = (typeof(g_skp[0])){1, k0, k1};
+}
+// The pairs, the count first: "; shaders skipped most: (vertex %016llx, pixel %016llx) x%llu, …", "shader %016llx x%llu" for one with no pixel stage (a dispatch or a mesh
+// program). "" while none is recorded. Read once, when the skipped-work warning fires
+void vka_draw_skip_pipes(char *b, size_t n) {
+    b[0] = 0;
+    if (!g_nskp) return;
+    int idx[SKP_N]; for (int i = 0; i < g_nskp; i++) idx[i] = i;
+    for (int i = 1; i < g_nskp; i++) for (int k = i; k && g_skp[idx[k - 1]].n < g_skp[idx[k]].n; k--) { int t = idx[k - 1]; idx[k - 1] = idx[k]; idx[k] = t; }
+    size_t o = (size_t)snprintf(b, n, "; shaders skipped most:");
+    for (int i = 0; i < g_nskp && o + 60 < n; i++)
+        o += (size_t)snprintf(b + o, n - o, g_skp[idx[i]].k1 ? " (vertex %016llx, pixel %016llx) x%llu" : " shader %016llx x%llu",
+                              (unsigned long long)g_skp[idx[i]].k0, (unsigned long long)g_skp[idx[i]].k1, (unsigned long long)g_skp[idx[i]].n);
+}
 static uint32_t g_claim_words;   // the draw's claim words (an upper bound of its primitives): 0 = its geometry shader takes no claim
 #define SKIPD(c, ...) do { g_skip_dev[c]++; SKIP(__VA_ARGS__); } while (0)   // (SKIP, counted as a device cause)
 #define SKIP(...) do { g_skipped++; static _Atomic int n_; if (atomic_fetch_add(&n_, 1) < 4) VRED(__VA_ARGS__); return; } while (0)
@@ -2796,7 +2823,7 @@ static void draw_body(vka_dstate *d, const p_set_rt *rt, int has_rt, const p_sci
         if (why) p = vka_gfx_pipeline_now(sh, why, ind != 0 || mdi != 0 ? -1 : (long long)(dw ? dw->count : di->count), q.w, q.h);
     }
     // PEANUTS end
-    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++; return; }   // the driver refused it (logged when it was made)
+    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++; skip_pipe(sh[0] ? sh[0]->key : sh[7] ? sh[7]->key : 0, sh[1] ? sh[1]->key : 0); return; }   // the driver refused it (logged when it was made); PEANUTS: the shaders named by the skipped-work warning (skip_pipe)
     // DM_VK_INSTANCE: a direct indexed draw of one instance with only vertex and pixel shaders, their base modules and no retyped inputs may join the open run (its
     // instanced pipeline stays bound) or start one (decided at the sets, below)
     VkBuffer i_ib = VK_NULL_HANDLE; VkDeviceSize i_io = 0; VkIndexType i_it = VK_INDEX_TYPE_UINT16;
@@ -3434,7 +3461,7 @@ void vka_dispatch(vka_dstate *d, const p_dispatch *dp) {
     vka_layout lay; if (!vka_layout_of(sh, 1, &lay)) SKIP("dispatch skipped: no pipeline layout");
     VkPipeline p = vka_cs_pipeline_frame(sh[5], &lay);   // (VK_NULL_HANDLE while being made in the background, DM_VK_CS_ASYNC: the dispatch skipped)
     if (vka_nan_on()) vka_tex_watch_dispatch(sh[5]->key);
-    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++; return; }
+    if (!p) { g_skipped++; g_skip_dev[VKS_PIPELINE]++; skip_pipe(sh[5]->key, 0); return; }
     d->b.dispatch[0] = (uint32_t)dp->x; d->b.dispatch[1] = (uint32_t)dp->y; d->b.dispatch[2] = (uint32_t)dp->z; d->b.nvn2 = (uint32_t)vka_nvn2();
     VkBuffer ib = VK_NULL_HANDLE; VkDeviceSize io = 0;
     if (dp->ind && (!vka_addr(dp->ind, 12, &ib, &io, NULL) || (io & 3))) SKIPU(UNP_INDIRECT, dp->ind, /* PEANUTS: counted */ "indirect dispatch arguments at %#llx are not in placed guest RAM: skipped", (unsigned long long)dp->ind);

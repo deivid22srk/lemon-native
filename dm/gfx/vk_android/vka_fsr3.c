@@ -389,7 +389,7 @@ int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst,
 #undef MIP
     if (enc) {
         vka_barrier(cb);
-        if (!vka_dlss_scale(cb, R->out.view, 0, 0, (int)uw, (int)uh, uw, uh, dst, 0, d->xoffset, d->yoffset, (int)ow, (int)oh, 1)) { F.parity = q; return 0; }
+        if (!vka_dlss_scale(cb, R->out.view, 0, 0, (int)uw, (int)uh, uw, uh, dst, 0, d->xoffset, d->yoffset, (int)ow, (int)oh, 1, VK_FORMAT_UNDEFINED)) { F.parity = q; return 0; }   // (the output texture's own format is not known here: the last store blits between the images, as before)
     } else if (!direct) {
         VkImageSubresourceLayers l = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
         vka_barrier(cb);
