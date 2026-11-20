@@ -694,7 +694,9 @@ final class Ui {
             toggle.setChecked(on);
             toggle.setOnCheckedChangeListener((b, x) -> { dev.peanuts.ui.Feel.toggled(b, x); if (l != null) l.onCheckedChanged(b, x); says(); });   // the value line follows the switch (says)   // PEANUTS: Feel.toggled, a switch's haptic
             view.addView(toggle);
-            title.setLabelFor(toggle);   // a screen reader reaches the switch through the row's title (the row's tap flips it too)
+            int switchId = View.generateViewId();   // setLabelFor takes the view's id, not the view: name the switch once, when the row is built
+            toggle.setId(switchId);
+            title.setLabelFor(switchId);   // a screen reader reaches the switch through the row's title (the row's tap flips it too)
             if (!view.hasOnClickListeners()) view.setOnClickListener(v -> { if (toggle.isEnabled()) toggle.toggle(); });
             return this;
         }
