@@ -1,7 +1,6 @@
 package dev.peanuts.settings;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -13,6 +12,8 @@ import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import dev.nxnative.android.R;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -148,7 +149,7 @@ final class SectionUi {
             b.setText(label);
             b.setAllCaps(false);
             b.setOnClickListener(l);
-            if (kindName.equals(DANGER)) b.setTextColor(Color.rgb(0xB0, 0x30, 0x20));
+            if (kindName.equals(DANGER)) b.setTextColor(c.getColor(R.color.bn_overlay_danger));   // the fallback's plain button: the overlay's danger (bn_overlay_danger)
             return b;
         }
     }

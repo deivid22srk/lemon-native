@@ -25,7 +25,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 /**
- * The launcher's building blocks, in code like the rest of the launcher (no layouts, no AndroidX), in the banana palette (res/values/colors.xml, values-night for dark
+ * The launcher's building blocks, in code like the rest of the launcher (no layouts, no AndroidX), in the Slate & Signal palette (res/values/colors.xml, values-night for dark
  * mode; themes.xml's Theme.Banana). One small design system so every screen looks the same:
  * <ul>
  * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line.</li>
@@ -67,7 +67,7 @@ final class Ui {
     /**
      * A clickable view that is not a button (a row, a tab, a chip): the touch ripple while pressed and, while a D-pad or keyboard focuses it, the same hairline
      * accent edge a button shows (style), so focus reads the same everywhere. fill: the resting fill (Color.TRANSPARENT for a plain row); edge: the focus edge's
-     * color (a filled pill takes the on-banana brown, the accent would vanish on it in dark mode, where the accent is the banana)
+     * color (the accent resource, like every control's: focus is the accent everywhere)
      */
     private static void touchable(Context c, View v, int fill, float radiusDp, int edgeColorRes) {
         android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
@@ -216,13 +216,13 @@ final class Ui {
         return t;
     }
 
-    /** A game's tile: the first letter of its name on banana yellow, rounded */
+    /** A game's tile: the first letter of its name on the accent, rounded */
     static TextView tile(Context c, String name, int sizeDp) {
         String n = name == null ? "" : name.trim();
-        TextView t = text(c, n.isEmpty() ? "?" : n.substring(0, n.offsetByCodePoints(0, 1)).toUpperCase(java.util.Locale.ROOT), sizeDp * 0.4f, R.color.bn_on_banana, 800);
+        TextView t = text(c, n.isEmpty() ? "?" : n.substring(0, n.offsetByCodePoints(0, 1)).toUpperCase(java.util.Locale.ROOT), sizeDp * 0.4f, R.color.bn_on_accent, 800);
         t.setGravity(Gravity.CENTER);
         t.setIncludeFontPadding(false);
-        t.setBackground(round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_INNER), 0, 0));
+        t.setBackground(round(col(c, R.color.bn_accent), dp(c, Tokens.RADIUS_INNER), 0, 0));
         t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         t.setLayoutParams(new LinearLayout.LayoutParams(dp(c, sizeDp), dp(c, sizeDp)));
         return t;
@@ -231,7 +231,7 @@ final class Ui {
     /** Shows a picture (the game's icon) in a tile made by tile(), in place of its letter and with the same rounded corners. Pass null to get the letter back */
     static void tileIcon(TextView t, android.graphics.Bitmap b) {
         Context c = t.getContext();
-        if (b == null) { t.setTextColor(col(c, R.color.bn_on_banana)); t.setBackground(round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_INNER), 0, 0)); return; }
+        if (b == null) { t.setTextColor(col(c, R.color.bn_on_accent)); t.setBackground(round(col(c, R.color.bn_accent), dp(c, Tokens.RADIUS_INNER), 0, 0)); return; }
         android.graphics.drawable.Drawable d = new android.graphics.drawable.BitmapDrawable(c.getResources(), b);
         t.setBackground(d);
         t.setTextColor(android.graphics.Color.TRANSPARENT);   // only hidden, so the letter is still there if the tile is reused for another game
@@ -341,7 +341,7 @@ final class Ui {
     /** A page's header, the same on every screen: 56 dp high; a leading view (the banana badge, or a back button), the title, and an optional trailing button */
     static LinearLayout header(Context c, View leading, CharSequence title, View trailing) { return header(c, leading, title, null, trailing); }
 
-    /** The same, with a small line under the title in the accent yellow (Home: the build identifier, Prefs.buildId), or none when null */
+    /** The same, with a small line under the title in the accent (Home: the build identifier, Prefs.buildId), or none when null */
     static LinearLayout header(Context c, View leading, CharSequence title, CharSequence subtitle, View trailing) {
         LinearLayout h = row(c);
         h.setMinimumHeight(dp(c, Tokens.HEADER_DP));
@@ -441,13 +441,13 @@ final class Ui {
 
     /**
      * A button's look across its states: its kind's fill with the touch ripple while pressed, a hairline accent edge while a D-pad or keyboard focuses it (the
-     * shape keeps its size, so nothing moves) and a muted warm fill when disabled (the label fades with it, textColorList). One place, so a button, an action
+     * shape keeps its size, so nothing moves) and a muted fill when disabled (the label fades with it, textColorList). One place, so a button, an action
      * and an icon button all show the same states
      */
     private static void style(Context c, View b, Kind k, float radiusDp) {
         int fill, stroke = 0;
         switch (k) {
-            case PRIMARY: fill = col(c, R.color.bn_banana); break;
+            case PRIMARY: fill = col(c, R.color.bn_accent); break;
             case TONAL: fill = col(c, R.color.bn_tint); break;
             case SOFT: fill = Color.TRANSPARENT; stroke = col(c, R.color.bn_card_stroke); break;
             case DANGER: fill = col(c, R.color.bn_danger_tint); break;
@@ -457,9 +457,9 @@ final class Ui {
         GradientDrawable off = round(k == Kind.QUIET || k == Kind.SOFT ? Color.TRANSPARENT : col(c, R.color.bn_tint),
                 dp(c, radiusDp), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP));   // disabled: an outlined, unfilled button reads as off in every kind
         android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
-        // the focus edge: the deep gold against cream surfaces, but against the banana fill itself the dark on-banana brown (the gold is the banana in dark mode)
+        // the focus edge: the accent on every kind, the filled primary included
         s.addState(new int[]{android.R.attr.state_focused},
-                round(fill, dp(c, radiusDp), col(c, k == Kind.PRIMARY ? R.color.bn_on_banana : R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
+                round(fill, dp(c, radiusDp), col(c, R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
         s.addState(new int[]{-android.R.attr.state_enabled}, off);
         s.addState(new int[]{}, ripple(c, shape));
         b.setBackground(s);
@@ -467,7 +467,7 @@ final class Ui {
 
     private static int textColor(Kind k) {
         switch (k) {
-            case PRIMARY: return R.color.bn_on_banana;
+            case PRIMARY: return R.color.bn_on_accent;
             case DANGER: return R.color.bn_danger;
             case QUIET: return R.color.bn_accent;
             default: return R.color.bn_text;
@@ -482,7 +482,7 @@ final class Ui {
 
     /**
      * A button: 48 dp high, 14 dp corners, one line (labels are kept short; the button grows to fit its label, and a half-width one ellipsizes rather than wraps).
-     * PRIMARY banana yellow, TONAL the soft tint, SOFT an outline, DANGER red-orange on its tint, QUIET text only in the accent. Disabled ones fade to the muted
+     * PRIMARY the accent with its on-accent label, TONAL the soft tint, SOFT an outline, DANGER the danger red on its tint, QUIET text only in the accent. Disabled ones fade to the muted
      * fill and label (style, textColorList); focused ones get a hairline accent edge
      */
     static Button button(Context c, CharSequence s, Kind k, View.OnClickListener l) {
@@ -603,7 +603,7 @@ final class Ui {
 
     static ProgressBar progress(Context c) {
         ProgressBar bar = new ProgressBar(c, null, android.R.attr.progressBarStyleHorizontal);
-        bar.setProgressTintList(ColorStateList.valueOf(col(c, R.color.bn_accent)));   // the deep gold clears 3:1 against the track where the banana does not
+        bar.setProgressTintList(ColorStateList.valueOf(col(c, R.color.bn_accent)));   // the Signal blue clears 4.2:1 against the stroke track
         bar.setProgressBackgroundTintList(ColorStateList.valueOf(col(c, R.color.bn_card_stroke)));
         bar.setScaleY(1.6f);
         return bar;
@@ -740,7 +740,7 @@ final class Ui {
         }
     }
 
-    /** A choice of a few words side by side in one rounded track (Recommended | Custom): the picked one on banana yellow. pick gets the index when the player picks another */
+    /** A choice of a few words side by side in one rounded track (Recommended | Custom): the picked one in the tonal accent (bn_accent_tint, its label the accent). pick gets the index when the player picks another */
     static final class Segmented extends LinearLayout {
         private final TextView[] items;
         private int selected;
@@ -774,13 +774,13 @@ final class Ui {
             Context c = getContext();
             for (int i = 0; i < items.length; i++) {
                 boolean on = i == k;
-                if (on) {   // the picked one on banana, with its own focus edge in the on-banana brown (the accent is the banana in dark mode)
+                if (on) {   // the picked one in the tonal accent container (selection is never a filled accent), its focus edge the accent like everywhere
                     android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
-                    s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), col(c, R.color.bn_on_banana), dp(c, Tokens.FOCUS_EDGE_DP)));
-                    s.addState(new int[]{}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), 0, 0));
+                    s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_accent_tint), dp(c, Tokens.RADIUS_ROW), col(c, R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
+                    s.addState(new int[]{}, round(col(c, R.color.bn_accent_tint), dp(c, Tokens.RADIUS_ROW), 0, 0));
                     items[i].setBackground(s);
                 } else touchable(c, items[i], Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);
-                items[i].setTextColor(col(c, on ? R.color.bn_on_banana : R.color.bn_text_2));
+                items[i].setTextColor(col(c, on ? R.color.bn_accent : R.color.bn_text_2));
                 items[i].setSelected(on);
             }
         }

@@ -16,6 +16,8 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import dev.nxnative.android.R;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,7 +74,7 @@ public final class ScreensOff {
         if (hint) {   // said once, then gone: nothing stays lit
             TextView t = new TextView(d.getContext());
             t.setText("The build goes on. Tap a screen to bring it back.");
-            t.setTextColor(0xFF8A8A8A);
+            t.setTextColor(d.getContext().getColor(R.color.bn_overlay_text_2));   // the hint on black: the overlay's secondary text
             t.setTextSize(16);
             t.setGravity(Gravity.CENTER);
             root.addView(t, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

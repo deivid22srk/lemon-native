@@ -339,7 +339,7 @@ final class GameSettings {
         } else h.addView(Ui.spacer(a));
         if (play) {
             android.widget.Button b = Ui.button(a, "Play", Ui.Kind.PRIMARY, dev.peanuts.ui.Feel.launch(v -> a.launch(g)));   // PEANUTS: Play is the heavy word, and Home fades out over the game
-            b.setCompoundDrawablesRelativeWithIntrinsicBounds(Ui.icon(a, R.drawable.ic_play, R.color.bn_on_banana), null, null, null);
+            b.setCompoundDrawablesRelativeWithIntrinsicBounds(Ui.icon(a, R.drawable.ic_play, R.color.bn_on_accent), null, null, null);   // the label's own color (Ui.button Kind.PRIMARY)
             b.setCompoundDrawablePadding(Ui.dp(a, 4));
             b.setPadding(Ui.dp(a, 14), 0, Ui.dp(a, 18), 0);
             h.addView(b, Ui.wrap());

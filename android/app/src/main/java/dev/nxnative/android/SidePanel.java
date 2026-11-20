@@ -47,7 +47,7 @@ final class SidePanel extends FrameLayout {
     static final String[] TAB_NAMES = {"Performance", "Display", "Controls", "General"};
     private static final int TAB_PERF = 0, TAB_DISPLAY = 1, TAB_CONTROLS = 2, TAB_GENERAL = 3;
     private int tab = TAB_PERF;
-    private static final int FOCUS = 0xFFFFD54F;   // the tab bar's selected tab and the focus frame: a banana yellow, dark text on it
+    private final int FOCUS;   // the tab bar's selected tab and the focus frame: the overlay's Signal blue (bn_overlay_accent), stable over the game in both modes
 
     // A controller: its confirm and back keys (padButtons), the held direction and its repeat
     private int confirm = KeyEvent.KEYCODE_BUTTON_B, back = KeyEvent.KEYCODE_BUTTON_A;
@@ -70,9 +70,10 @@ final class SidePanel extends FrameLayout {
         super(a);
         act = a;
         this.rows = rows;
+        FOCUS = a.getColor(R.color.bn_overlay_accent);
         float dp = getResources().getDisplayMetrics().density;
         View scrim = new View(a);
-        scrim.setBackgroundColor(0x66000000);
+        scrim.setBackgroundColor(a.getColor(R.color.bn_overlay_scrim));
         scrim.setOnClickListener(v -> close());
         addView(scrim, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         box = new LinearLayout(a);
@@ -83,10 +84,10 @@ final class SidePanel extends FrameLayout {
         scroll.addView(box);
         LinearLayout sh = new LinearLayout(a);   // the tab bar fixed at the top, the tab's rows scrolling under it
         sh.setOrientation(LinearLayout.VERTICAL);
-        sh.setBackgroundColor(0xF0202124);
+        sh.setBackgroundColor(a.getColor(R.color.bn_overlay_card));   // the panel's slate, overlay-stable in both modes (no values-night override)
         tabs = new LinearLayout(a);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
-        tabs.setBackgroundColor(0xFF2D2E31);
+        tabs.setBackgroundColor(a.getColor(R.color.bn_overlay_card));
         sh.addView(tabs, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         sh.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         addView(sh, new LayoutParams(PanelLook.widthPx(Prefs.panelSize(a), dp, a.getResources().getDisplayMetrics().widthPixels), LayoutParams.MATCH_PARENT, Gravity.END));
@@ -227,13 +228,13 @@ final class SidePanel extends FrameLayout {
         if (f != null) f.requestFocus();
     }
 
-    /** The focus frame: a yellow outline on the focused row of the panel (not in touch mode, where nothing has the focus) */
+    /** The focus frame: an accent outline on the focused row of the panel (not in touch mode, where nothing has the focus) */
     private void focusMoved(View old, View now) {
         if (lit != null) { lit.setForeground(null); lit = null; }
         if (now == null || !inside(now) || isInTouchMode()) return;
         float dp = getResources().getDisplayMetrics().density;
         android.graphics.drawable.GradientDrawable d = new android.graphics.drawable.GradientDrawable();
-        d.setColor(0x26FFD54F);
+        d.setColor((FOCUS & 0x00FFFFFF) | 0x26000000);   // the frame's wash: the accent at its 15 %, like PadFocus's
         d.setStroke(Math.round(2.5f * dp), FOCUS);
         d.setCornerRadius(6 * dp);
         now.setForeground(d);
@@ -258,11 +259,12 @@ final class SidePanel extends FrameLayout {
         return d;
     }
 
-    /** The tab bar: one button per tab (the selected one filled), then ✕; large enough to tap (the panel's row height, 48 dp at least), named for TalkBack */
+    /** The tab bar: one button per tab (the selected one on the card with an accent edge), then ✕; large enough to tap (the panel's row height, 48 dp at least), named for TalkBack */
     private void tabBar() {
         tabs.removeAllViews();
         float dp = getResources().getDisplayMetrics().density;
         int h = Math.max(Math.round(48 * dp), PanelLook.rowPx(Prefs.panelSize(act), dp)), pad = Math.round(4 * dp);
+        int ink = act.getColor(R.color.bn_overlay_text);
         for (int i = 0; i < TAB_NAMES.length; i++) {
             int k = i;
             boolean on = i == tab;
@@ -274,8 +276,14 @@ final class SidePanel extends FrameLayout {
             t.setTextSize(TypedValue.COMPLEX_UNIT_SP, Tokens.TYPE_BODY);   // one size for every tab, set once the bar is laid out (tabTextSize)
             t.setPadding(pad, 0, pad, 0);
             t.setTypeface(on ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-            t.setTextColor(on ? 0xFF000000 : 0xFFE8EAED);
-            t.setBackgroundColor(on ? FOCUS : 0);
+            t.setTextColor(on ? FOCUS : ink);
+            if (on) {   // the selected tab: the card fill with the accent edge — selection is tonal, never a filled accent
+                android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+                g.setColor(act.getColor(R.color.bn_overlay_card));
+                g.setCornerRadius(6 * dp);
+                g.setStroke(Math.round(2 * dp), FOCUS);
+                t.setBackground(g);
+            } else t.setBackgroundColor(0);
             t.setSelected(on);
             t.setFocusable(true);
             t.setOnClickListener(v -> showTab(k));
@@ -286,7 +294,7 @@ final class SidePanel extends FrameLayout {
         x.setText("✕");
         x.setGravity(Gravity.CENTER);
         x.setTextSize(Tokens.TYPE_HEADING);
-        x.setTextColor(0xFFE8EAED);
+        x.setTextColor(act.getColor(R.color.bn_overlay_text));
         x.setFocusable(true);
         x.setOnClickListener(v -> close());
         x.setContentDescription("Close the panel, back to the game");

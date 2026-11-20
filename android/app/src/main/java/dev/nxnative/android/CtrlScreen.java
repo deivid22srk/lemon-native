@@ -1,6 +1,5 @@
 package dev.nxnative.android;
 
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
@@ -66,14 +65,14 @@ final class CtrlScreen {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER);
-        box.setBackgroundColor(0xE0101418);
+        box.setBackgroundColor(a.getColor(R.color.bn_overlay_card));   // the join screen's slate, overlay-stable in both modes (no values-night override)
         box.setClickable(true);   // touches stop here: the game's controls are held while it shows
         box.setFocusable(false);
         int pad = Math.round(24 * dp);
         box.setPadding(pad, pad, pad, pad);
-        TextView title = text(a, "Controllers", 24, Color.WHITE); title.setTypeface(Typeface.DEFAULT_BOLD);
+        TextView title = text(a, "Controllers", 24, a.getColor(R.color.bn_overlay_text)); title.setTypeface(Typeface.DEFAULT_BOLD);
         box.addView(title);
-        hint = text(a, "", 15, 0xFFB8C4CC);
+        hint = text(a, "", 15, a.getColor(R.color.bn_overlay_text_2));
         box.addView(hint, lp(LinearLayout.LayoutParams.WRAP_CONTENT, 8));
         cards = new LinearLayout(a); cards.setOrientation(LinearLayout.HORIZONTAL); cards.setGravity(Gravity.CENTER);
         box.addView(cards, lp(LinearLayout.LayoutParams.MATCH_PARENT, 20));
@@ -111,9 +110,9 @@ final class CtrlScreen {
     private static LinearLayout card(GameActivity a) {
         LinearLayout c = new LinearLayout(a); c.setOrientation(LinearLayout.VERTICAL); c.setGravity(Gravity.CENTER_HORIZONTAL);
         int p = Math.round(12 * dp); c.setPadding(p, p, p, p);
-        c.addView(text(a, "", 18, Color.WHITE));   // Player n
-        c.addView(text(a, "", 14, Color.WHITE));   // the controller, or Press L + R
-        c.addView(text(a, "", 12, 0xFFB8C4CC));    // the game's text
+        c.addView(text(a, "", 18, a.getColor(R.color.bn_overlay_text)));   // Player n
+        c.addView(text(a, "", 14, a.getColor(R.color.bn_overlay_text)));   // the controller, or Press L + R
+        c.addView(text(a, "", 12, a.getColor(R.color.bn_overlay_text_2)));    // the game's text
         LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(Math.round(150 * dp), Math.round(130 * dp));
         l.setMargins(Math.round(6 * dp), 0, Math.round(6 * dp), 0);
         c.setLayoutParams(l);
@@ -123,12 +122,12 @@ final class CtrlScreen {
     private static void fill(LinearLayout c, String[] f) {   // "<player>\t<device>\t<name>\t<colour>\t<text>"
         if (f.length < 5) return;
         boolean joined = !"-1".equals(f[1]);
-        int col = 0xFF2E3A44;
+        int col = c.getContext().getColor(R.color.bn_overlay_stroke);   // a slot's slate when the game gives no colour (its own colour when it does)
         if (!"-".equals(f[3]) && f[3].length() == 8) {
             try { long v = Long.parseLong(f[3], 16); col = (int) (0xFF000000L | (v >>> 8)); } catch (NumberFormatException ignored) { }
         }
         GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(10 * dp);
-        bg.setColor(joined ? col : 0x00000000); bg.setStroke(Math.round(2 * dp), joined ? col : 0xFF55626C);
+        bg.setColor(joined ? col : 0x00000000); bg.setStroke(Math.round(2 * dp), joined ? col : c.getContext().getColor(R.color.bn_overlay_stroke));
         c.setBackground(bg);
         ((TextView) c.getChildAt(0)).setText("Player " + f[0]);
         ((TextView) c.getChildAt(1)).setText(joined ? f[2] : "Press L + R");

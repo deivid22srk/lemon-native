@@ -23,6 +23,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import dev.nxnative.android.R;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -84,10 +86,10 @@ final class CompanionPage {
         textRoot.setOrientation(LinearLayout.VERTICAL);
         textRoot.setGravity(Gravity.CENTER_HORIZONTAL);
         textRoot.setPadding(32, 48, 32, 32);
-        textRoot.setBackgroundColor(Color.rgb(0x14, 0x12, 0x0c));
-        textRoot.addView(text("Peanuts Native", 30, Color.rgb(0xff, 0xd9, 0x5a), Typeface.DEFAULT_BOLD));
-        textRoot.addView(text(gameName, 22, Color.WHITE, Typeface.DEFAULT));
-        values = text("", 18, Color.LTGRAY, Typeface.MONOSPACE);
+        textRoot.setBackgroundColor(getContext().getColor(R.color.bn_overlay_card));   // the overlay's slate, stable over the game in both modes (no values-night override)
+        textRoot.addView(text("Peanuts Native", 30, getContext().getColor(R.color.bn_overlay_accent), Typeface.DEFAULT_BOLD));   // the wordmark in the Signal blue: the amber stays on the launcher's badge and empty state
+        textRoot.addView(text(gameName, 22, getContext().getColor(R.color.bn_overlay_text), Typeface.DEFAULT));
+        values = text("", 18, getContext().getColor(R.color.bn_overlay_text_2), Typeface.MONOSPACE);
         values.setGravity(Gravity.START);
         textRoot.addView(values);
         root.addView(textRoot, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

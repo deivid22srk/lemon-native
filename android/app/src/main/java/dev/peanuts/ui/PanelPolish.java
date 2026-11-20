@@ -1,5 +1,6 @@
 package dev.peanuts.ui;
 
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -16,18 +17,18 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import dev.nxnative.android.R;
+
 /**
  * PEANUTS: a restyle of the in-game side panel's tabs, called from SidePanel.look() after a tab is built. It only changes looks, never behaviour and never removes a
- * view: short radio groups become segmented controls, the section headings (SidePanel.head: bold, 15 sp, an 18 dp top gap, no side padding) and the grey notes
- * (SidePanel.note: 12 sp, light grey, not bold) get one look each, and the all-caps default Buttons are rounded. A styled view is tagged, so a rebuilt tab
+ * view: short radio groups become segmented controls, the section headings (SidePanel.head: bold, 15 sp, an 18 dp top gap, no side padding) and the notes
+ * (SidePanel.note: 12 sp, the overlay's secondary text, not bold) get one look each, and the all-caps default Buttons are rounded. A styled view is tagged, so a rebuilt tab
  * (or a second call) is styled once.
  */
 public final class PanelPolish {
     private PanelPolish() {}
 
     private static final String DONE = "pn_polish";
-    private static final int ACCENT = 0xFFFFD54F;   // SidePanel.FOCUS, the selected tab's colour
-    private static final int OUTLINE = 0xFF555555;
 
     public static void apply(View root) {
         if (root == null) return;
@@ -53,6 +54,8 @@ public final class PanelPolish {
             View c = g.getChildAt(i);
             if (!(c instanceof RadioButton) || String.valueOf(((RadioButton) c).getText()).length() > 12) return;
         }
+        Context c = g.getContext();
+        int accent = c.getColor(R.color.bn_overlay_accent), stroke = c.getColor(R.color.bn_overlay_stroke), ink = c.getColor(R.color.bn_overlay_text);
         g.setOrientation(LinearLayout.HORIZONTAL);
         g.setTag(DONE);
         for (int i = 0; i < n; i++) {
@@ -61,10 +64,10 @@ public final class PanelPolish {
             b.setGravity(Gravity.CENTER);
             b.setSingleLine(true);
             b.setPadding(Math.round(6 * dp), 0, Math.round(6 * dp), 0);
-            b.setTextColor(new ColorStateList(new int[][] {{android.R.attr.state_checked}, {}}, new int[] {0xFF000000, 0xFFE8EAED}));
+            b.setTextColor(new ColorStateList(new int[][] {{android.R.attr.state_checked}, {}}, new int[] {accent, ink}));
             StateListDrawable bg = new StateListDrawable();
-            bg.addState(new int[] {android.R.attr.state_checked}, pill(ACCENT, 0, dp));
-            bg.addState(new int[] {}, pill(Color.TRANSPARENT, OUTLINE, dp));
+            bg.addState(new int[] {android.R.attr.state_checked}, pill(Color.TRANSPARENT, accent, dp));   // selection is the accent edge and the accent label: never a filled accent (the overlays have no tonal accent container)
+            bg.addState(new int[] {}, pill(Color.TRANSPARENT, stroke, dp));
             b.setBackground(bg);
             RadioGroup.LayoutParams lp = new RadioGroup.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             lp.setMargins(i == 0 ? 0 : Math.round(3 * dp), Math.round(2 * dp), i == n - 1 ? 0 : Math.round(3 * dp), Math.round(2 * dp));
@@ -92,13 +95,13 @@ public final class PanelPolish {
             t.setTag(DONE);
             t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             t.setTextSize(TypedValue.COMPLEX_UNIT_PX, 13 * sp * scale);
-            t.setTextColor(0xFFC8C8C8);
+            t.setTextColor(t.getContext().getColor(R.color.bn_overlay_text));
             t.setPadding(0, Math.round(20 * dp), 0, 0);
         } else if (!bold && t.getCurrentTextColor() == Color.LTGRAY && size <= 13 * sp) {
             float scale = size / (12 * sp);
             t.setTag(DONE);
             t.setTextSize(TypedValue.COMPLEX_UNIT_PX, 12 * sp * scale);
-            t.setTextColor(0xFF8A8A8A);
+            t.setTextColor(t.getContext().getColor(R.color.bn_overlay_text_2));
             t.setLineSpacing(0, 1.15f);
         }
     }
@@ -120,7 +123,7 @@ public final class PanelPolish {
     private static void button(Button b, float dp) {
         if (!b.isAllCaps()) return;   // the panel's list rows (SidePanel.row) already turned it off
         TypedValue tv = new TypedValue();
-        int fill = b.getContext().getTheme().resolveAttribute(android.R.attr.colorButtonNormal, tv, true) ? tv.data : 0xFF555555;
+        int fill = b.getContext().getTheme().resolveAttribute(android.R.attr.colorButtonNormal, tv, true) ? tv.data : b.getContext().getColor(R.color.bn_overlay_stroke);   // the theme's button colour, else the overlay's raised slate (the theme sets none)
         b.setTag(DONE);
         b.setAllCaps(false);
         b.setStateListAnimator(null);

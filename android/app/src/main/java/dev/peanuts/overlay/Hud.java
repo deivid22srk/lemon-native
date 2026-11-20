@@ -8,6 +8,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.TypefaceSpan;
 
+import dev.nxnative.android.R;
 import dev.peanuts.Bridge;
 
 import java.util.ArrayList;
@@ -31,9 +32,8 @@ public final class Hud {
     static final String[] CORNERS = {"tl", "tr", "bl", "br"};
     private static int sentCorner = -1;
 
-    /** Value colours: white is normal, yellow a warning, red a bad value (the dot's green stays in LEVEL) */
-    private static final int WHITE = 0xFFFFFFFF, YELLOW = 0xFFFFC107, RED = 0xFFF44336;
-    private static final int[] LEVEL = {0xFF4CAF50, YELLOW, RED};
+    /** The throttle's traffic light (the dot's levels — upstream Overlay.DOT's own trio, and HistogramSpan's bars): no overlay token exists for its middle, so it stays whole and literal */
+    private static final int[] LEVEL = {0xFF4CAF50, 0xFFFFC107, 0xFFF44336};
     /** LABEL: the widest label ("GAME") and the column every label is padded to; MIN_VALUE: the narrowest value column */
     private static final int BARS = 48, WINDOW = 512, LABEL = 4, MIN_VALUE = 10;
     private static final float GIB = 1024f * 1024f * 1024f;
@@ -58,7 +58,7 @@ public final class Hud {
     /** One row: label, value and colours; {@code hist} is the histogram's placeholder (no value) */
     private static final class Row {
         String label = "", value = "", hist;
-        int color = WHITE, dot = -2;   // dot: -2 none, -1 grey, 0..2 level
+        int color, dot = -2;   // color: the value's ink, 0 until set (build falls back to the block's text colour); dot: -2 none, -1 grey, 0..2 level
         boolean big;
         Row(String label, String value) { this.label = label; this.value = value; }
     }
@@ -69,6 +69,7 @@ public final class Hud {
         SharedPreferences p = prefs(c);
         sendCorner(p);
         int scale = p.getInt(SCALE, 100);
+        int ink = c.getColor(R.color.bn_overlay_text), grey = c.getColor(R.color.bn_overlay_text_2);   // the overlay's text colours (bn_overlay_*): stable over the game in both modes
         if ("classic".equals(p.getString(STYLE, "table"))) { graphOff(); return scaled(classic, scale); }
         List<Row> rows = new ArrayList<>();
         boolean fps = item(c, "fps"), dot = item(c, "throttle");
@@ -87,27 +88,27 @@ public final class Hud {
         if (item(c, "graph")) graph(rows, n, target);
         if (fps && fresh) {
             Row r = new Row("FT", String.format(Locale.ROOT, "%.1f ms", rate[2]));
-            if (!Float.isNaN(target) && !Float.isNaN(rate[2])) r.color = warn(FrameStats.level(rate[2], target));
+            if (!Float.isNaN(target) && !Float.isNaN(rate[2])) r.color = warn(c, FrameStats.level(rate[2], target));
             rows.add(r);
         }
         if (item(c, "gpu") && fresh && rate[5] >= 0) rows.add(new Row("GPU", String.format(Locale.ROOT, "%.1f ms", rate[5])));
         if (item(c, "cpu") && !Float.isNaN(cap)) {
             Row r = new Row("CPU", String.format(Locale.ROOT, "%.0f%%", cap * 100f));
-            r.color = cap < 0.65f ? LEVEL[2] : cap < 0.85f ? LEVEL[1] : WHITE;
+            r.color = cap < 0.65f ? LEVEL[2] : cap < 0.85f ? LEVEL[1] : ink;
             rows.add(r);
         }
         if (item(c, "soc")) {
             int t = SocTemp.celsius();
             if (t != SocZones.NONE) {
                 Row r = new Row("SOC", t + "°");
-                r.color = t >= SocTemp.HOT ? LEVEL[2] : t >= 70 ? LEVEL[1] : WHITE;
+                r.color = t >= SocTemp.HOT ? LEVEL[2] : t >= 70 ? LEVEL[1] : ink;
                 rows.add(r);
             }
         }
         if (item(c, "battery") && batLevel >= 0) {
             // the temperature drives the colour of the whole value
             Row r = new Row("BAT", (Float.isNaN(batTemp) ? "" : String.format(Locale.ROOT, "%.0f° ", batTemp)) + batLevel + "%" + (charging ? "⚡︎" : ""));
-            r.color = warn(FrameStats.batteryLevel(batTemp));
+            r.color = warn(c, FrameStats.batteryLevel(batTemp));
             rows.add(r);
         }
         if (item(c, "memory")) {
@@ -116,7 +117,7 @@ public final class Hud {
             if (memTotal > 0) {
                 Row r = new Row("RAM", String.format(Locale.ROOT, "%.1f/%.1fG", (memTotal - memAvail) / GIB, memTotal / GIB));
                 if (memLow) r.value += " low";
-                r.color = warn(FrameStats.ramLevel(memTotal - memAvail, memTotal, memLow));
+                r.color = warn(c, FrameStats.ramLevel(memTotal - memAvail, memTotal, memLow));
                 rows.add(r);
             }
         }
@@ -126,7 +127,7 @@ public final class Hud {
         for (Row r : rows) hasGraph |= r.hist != null;
         if (!hasGraph) graphOff();   // no bars in this block: the host paints none
         if (rows.isEmpty()) return null;
-        return scaled(build(rows), scale);
+        return scaled(build(rows, ink, grey), scale);
     }
 
     /** The whole block at scale percent of its size (a span over all of it, so the histogram's paint is scaled too); null stays null */
@@ -154,9 +155,9 @@ public final class Hud {
         try { return Math.min(Bridge.frameTimes(frames), WINDOW); } catch (UnsatisfiedLinkError e) { return 0; }
     }
 
-    /** A value's colour from its status: 0 white (normal), 1 yellow, 2 red */
-    private static int warn(int level) {
-        return level == 2 ? RED : level == 1 ? YELLOW : WHITE;
+    /** A value's colour from its status: 0 the overlay's text (normal), 1 yellow, 2 red */
+    private static int warn(Context c, int level) {
+        return level == 2 ? LEVEL[2] : level == 1 ? LEVEL[1] : c.getColor(R.color.bn_overlay_text);
     }
 
     private static void graph(List<Row> rows, int n, float target) {
@@ -173,7 +174,7 @@ public final class Hud {
         }
     }
 
-    private static CharSequence build(List<Row> rows) {
+    private static CharSequence build(List<Row> rows, int ink, int grey) {
         int w = MIN_VALUE;
         for (Row r : rows) w = Math.max(w, valueLength(r));
         SpannableStringBuilder s = new SpannableStringBuilder();
@@ -195,13 +196,13 @@ public final class Hud {
             if (r.dot > -2) {
                 int d = s.length();
                 s.append('●');
-                s.setSpan(new ForegroundColorSpan(r.dot >= 0 ? LEVEL[r.dot] : 0xFF888888), d, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                s.setSpan(new ForegroundColorSpan(r.dot >= 0 ? LEVEL[r.dot] : grey), d, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 if (!r.value.isEmpty()) s.append(' ');
             }
             int vs = s.length();
             s.append(r.value);
             if (s.length() > vs) {
-                s.setSpan(new ForegroundColorSpan(r.color), vs, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                s.setSpan(new ForegroundColorSpan(r.color != 0 ? r.color : ink), vs, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);   // 0: the row never set its colour — the block's text
                 if (r.big) s.setSpan(new RelativeSizeSpan(1.5f), vs, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }

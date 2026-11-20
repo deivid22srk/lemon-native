@@ -41,6 +41,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 import dev.peanuts.PeanutsPrefs;
 import dev.peanuts.build.BuildListener;
 import dev.peanuts.build.BuildPipeline;
@@ -267,7 +268,7 @@ public final class Library {
         column.setGravity(Gravity.CENTER_HORIZONTAL);
         column.addView(PUi.iconButton(a, iconRes, description, PUi.Kind.TONAL, action));
 
-        TextView caption = PUi.text(a, label, 10, R.color.bn_accent, 700);
+        TextView caption = PUi.text(a, label, Tokens.TYPE_CAPTION, R.color.bn_accent, 700);
         caption.setSingleLine(true);
         caption.setGravity(Gravity.CENTER);
         caption.setPadding(0, PUi.dp(a, 2), 0, 0);
@@ -1050,7 +1051,7 @@ public final class Library {
     /**
      * One cell of the grid: the cover (PUi's tile at cell size, the NACP icon once it has landed) with the state on it, the name under it. The cover is the focusable,
      * clickable thing: a tap plays a ready game, opens the Building filter for a building one, the sheet or Manage otherwise; a long press (or Y) opens Manage
-     * (listed) or the sheet (scanned); a 3 dp banana ring and a banana name show the focus
+     * (listed) or the sheet (scanned); a 3 dp accent ring and an accent name show the focus
      */
     private View coverCell(Row r, int cellDp) {
         int st = r.status();
@@ -1078,11 +1079,11 @@ public final class Library {
         cover.setClickable(true);
         cover.setFocusable(true);
         cover.setContentDescription(name + ", " + state + (companion ? ", companion installed" : ""));
-        // the ripple under the cover (masked to its 16 dp corners) and the focus ring, 3 dp outside the cover's edge
+        // the ripple under the cover (masked to its 16 dp corners, bn_control_ripple like every theme widget) and the focus ring, 3 dp outside the cover's edge
         StateListDrawable ring = new StateListDrawable();
-        ring.addState(new int[] {android.R.attr.state_focused}, PUi.round(Color.TRANSPARENT, PUi.dp(a, 20), PUi.col(a, R.color.bn_banana), PUi.dp(a, 3)));
+        ring.addState(new int[] {android.R.attr.state_focused}, PUi.round(Color.TRANSPARENT, PUi.dp(a, 20), PUi.col(a, R.color.bn_accent), PUi.dp(a, 3)));
         ring.addState(new int[0], new ColorDrawable(Color.TRANSPARENT));
-        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(0x336B4423), null, new InsetDrawable(PUi.round(Color.BLACK, PUi.dp(a, 16), 0, 0), p4));
+        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(PUi.col(a, R.color.bn_control_ripple)), null, new InsetDrawable(PUi.round(Color.BLACK, PUi.dp(a, 16), 0, 0), p4));
         cover.setForeground(new LayerDrawable(new Drawable[] {ripple, ring}));
 
         int coverDp = cellDp - 8;   // the cell less the 4 dp the focus ring needs on each side: the cover stays square
@@ -1136,7 +1137,7 @@ public final class Library {
         nlp.setMargins(p4, p4, p4, 0);
         String key = "cover:" + r.id();
         cover.setOnFocusChangeListener((v, f) -> {
-            n.setTextColor(PUi.col(a, f ? R.color.bn_banana : nameColor));   // at once: a colour animation would redraw the text every frame
+            n.setTextColor(PUi.col(a, f ? R.color.bn_accent : nameColor));   // at once: a colour animation would redraw the text every frame
             noteFocus(key, f);
             Motion.focus(tile, f, restoring);
         });
