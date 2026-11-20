@@ -49,7 +49,9 @@ Status: **bring-up / not tested upstream**. SDK 16.2.3, Unreal Engine 4, NVN, Ww
   (`; shaders skipped most: (vertex …, pixel …) xN`, a mesh draw's pair as
   `(mesh …, pixel …)`) when a draw is still skipped, the third kind in the
   asynchronous pipelines line (`+ N by the profile's sync-all rule`), the NVN
-  formats in `same_shape`'s line (`NVN 0x… ↔ 0x…`), and the run's first
+  formats in `same_shape`'s line (`NVN 0x… ↔ 0x…`) when a pair is learned
+  again (a fresh `$DM_TEMP`: with the file held, the pair comes from it at the
+  image's creation and nothing logs), and the run's first
   `learned view formats … : 44 ↔ 37 640x360` line listing the pairs the file
   holds — the pair above among them, learned by the second log's run.
 - Diagnostics for the next capture: `DM_VK_PSO_SKIPLOG=n` names the first n

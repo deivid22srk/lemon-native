@@ -133,7 +133,10 @@ static int out_store(VkCommandBuffer cb, vka_img *d, uint32_t dl, int dx, int dy
     if (!df || df == d->f.vk) { vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST); vka_barrier(cb); return 0; }
     VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, df, &fp);
     VkImage t = (fp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) ? vka_sconv_image(df, (uint32_t)ow, (uint32_t)oh, VK_NULL_HANDLE) : VK_NULL_HANDLE;
-    if (!t) { vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST); vka_barrier(cb); return 0; }
+    if (!t) {
+        VRED_ONCE("DLSS stand-in: the output's store: no BLIT_DST feature or scratch for the texture's format %u: written in the image's format as before", df);
+        vk.vkCmdBlitImage(cb, D.r.img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &bl, VK_FILTER_NEAREST); vka_barrier(cb); return 0;
+    }
     VRED_ONCE("DLSS stand-in: the output's store into an image of VkFormat %d whose texture is VkFormat %u: converted through a scratch of the texture's format", d->f.vk, df);
     vka_barrier(cb);
     VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};

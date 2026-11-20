@@ -1415,8 +1415,12 @@ static void dlss_eval(const p_dlss *o) {
         if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, cf.view, &p1); ok = (p1.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT) != 0; }
         if (ok && cf.vk != s->f.vk) ok = (t1 = sconv_image(cf.view, (uint32_t)iw, (uint32_t)ih)) != VK_NULL_HANDLE;
         const VkFormat dfmt = t1 ? of.view : in_srgb == enc ? of.vk : of.view;
+        // PEANUTS: the format the blit writes, which is asked for BLIT_DST: the scratch of the output texture's format when one is made (fd, below), the output's image
+        // otherwise — with fd 0 the output texture's view format can still differ from the image's (an sRGB texture over its UNORM twin), and it is the image the blit
+        // writes (copy_t2t's bdf, above)
+        const VkFormat bdf = fd ? dfmt : d->f.vk;
         VkFormatProperties p2;
-        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, dfmt, &p2); ok = (p2.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0; }
+        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, bdf, &p2); ok = (p2.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0; }
         if (ok && fd) ok = (t2 = sconv_image_not(dfmt, (uint32_t)ow, (uint32_t)oh, t1)) != VK_NULL_HANDLE;
         if (ok) {
             VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};

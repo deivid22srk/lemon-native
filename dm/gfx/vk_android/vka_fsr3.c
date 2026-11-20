@@ -402,6 +402,7 @@ int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst,
         if (df && df != dst->f.vk) {
             VkFormatProperties dfp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, df, &dfp);
             if (dfp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) t = vka_sconv_image(df, (uint32_t)ow, (uint32_t)oh, VK_NULL_HANDLE);
+            if (!t) VRED_ONCE("FSR 3.1: the output's store: no BLIT_DST feature or scratch for the texture's format %u: written in the image's format as before", df);
         }
         if (t) {
             VRED_ONCE("FSR 3.1: the output's store into an image of VkFormat %d whose texture is VkFormat %u: converted through a scratch of the texture's format", dst->f.vk, df);
