@@ -3,6 +3,7 @@ package dev.peanuts.ui;
 import android.content.Context;
 import android.util.Log;
 
+import dev.nxnative.android.AppStorage;
 import dev.peanuts.PeanutsPrefs;
 
 import org.json.JSONArray;
@@ -190,6 +191,10 @@ final class LibraryScanner {
     private File packOf(Title t, List<Upstream.Entry> list) {
         if (t.launch == null) return null;
         for (Upstream.Entry e : list) if (e.ready && samePath(e.gameDir, t.launch.getPath())) return new File(e.packDir);
+        // A pack already in the app's own storage: Import pack… (the game page's Storage tab or the game sheet's, dev.nxnative.android.PackImport) puts it
+        // there, and a fresh install may import it before upstream's list has an entry for the game. The same readiness check Play makes decides.
+        File appPack = AppStorage.pack(ctx, t.titleId);
+        if (new File(appPack, "pack.tsv").isFile() && ready(t.titleId, t.launch, appPack)) return appPack;
         for (File h : new File[] {t.home, t.home == null ? null : t.home.getParentFile()}) {
             if (h == null) continue;
             File[] kids = new File(h, t.titleId + "-work").listFiles(File::isDirectory);

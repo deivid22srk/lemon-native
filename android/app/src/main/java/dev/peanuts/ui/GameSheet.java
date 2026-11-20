@@ -235,6 +235,49 @@ public final class GameSheet {
             again.setEnabled(!building);
             PUi.add(box, again, 4, PUi.wrap());
         }
+        // Import pack…: an already compiled game (a .zip made by Export pack…) can be put in place before any build, so a fresh install plays it without
+        // compiling the same data again. The zip is checked against the game and this APK before it replaces anything (dev.nxnative.android.PackImport)
+        File gameFile = packGame();
+        if (gameFile != null) {
+            PUi.Setting into = new PUi.Setting(a, "📥", "Import pack…",
+                    v -> { if (!building) { Haptics.play(v, Haptics.Word.TICK); LibrarySettings.pickFile(a, LibrarySettings.REQ_PACK_ZIP, "Pick the game's pack .zip", "application/zip"); } })
+                    .value("Already compiled elsewhere? A .zip made by Export pack…").chevron(a);
+            into.view.setEnabled(!building);
+            PUi.add(box, into.view, 4);
+        }
+    }
+
+    /** The file a pack is checked against: the game to launch (a dump or .nup), else the base file before its import */
+    private File packGame() {
+        File f = title.launch != null ? title.launch : title.base == null ? null : title.base.file;
+        return f != null && f.exists() ? f : null;
+    }
+
+    /** LibrarySettings.result for Import pack…: checks and installs the picked zip, then the title is a normal ready game with no build at all */
+    void pickedPack(File zip) {
+        File game = packGame();
+        if (game == null) { Haptics.play(box, Haptics.Word.REJECT); Toast.makeText(a, "The game's files are not where the library found them. Rescan, or pick the game folder again.", Toast.LENGTH_LONG).show(); return; }
+        if (lib.building(title.titleId)) { Haptics.play(box, Haptics.Word.REJECT); Toast.makeText(a, "Building now: wait for it to finish, then import.", Toast.LENGTH_LONG).show(); return; }
+        AlertDialog wait = new AlertDialog.Builder(a).setTitle("Import pack").setMessage("Importing " + title.name + "'s pack…").setCancelable(false).create();
+        wait.show();
+        dev.nxnative.android.PackImport.importZip(a, title.titleId, game, zip, (packDir, error) -> {
+            if (wait.isShowing()) wait.dismiss();
+            if (error != null) {
+                Haptics.play(box, Haptics.Word.REJECT);
+                PUi.explain(a, "Pack not imported", error + (error.endsWith(".") ? "" : ".") + " Nothing was changed.", null).setPositiveButton("OK", null).show();
+                return;
+            }
+            Haptics.play(box, Haptics.Word.DONE);
+            new Thread(() -> {
+                Upstream.addToList(a, game, packDir, title.titleId, title.name);
+                a.runOnUiThread(() -> {
+                    Library.rescan(a);
+                    if (dialog != null) dialog.dismiss();
+                    PUi.explain(a, "Pack imported", "The game is ready: its compiled data is in place, so it plays without building it again.", "Pack folder: " + packDir)
+                            .setPositiveButton("OK", null).show();
+                });
+            }, "peanuts-pack-add").start();
+        });
     }
 
     // ---- Import again (dev.peanuts.build.Reimport) ----

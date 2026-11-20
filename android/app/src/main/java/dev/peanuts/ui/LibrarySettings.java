@@ -31,6 +31,8 @@ public final class LibrarySettings {
     static final String KEYS_FIRMWARE_GUIDANCE = "Firmware and keys should be the same version.";
     static final int REQ_KEYS = 60, REQ_GAME = 61, REQ_UPDATE_DIR = 62, REQ_DLC_DIR = 63, REQ_FIRMWARE = 64, REQ_SHEET_UPDATE = 65, REQ_SHEET_DLC = 66, REQ_FIRMWARE_ZIP = 67,
             REQ_BUILD_DIR = 68;
+    /** The game sheet's Import pack…: a pack .zip made by Export pack… (dev.peanuts.ui.GameSheet.pickedPack) */
+    static final int REQ_PACK_ZIP = 72;
     /** dev.peanuts.settings.ModsSection's "Install mod…" (ACTION_OPEN_DOCUMENT_TREE / ACTION_OPEN_DOCUMENT), public: the section lives in another
      *  package and only needs these two request codes, not any other picker here */
     public static final int REQ_MOD_FOLDER = 69, REQ_MOD_ZIP = 70;
@@ -284,11 +286,17 @@ public final class LibrarySettings {
     /** MainActivity.onActivityResult's first line: true when the request was one of this package's (handled, whatever the result) */
     public static boolean result(Activity a, int request, int result, Intent data) {
         if (BuildLogUi.result(a, request, result, data)) return true;   // Share build log's Save to a folder (REQ_SAVE 71)
-        if (request < REQ_KEYS || request > REQ_MOD_ZIP) return false;
+        if (!(request >= REQ_KEYS && request <= REQ_MOD_ZIP) && request != REQ_PACK_ZIP) return false;
         if (result != Activity.RESULT_OK || data == null || data.getData() == null) return true;
         Uri u = data.getData();
         if (request == REQ_KEYS) { copyKeys(a, u); return true; }
         if (request == REQ_FIRMWARE_ZIP) { pickedFirmwareZip(a, u); return true; }
+        if (request == REQ_PACK_ZIP) {
+            String p = Upstream.documentToPath(u);
+            if (p == null || !new File(p).isFile()) { error(a, "Pick the pack .zip from the phone's storage (not Recent or a cloud provider), so the app can read it by its path."); return true; }
+            if (GameSheet.current != null) GameSheet.current.pickedPack(new File(p));
+            return true;
+        }
         if (request == REQ_MOD_FOLDER) { dev.peanuts.settings.ModsSection.pickedFolder(a, u); return true; }
         if (request == REQ_MOD_ZIP) { dev.peanuts.settings.ModsSection.pickedZip(a, u, displayName(a, u)); return true; }
         if (request == REQ_SHEET_UPDATE || request == REQ_SHEET_DLC) {
