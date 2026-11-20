@@ -63,9 +63,10 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
-          chmod +x android/ondevice/build.sh
-          zsh android/ondevice/build.sh "$RUNNER_TEMP/packstage" all
+          chmod +x peanuts/scripts/ondevice-stage.sh android/ondevice/build.sh dm/peanuts/pack_worker/build.sh
+          zsh peanuts/scripts/ondevice-stage.sh "$RUNNER_TEMP/packstage" all
           test -f "$RUNNER_TEMP/packstage/stage/lib/libdmsh_xlate.so"
+          test -x "$RUNNER_TEMP/packstage/stage/python/bin/nxpack_worker"
 
       - name: Build the APK
         run: |
