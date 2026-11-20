@@ -406,12 +406,16 @@ had 99 pipelines held on the frame, frames up to 564 ms) and draws into targets 
 |---|---|---|---|
 | `dm/gfx/vk_android/vka_pso.c` | 9 | the include; the stats line's buffer in `mtl_pso_line` (960 bytes, was 200: the line was cut before the new counts); the counters; `as_main` notes its thread on the entry it builds and puts its priority back after each build (2 hunks); `vka_pso_async_line`: the counts of the draws not skipped, by kind, and their frame time (2 hunks); `last_g` at file scope; `vka_gfx_pipeline_now` (the last lookup's queued job taken back and built on the frame path, or the frame waits for the thread that has it; the first of each kind logged) | `// PEANUTS ...`, `// PEANUTS begin`/`end` |
 | `dm/gfx/vk_android/vka.h` | 1 | the declaration | `// PEANUTS ...` |
-| `dm/gfx/vk_android/vka_draw.c` | 2 | the include; `draw_body`: when the pipeline lookup returns none, `vkps_why` decides and `vka_gfx_pipeline_now` makes it | `// PEANUTS ...`, `// PEANUTS begin`/`end` |
+| `dm/gfx/vk_android/vka_draw.c` | 3 | the include; `draw_body`: when the pipeline lookup returns none, `vkps_why` (with the profile's `DM_GAME_PSO_SYNC_ALL`) decides and `vka_gfx_pipeline_now` makes it; the first n skipped draws log their pass's targets (`DM_VK_PSO_SKIPLOG`) | `// PEANUTS ...`, `// PEANUTS begin`/`end` |
 | `dm/host/tests/Makefile` | 1 | `android-psosync` | `# PEANUTS begin`/`end` |
 | `docs/reference/rendering.md`, `docs/agents/symptoms.md` | 1 entry, generated | "A draw skipped for its pipeline left a result the game kept (Android)" | `PEANUTS` in the Symptom text (the index copies it) |
+| `docs/env_switches.tsv` | 1 row | `DM_VK_PSO_SKIPLOG` | generated table, row by hand |
+| `dm/games/game.py`, `dm/games/0100F7E00C70E000/game.tsv` | 2 + 1 | the `pso_sync_all` key and its macro `DM_GAME_PSO_SYNC_ALL`; the key set in Hogwarts Legacy's profile until its seed is recorded | profile keys are the fork's own mechanism |
 
-Left as it was: a kept result drawn into a larger target (a cube map, a shadow atlas, a texture drawn once with scene geometry) is skipped while its pipeline is
-made. Upstream candidate: yes, as a whole (upstream's asynchronous pipelines skip the same draws).
+Kept as it was, except per profile: a kept result drawn into a larger target (a cube map, a shadow atlas, a texture drawn once with scene geometry) is skipped while its
+pipeline is made. Hogwarts Legacy hit it (2026-11-20, its first run on an Adreno 660 phone: a flat bright green coat with a green bloom and black skin in the character
+creator, dark silhouettes with a blown-out white region in the Professor Fig cutscene, no `[RED]` line), so its profile sets `pso_sync_all on` until a seed is recorded;
+other profiles are unchanged. Upstream candidate: the rule as a whole, as above; the key follows it.
 
 ### Round 10, texture copies go by the textures' formats (2026-11-15)
 
