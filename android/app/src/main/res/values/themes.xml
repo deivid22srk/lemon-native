@@ -6,6 +6,7 @@
         <item name="android:colorPrimaryDark">@color/bn_bg</item>
         <item name="android:colorAccent">@color/bn_accent</item>
         <item name="android:colorControlActivated">@color/bn_accent</item>
+        <item name="android:colorControlHighlight">@color/bn_control_ripple</item>
         <item name="android:colorBackground">@color/bn_bg</item>
         <item name="android:windowBackground">@color/bn_bg</item>
         <item name="android:textColorPrimary">@color/bn_text</item>
@@ -14,6 +15,9 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
+        <!-- Edge to edge without the system's own contrast scrims: the page draws its cream scrim over the clock itself (Ui.page) -->
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:alertDialogTheme">@style/Theme.Banana.Dialog</item>
     </style>
 
@@ -21,6 +25,7 @@
     <style name="Theme.Banana.Dialog" parent="android:Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">@color/bn_accent</item>
         <item name="android:colorControlActivated">@color/bn_accent</item>
+        <item name="android:colorControlHighlight">@color/bn_control_ripple</item>
         <item name="android:colorBackground">@color/bn_card</item>
         <item name="android:textColorPrimary">@color/bn_text</item>
         <item name="android:textColorSecondary">@color/bn_text_2</item>
