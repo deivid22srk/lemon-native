@@ -38,6 +38,7 @@ int main(void) {
     printf("ue_fps_cvar=%s\n", DM_GAME_UE_FPS_CVAR);
     printf("present_snap=%d\n", (int)DM_GAME_PRESENT_SNAP);
     printf("pso_mtl4=%d\n", (int)DM_GAME_PSO_MTL4);
+    printf("pso_sync_all=%d\n", (int)DM_GAME_PSO_SYNC_ALL);
     printf("enc_thread=%d\n", (int)DM_GAME_ENC_THREAD);
 #ifdef DM_GAME_SHARED_FONT_TTF
     printf("has_shared_font_ttf=1\n"); printf("shared_font_ttf=%d\n", (int)DM_GAME_SHARED_FONT_TTF);

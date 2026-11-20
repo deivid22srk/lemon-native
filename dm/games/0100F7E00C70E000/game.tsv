@@ -30,6 +30,14 @@ app_pool	0xCD500000
 # the NPDM declares 16 MB of system resource
 sys_resource	0x1000000
 
+# ---- Vulkan replay ----
+# pso_sync_all: a draw whose pipeline the cache lacks is never skipped (vka_psosync.h VKPS_ALL). The first capture on the Motorola Edge 30 Fusion (2026-11-20,
+# 0.1.5-dev) was a first run - empty pipeline cache, no prewarm seed - and kept, for the whole session, what draws into larger targets made while their pipelines
+# compiled in the background (docs/reference/rendering.md "A draw skipped for its pipeline left a result the game kept", its Open item): the character creator's
+# model in a flat bright green coat with a green bloom and black skin, and the Professor Fig cutscene in dark silhouettes with a blown-out white region. Off again
+# once a seed is recorded (vk_prewarm.bin)
+pso_sync_all	on
+
 # ---- Shader split ----
 # the decoded shader code archives: the engine's global shaders and the game's material shaders
 shader_groups	ShaderArchive-Global-=global ShaderArchive-=game

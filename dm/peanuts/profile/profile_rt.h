@@ -59,7 +59,7 @@ typedef struct {
     uint32_t present_display, core_preempt, alloc_big_align;
     uint32_t fps_target, fps_hold, fps_limit;
     uint32_t ue_texture_pool; char ue_fps_cvar[32];
-    uint32_t present_snap, pso_mtl4, enc_thread;
+    uint32_t present_snap, pso_mtl4, enc_thread, pso_sync_all;   // PEANUTS: pso_sync_all - a draw whose pipeline the cache lacks is never skipped (vka_psosync.h VKPS_ALL)
     uint32_t pad_layout, opmode, perf_boost, tex_flush_upload;
     uint64_t shader_key_skip_off, shader_key_skip_len;
     uint32_t render_cond, tex_dirty_upload, tex_dyn_slots, tex_soft, gpu_ts_segment, draw_barriers_game, vconv_range, av1_dav1d;

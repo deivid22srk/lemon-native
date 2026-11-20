@@ -1288,7 +1288,7 @@ static _Atomic uint64_t g_as_queued, g_as_made, g_as_skips, g_as_ns, g_as_lat_ma
 // before 2026-11-11. DM_VK_PSO_FAIR_MS (restart, 2000; 0 never): how long the oldest job waits before it takes turns with the cheapest. Under g_as_mu: g_as_credit (ns)
 // PEANUTS: the draws not skipped (vka_gfx_pipeline_now): their pipelines by reason (vka_psosync.h: a small target, memory written), the frame time they took, and
 // of them those the pipeline cache held after all and those a background thread was already making (waited for)
-static _Atomic uint64_t g_sp_n[2], g_sp_ns, g_sp_cached, g_sp_waited;
+static _Atomic uint64_t g_sp_n[3], g_sp_ns, g_sp_cached, g_sp_waited;   // PEANUTS: [2] is the profile's sync-all rule (Hogwarts Legacy)
 static int g_as_order = -1; static uint64_t g_as_fair_ns; static int64_t g_as_credit; static uint64_t g_as_cheap_n, g_as_old_n, g_as_lat_cheap_ns, g_as_lat_old_ns;
 // A job's predicted cost: the SPIR-V bytes of its stages (a library part's compile on Turnip grew with them: ~25-170 ms under 70 KB, 1.6-3.8 s for the market's
 // shaders of 88-130 KB), a shader in the .heavy list (it took DM_VK_PREWARM_HEAVY_MS or more before) counted as 64 MiB more, so after every unknown one
@@ -1367,12 +1367,12 @@ void vka_pso_async_line(char *out, size_t n) {
     pthread_mutex_unlock(&g_as_mu);
     // PEANUTS: "not skipped ..." (the pipelines of the draws that are not skipped: made on the frame path), after the skipped count so a cut line still has it
     snprintf(out, n, "asynchronous: %llu queued, %llu made (%.0f ms in all, longest wait from the miss %.0f ms), deepest queue %d, draws skipped waiting %llu, "
-             "not skipped %llu pipelines of small targets + %llu writing memory (%.0f ms of frame time, %llu were in the cache, %llu waited for a background thread); "   // PEANUTS
+             "not skipped %llu pipelines of small targets + %llu writing memory + %llu by the profile's sync-all rule (%.0f ms of frame time, %llu were in the cache, %llu waited for a background thread); "   // PEANUTS: the third kind (pso_sync_all)
              "background compiles %d at once (%s), their gate held the frame's %.0f ms and the speculative ones %.0f ms; "
              "taken %s: %llu cheapest (mean wait %.0f ms), %llu oldest (mean wait %.0f ms)",
              (unsigned long long)atomic_load(&g_as_queued), (unsigned long long)atomic_load(&g_as_made), atomic_load(&g_as_ns) / 1e6, atomic_load(&g_as_lat_max_ns) / 1e6,
              atomic_load(&g_as_depth_max), (unsigned long long)atomic_load(&g_as_skips),
-             (unsigned long long)atomic_load(&g_sp_n[0]), (unsigned long long)atomic_load(&g_sp_n[1]), atomic_load(&g_sp_ns) / 1e6,   // PEANUTS
+             (unsigned long long)atomic_load(&g_sp_n[0]), (unsigned long long)atomic_load(&g_sp_n[1]), (unsigned long long)atomic_load(&g_sp_n[2]), atomic_load(&g_sp_ns) / 1e6,   // PEANUTS
              (unsigned long long)atomic_load(&g_sp_cached), (unsigned long long)atomic_load(&g_sp_waited), atomic_load(&g_gate_slots), pso_overlap() ? "ungated: DM_VK_PREWARM_OVERLAP=1" : "by memory, DM_VK_PSO_SLOTS",
              atomic_load(&g_gate_frame_wait_ns) / 1e6, atomic_load(&g_gate_spec_wait_ns) / 1e6,
              g_as_order ? "least cost first, the oldest in turn (DM_VK_PSO_ORDER)" : "in arrival order (DM_VK_PSO_ORDER=0)",
@@ -1514,7 +1514,7 @@ VkPipeline vka_gfx_pipeline_now(vka_shader *const sh[VKA_NSTAGE], int why, long 
     }
     uint64_t dns = now_ns() - t0;
     pthread_mutex_lock(&g_mu); int cached = g_probe_hit != hit0; pthread_mutex_unlock(&g_mu);
-    int ri = why == VKPS_SMALL ? 0 : 1;
+    int ri = why == VKPS_SMALL ? 0 : why == VKPS_WRITES ? 1 : 2;   // PEANUTS: 2 = the profile's sync-all rule (VKPS_ALL)
     uint64_t nth = atomic_fetch_add(&g_sp_n[ri], 1); atomic_fetch_add(&g_sp_ns, dns);
     if (cached) atomic_fetch_add(&g_sp_cached, 1);
     if (waited) atomic_fetch_add(&g_sp_waited, 1);

@@ -53,6 +53,7 @@
 #define DM_GAME_UE_FPS_CVAR (g_profile.ue_fps_cvar)
 #define DM_GAME_PRESENT_SNAP (g_profile.present_snap)
 #define DM_GAME_PSO_MTL4 (g_profile.pso_mtl4)
+#define DM_GAME_PSO_SYNC_ALL (g_profile.pso_sync_all)   // a draw whose pipeline the cache lacks is never skipped (vka_psosync.h VKPS_ALL)
 #define DM_GAME_ENC_THREAD (g_profile.enc_thread)
 #define DM_GAME_PAD_LAYOUT (g_profile.pad_layout)
 #define DM_GAME_OPMODE (g_profile.opmode)
