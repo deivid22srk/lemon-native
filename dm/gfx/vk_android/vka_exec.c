@@ -1326,6 +1326,12 @@ static void copy_t2t(const p_copy_t2t *c) {
             if (!(ip.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
                 VRED_ONCE("texture copy %#x → %#x: no scratch image for the conversion, and the destination's image (VkFormat %d) is no blit destination: not done", c->src->d.format, c->dst->d.format, d->f.vk); return; }
         }
+        // PEANUTS: the raw blit moves the bytes as they are: when the textures' encodings disagree with each other or with their images' (vk-equal sRGB twins over one
+        // memory: same_shape shares equal-vk pairs whatever the srgb; or the route's and the sRGB branch's scratch images were refused), the store lands in the
+        // images' encoding, not the textures'
+        if (tsf.srgb != tdf.srgb || tsf.srgb != s->f.srgb || tdf.srgb != d->f.srgb)
+            VRED_ONCE("texture copy %#x → %#x: blitted as bits between the images (textures srgb %u/%u, images srgb %u/%u): the store is in the images' encoding, not the textures'",
+                      c->src->d.format, c->dst->d.format, tsf.srgb, tdf.srgb, s->f.srgb, d->f.srgb);
         vk.vkCmdBlitImage(g_cb, s->img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &r, fl);
     }
 done:
