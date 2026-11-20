@@ -435,9 +435,9 @@ VkImage vka_sconv_image(VkFormat f, uint32_t w, uint32_t h, VkImage not);
 // NVN2's DLSS stand-in upscalers (vka_dlss.c): mode 2 = FSR 1 with the jitter taken out, 3 = Snapdragon GSR2 3-pass; writes the output rectangle of d (level dl) from
 // the input rectangle of s (level sl), outside any render pass. Returns the mode done (3, or 2 when GSR2 lacks depth / motion), 0 = not done (the caller blits).
 // sfmt: the input texture's view format (an sRGB texture's decodes; its image may be shared with the UNORM twin); enc: the output texture is sRGB (stored as its UNORM
-// twin), so the result is written sRGB-encoded. df: the output texture's view format when its image has another format (a shared image of two formats): the last store
-// then converts into it through a scratch of it and its bytes are copied raw into the image, and enc must be 0 (the store encodes)
-int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst, int enc, vka_img *depth, vka_img *motion, const p_dlss_t2t *o);   // vka_fsr3.c: FSR 3.1 for DM_VK_DLSS=4; 0 = not done (the caller falls back to FSR 1)
+// twin), so the result is written sRGB-encoded. df: the output texture's view format when its image has another format (a shared image of two formats): the last writes
+// into the output convert into it through a scratch of it and its bytes are copied raw into the image, and enc must then be 0 (the store encodes)
+int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst, int enc, VkFormat df, vka_img *depth, vka_img *motion, const p_dlss_t2t *o);   // vka_fsr3.c: FSR 3.1 for DM_VK_DLSS=4; 0 = not done (the caller falls back to FSR 1)
 int vka_dlss_run(VkCommandBuffer cb, const p_dlss *o, int mode, vka_img *s, uint32_t sl, VkFormat sfmt, int sx, int sy, int iw, int ih, vka_img *d, uint32_t dl, int enc, int dx, int dy, int ow, int oh, VkFormat df);
 int vka_dlss_scale(VkCommandBuffer cb, VkImageView in, int sx, int sy, int iw, int ih, uint32_t tw, uint32_t th, vka_img *d, uint32_t dl, int dx, int dy, int ow, int oh, int enc, VkFormat df);   // a scaled copy, sRGB-encoded with enc
 int vka_dlss_ready(void);   // the stand-in's pipelines are made (vka_dlss_scale can run)

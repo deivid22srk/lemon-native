@@ -1231,10 +1231,18 @@ static void copy_t2t(const p_copy_t2t *c) {
         VkImageCopy r = {ss, {c->sr.xoffset, c->sr.yoffset, s3 ? c->sr.zoffset : 0}, ds, {c->dr.xoffset, c->dr.yoffset, d3 ? c->dr.zoffset : 0}, {(uint32_t)c->sr.width, (uint32_t)c->sr.height, s3 ? (uint32_t)nz : 1}};
         vk.vkCmdCopyImage(g_cb, s->img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &r);
     } else {   // a scaled, mirrored or format-changing copy: a blit (filtered with LINEAR_FILTER), or a draw into a depth format that is no blit destination (vka_t2tpath.h)
+        // us / ud: the side goes through a scratch image of its texture's format: its image has another format (fs / fd), or it is the sRGB side of an sRGB and a linear
+        // texture (an sRGB texture's image holds its UNORM twin, so the blit decodes and encodes only through scratch images of the real sRGB formats: that side goes
+        // through a scratch too, whatever its image)
+        int us = fs || (tsf.srgb != tdf.srgb && tsf.srgb), ud = fd || (tsf.srgb != tdf.srgb && tdf.srgb);
+        // The destination scratch's format follows the blit's effective source: with a source scratch (us) the pair is the textures' formats (tdf.view encodes for an
+        // sRGB destination); without one the source is the input's image as it is stored, so equal encodings move the bytes raw (tdf.vk, the sRGB twin's storage format)
+        // and different ones encode once into the view format (tdf.view; the pair is then best-effort: the blit cannot decode the source)
+        VkFormat dfmt = us ? tdf.srgb ? tdf.view : tdf.vk : tsf.srgb == tdf.srgb ? tdf.vk : tdf.view;
         // PEANUTS: the format the blit writes, which is asked for BLIT_DST: the destination's image, or the scratch image of the destination texture's format the copy
         // goes through below (a texture whose image has another format, or an sRGB destination of a linear source: sconv_image, one layer of a 2D colour texture)
         VkFormat bdf = d->f.vk;
-        if (sa == VK_IMAGE_ASPECT_COLOR_BIT && !s3 && !d3 && nz == 1 && (fd || (tsf.srgb != tdf.srgb && tdf.srgb))) bdf = tdf.srgb ? tdf.view : tdf.vk;
+        if (sa == VK_IMAGE_ASPECT_COLOR_BIT && !s3 && !d3 && nz == 1 && ud) bdf = dfmt;
         VkFormatProperties dp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, bdf, &dp);   // PEANUTS: bdf (upstream: d->f.vk)
         int path = t2t_path(0, tsf.kind, tdf.kind, tsf.bw > 1 || tdf.bw > 1, s->samples > 1 || d->samples > 1, (dp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0);   // PEANUTS: tsf / tdf (above), the textures' formats where upstream asks the images'
         if (path == T2T_NONE) {
@@ -1255,11 +1263,8 @@ static void copy_t2t(const p_copy_t2t *c) {
         if (fs || fd) {
             static _Atomic int note_; VkImage t1 = VK_NULL_HANDLE, t2 = VK_NULL_HANDLE; VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
             int ok = sa == VK_IMAGE_ASPECT_COLOR_BIT && !s3 && !d3 && nz == 1;
-            // One texture sRGB and the other linear: an sRGB texture's image holds its UNORM twin, so the blit decodes and encodes only between scratch images of the
-            // real sRGB formats (as the block below does for images of the textures' own formats): that side goes through a scratch too, whatever its image
-            int us = fs || (tsf.srgb != tdf.srgb && tsf.srgb), ud = fd || (tsf.srgb != tdf.srgb && tdf.srgb);
             if (ok && us) ok = (t1 = sconv_image(tsf.srgb ? tsf.view : tsf.vk, (uint32_t)c->sr.width, (uint32_t)c->sr.height)) != VK_NULL_HANDLE;
-            if (ok && ud) ok = (t2 = sconv_image_not(tdf.srgb ? tdf.view : tdf.vk, (uint32_t)c->dr.width, (uint32_t)c->dr.height, t1)) != VK_NULL_HANDLE;
+            if (ok && ud) ok = (t2 = sconv_image_not(dfmt, (uint32_t)c->dr.width, (uint32_t)c->dr.height, t1)) != VK_NULL_HANDLE;
             if (!atomic_exchange(&note_, 1)) VLOG("texture copy %#x → %#x between textures whose images have other formats (Vulkan %u in a %u image → %u in a %u image): %s", c->src->d.format, c->dst->d.format,
                                                   tsf.vk, s->f.vk, tdf.vk, d->f.vk, ok ? "converted through scratch images of the textures' formats" : "no scratch image for it: blitted between the images as they are");
             if (ok) {
@@ -1385,7 +1390,7 @@ static void dlss_eval(const p_dlss *o) {
         f.depth = o->tex[DLSS_DEPTH]; f.motion = o->tex[DLSS_MOTION]; memcpy(f.jitter, o->jitter, sizeof f.jitter); memcpy(f.mv, o->mv, sizeof f.mv); f.reset = o->reset;
         vka_img *z = f.depth ? vka_tex_get(f.depth, g_cb) : NULL, *m = f.motion ? vka_tex_get(f.motion, g_cb) : NULL;
         if (vka_rs_on()) { if (z && z->rsc && !vka_tex_rs_down(z, g_cb, RS_WHY_STANDIN)) z = NULL; if (m && m->rsc && !vka_tex_rs_down(m, g_cb, RS_WHY_STANDIN)) m = NULL; }   // PEANUTS: DM_RES_SCALE: its depth and motion at 1x too, or left out
-        if (!o->base[DLSS_DEPTH][0] && !o->base[DLSS_DEPTH][1] && !o->base[DLSS_MOTION][0] && !o->base[DLSS_MOTION][1] && vka_dlss_fsr3(g_cb, s, sfmt, d, enc, z, m, &f)) { vka_img_written(d); g_stat_ops++; return; }
+        if (!o->base[DLSS_DEPTH][0] && !o->base[DLSS_DEPTH][1] && !o->base[DLSS_MOTION][0] && !o->base[DLSS_MOTION][1] && vka_dlss_fsr3(g_cb, s, sfmt, d, enc, fd ? of.view : VK_FORMAT_UNDEFINED, z, m, &f)) { vka_img_written(d); g_stat_ops++; return; }
         mode = 2;
     }
     if (mode >= 2 && vka_dlss_run(g_cb, o, mode, s, sl, sfmt, sx, sy, iw, ih, d, dl, fd ? 0 : enc, dx, dy, ow, oh, fd ? of.view : VK_FORMAT_UNDEFINED)) { vka_img_written(d); g_stat_ops++; return; }
@@ -1399,16 +1404,20 @@ static void dlss_eval(const p_dlss *o) {
         VRED_ONCE("DLSS stand-in: formats %#x → %#x cannot be blitted (integer, compressed or multisampled): the output stays unwritten", ct->d.format, ot->d.format); return; }
     // PEANUTS: a blit converts by the formats of the two images: with a side whose image has another format than its texture (a shared image of two formats, vka_tex.c
     // same_shape) it converted where the textures' formats are meant (copy_t2t's fix, above). It then goes through scratch images of the textures' formats (sconv_image):
-    // the source's rectangle copied raw into one, the blit made into another, whose bytes are copied raw into the output's rectangle. One layer of a 2D colour texture
-    // (the evaluation's shapes above); anything else is logged and blitted between the images as before
+    // the source's rectangle copied raw into one, the blit made into another, whose bytes are copied raw into the output's rectangle. The output's scratch is of the
+    // output texture's view format when the blit has a source scratch (the pair is then the textures' formats, of.view encodes for an sRGB output); without one the
+    // source is the input's image as it is stored (s->f.vk == cf.vk), so equal encodings move the bytes raw (of.vk, the sRGB twin's storage format) and different ones
+    // encode once into of.view (best effort: the picture is off in brightness, the VRED_ONCE above the blit flags it). One layer of a 2D colour texture (the
+    // evaluation's shapes above); anything else is logged and blitted between the images as before
     if (cf.vk != s->f.vk || fd) {
         VkImage t1 = VK_NULL_HANDLE, t2 = VK_NULL_HANDLE; int ok = s->depth <= 1 && d->depth <= 1;
         VkFormatProperties p1;
         if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, cf.view, &p1); ok = (p1.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT) != 0; }
-        VkFormatProperties p2;
-        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, of.view, &p2); ok = (p2.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0; }
         if (ok && cf.vk != s->f.vk) ok = (t1 = sconv_image(cf.view, (uint32_t)iw, (uint32_t)ih)) != VK_NULL_HANDLE;
-        if (ok && fd) ok = (t2 = sconv_image_not(of.view, (uint32_t)ow, (uint32_t)oh, t1)) != VK_NULL_HANDLE;
+        const VkFormat dfmt = t1 ? of.view : in_srgb == enc ? of.vk : of.view;
+        VkFormatProperties p2;
+        if (ok) { vk.vkGetPhysicalDeviceFormatProperties(V.pd, dfmt, &p2); ok = (p2.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0; }
+        if (ok && fd) ok = (t2 = sconv_image_not(dfmt, (uint32_t)ow, (uint32_t)oh, t1)) != VK_NULL_HANDLE;
         if (ok) {
             VkImageSubresourceLayers ts = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
             VkImage si = t1 ? t1 : s->img, di = t2 ? t2 : d->img;

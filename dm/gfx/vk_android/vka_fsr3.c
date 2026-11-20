@@ -254,7 +254,7 @@ static void clear(VkCommandBuffer cb, VkImage img, float v0, float v1) {
     vk.vkCmdClearColorImage(cb, img, VK_IMAGE_LAYOUT_GENERAL, &c, 1, &all);
 }
 
-int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst, int enc, vka_img *depth, vka_img *motion, const p_dlss_t2t *o) {
+int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst, int enc, VkFormat df, vka_img *depth, vka_img *motion, const p_dlss_t2t *o) {
     const p_copy_t2t *c = &o->c;
     const NVNcopyRegion *s = &c->sr, *d = &c->dr;
     if (!src || !dst || !depth || !motion || src == dst) { VRED_ONCE("FSR 3.1: the evaluation lacks %s", !depth ? "depth" : !motion ? "motion vectors" : "colour"); return 0; }
@@ -270,7 +270,9 @@ int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst,
     }
     if (!f3_ready()) return 0;
     // The output: dst itself when the whole of it is written and it can be a storage image, else an image of its format copied into the rectangle. An sRGB output (enc:
-    // stored as its UNORM twin, and a storage image cannot encode) takes FSR's linear result from an RGBA16F image through the stand-in's encoding copy (vka_dlss_scale)
+    // stored as its UNORM twin, and a storage image cannot encode) takes FSR's linear result from an RGBA16F image through the stand-in's encoding copy (vka_dlss_scale).
+    // df: the output texture's view format when its image has another format (a shared image of two formats, vka_exec.c dlss_eval): the last writes into the output route
+    // by it (out_store's rule, vka_dlss.c), so never dst itself (direct)
     VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, dst->f.vk, &fp);
     if (enc ? !vka_dlss_ready() : !(fp.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)) { VRED_ONCE("FSR 3.1: output format %d is not a storage format (or no encoding copy for sRGB)", dst->f.vk); return 0; }
     const VkFormat out_fmt = enc ? VK_FORMAT_R16G16B16A16_SFLOAT : dst->f.vk;
@@ -284,7 +286,7 @@ int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst,
         if (fw >= (int)rw && fh >= (int)rh && (uint32_t)fw <= ow && (uint32_t)fh <= oh && (enc || (fp.optimalTilingFeatures & blit) == blit)) { uw = (uint32_t)fw; uh = (uint32_t)fh; }
     }
     const int scaled = uw != ow || uh != oh;
-    int direct = !enc && !scaled && (dst->usage & VK_IMAGE_USAGE_STORAGE_BIT) && !d->xoffset && !d->yoffset && uw == dst->w && uh == dst->h;
+    int direct = !enc && !scaled && !(df && df != dst->f.vk) && (dst->usage & VK_IMAGE_USAGE_STORAGE_BIT) && !d->xoffset && !d->yoffset && uw == dst->w && uh == dst->h;
     if (!direct && !(dst->usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) return 0;
     // The colour through the texture's own view format: an sRGB input arrives linear, as on the console (its raw UNORM values read as linear were too bright)
     VkImageView vcol = vka_view(src, sfmt ? sfmt : src->f.view ? src->f.view : src->f.vk, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1, NULL);
@@ -389,11 +391,26 @@ int vka_dlss_fsr3(VkCommandBuffer cb, vka_img *src, VkFormat sfmt, vka_img *dst,
 #undef MIP
     if (enc) {
         vka_barrier(cb);
-        if (!vka_dlss_scale(cb, R->out.view, 0, 0, (int)uw, (int)uh, uw, uh, dst, 0, d->xoffset, d->yoffset, (int)ow, (int)oh, 1, VK_FORMAT_UNDEFINED)) { F.parity = q; return 0; }   // (the output texture's own format is not known here: the last store blits between the images, as before)
+        // PEANUTS: df (the output texture's view format, dlss_eval): the copy runs linear (enc 0) and the last store encodes into a scratch of it, as dlss_eval's calls pass them
+        if (!vka_dlss_scale(cb, R->out.view, 0, 0, (int)uw, (int)uh, uw, uh, dst, 0, d->xoffset, d->yoffset, (int)ow, (int)oh, df ? 0 : enc, df)) { F.parity = q; return 0; }
     } else if (!direct) {
         VkImageSubresourceLayers l = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
         vka_barrier(cb);
-        if (scaled) {
+        // PEANUTS: df (the output texture's view format when its image has another format, dlss_eval): the blit / copy converts into it through a scratch of it (out_store's
+        // rule, vka_dlss.c), whose bytes are copied raw into the image's rectangle; without it the stored bits move between the images as they are
+        VkImage t = VK_NULL_HANDLE;
+        if (df && df != dst->f.vk) {
+            VkFormatProperties dfp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, df, &dfp);
+            if (dfp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) t = vka_sconv_image(df, (uint32_t)ow, (uint32_t)oh, VK_NULL_HANDLE);
+        }
+        if (t) {
+            VRED_ONCE("FSR 3.1: the output's store into an image of VkFormat %d whose texture is VkFormat %u: converted through a scratch of the texture's format", dst->f.vk, df);
+            VkImageBlit b = {l, {{0, 0, 0}, {(int32_t)uw, (int32_t)uh, 1}}, l, {{0, 0, 0}, {(int32_t)ow, (int32_t)oh, 1}}};
+            vk.vkCmdBlitImage(cb, R->out.img, VK_IMAGE_LAYOUT_GENERAL, t, VK_IMAGE_LAYOUT_GENERAL, 1, &b, VK_FILTER_LINEAR);
+            vka_barrier(cb);
+            VkImageCopy cp = {l, {0, 0, 0}, l, {d->xoffset, d->yoffset, 0}, {ow, oh, 1}};
+            vk.vkCmdCopyImage(cb, t, VK_IMAGE_LAYOUT_GENERAL, dst->img, VK_IMAGE_LAYOUT_GENERAL, 1, &cp);
+        } else if (scaled) {
             VkImageBlit b = {l, {{0, 0, 0}, {(int32_t)uw, (int32_t)uh, 1}}, l, {{d->xoffset, d->yoffset, 0}, {d->xoffset + (int32_t)ow, d->yoffset + (int32_t)oh, 1}}};
             vk.vkCmdBlitImage(cb, R->out.img, VK_IMAGE_LAYOUT_GENERAL, dst->img, VK_IMAGE_LAYOUT_GENERAL, 1, &b, VK_FILTER_LINEAR);
         } else {

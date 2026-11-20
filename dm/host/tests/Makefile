@@ -89,6 +89,7 @@ run: $(B)/t_language $(B)/t_motion $(B)/t_heap_size $(B)/t_touch $(B)/t_gesture 
 	$(B)/t_android_texown
 	$(B)/t_android_mapbudget
 	$(B)/t_android_psogate
+	$(B)/t_android_psosync
 	$(B)/t_android_auto
 	$(B)/t_nvn_dpool
 	$(B)/t_android_t2tpath
@@ -536,7 +537,7 @@ android-tbuf: $(B)/t_android_tbuf
 	$(B)/t_android_tbuf
 # PEANUTS end
 # PEANUTS begin: which draws are not skipped while their pipeline is made in the background (vka_psosync.h vkps_why; vka_draw.c draw_body): small
-# targets and draws that write memory, the size limit's edges, other draws left skipped. Built with run; android-psosync builds and runs it
+# targets and draws that write memory, the size limit's edges, other draws left skipped. Built and run with run; android-psosync builds and runs it too
 run: $(B)/t_android_psosync
 $(B)/t_android_psosync: t_android_psosync.c $(VKA)/vka_psosync.h | $(B)
 	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_android_psosync.c
