@@ -1303,6 +1303,11 @@ static void copy_t2t(const p_copy_t2t *c) {
                     vka_barrier(g_cb);
                     VkImageCopy cp = {ts, {0, 0, 0}, ds, {c->dr.xoffset, c->dr.yoffset, 0}, {(uint32_t)c->dr.width, (uint32_t)c->dr.height, 1}};
                     vk.vkCmdCopyImage(g_cb, t, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &cp);
+                    // PEANUTS: the branch converts by the images' srgb flags: with vk-equal sRGB twins over one memory (same_shape shares equal-vk pairs whatever the srgb)
+                    // the texture's srgb can diverge from its image's, and the store follows the image, not the texture
+                    if (tsf.srgb != s->f.srgb || tdf.srgb != d->f.srgb)
+                        VRED_ONCE("texture copy %#x → %#x: converted by the images' srgb (images srgb %u/%u), not the textures' (%u/%u): vk-equal sRGB twins over one memory",
+                                  c->src->d.format, c->dst->d.format, s->f.srgb, d->f.srgb, tsf.srgb, tdf.srgb);
                     goto done;
                 }
             } else {
@@ -1315,6 +1320,9 @@ static void copy_t2t(const p_copy_t2t *c) {
                     int tx0 = x0 - c->sr.xoffset, tx1 = x1 - c->sr.xoffset, ty0 = y0 - c->sr.yoffset, ty1 = y1 - c->sr.yoffset;   // the mirrored source rectangle, moved to the scratch's origin
                     VkImageBlit b = {ts, {{tx0, ty0, 0}, {tx1, ty1, 1}}, ds, {{c->dr.xoffset, c->dr.yoffset, 0}, {c->dr.xoffset + c->dr.width, c->dr.yoffset + c->dr.height, 1}}};
                     vk.vkCmdBlitImage(g_cb, t, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &b, fl);
+                    if (tsf.srgb != s->f.srgb || tdf.srgb != d->f.srgb)   // PEANUTS: the images' srgb named the conversion, the textures' does not (vk-equal twins, above)
+                        VRED_ONCE("texture copy %#x → %#x: converted by the images' srgb (images srgb %u/%u), not the textures' (%u/%u): vk-equal sRGB twins over one memory",
+                                  c->src->d.format, c->dst->d.format, s->f.srgb, d->f.srgb, tsf.srgb, tdf.srgb);
                     goto done;
                 }
             }
@@ -1326,10 +1334,10 @@ static void copy_t2t(const p_copy_t2t *c) {
             if (!(ip.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
                 VRED_ONCE("texture copy %#x → %#x: no scratch image for the conversion, and the destination's image (VkFormat %d) is no blit destination: not done", c->src->d.format, c->dst->d.format, d->f.vk); return; }
         }
-        // PEANUTS: the raw blit moves the bytes as they are: when the textures' encodings disagree with each other or with their images' (vk-equal sRGB twins over one
-        // memory: same_shape shares equal-vk pairs whatever the srgb; or the route's and the sRGB branch's scratch images were refused), the store lands in the
-        // images' encoding, not the textures'
-        if (tsf.srgb != tdf.srgb || tsf.srgb != s->f.srgb || tdf.srgb != d->f.srgb)
+        // PEANUTS: the raw blit moves the bytes as they are: when the textures' encodings disagree with each other, or with their images' where the blit converts between
+        // images of other formats than the textures' (the route's and the sRGB branch's scratch images were refused), the store lands in the images' encoding, not the
+        // textures'. With equal images (fs / fd both 0) a bits move between them is what the console's copy of equal formats does
+        if (tsf.srgb != tdf.srgb || ((fs || fd) && (tsf.srgb != s->f.srgb || tdf.srgb != d->f.srgb)))
             VRED_ONCE("texture copy %#x → %#x: blitted as bits between the images (textures srgb %u/%u, images srgb %u/%u): the store is in the images' encoding, not the textures'",
                       c->src->d.format, c->dst->d.format, tsf.srgb, tdf.srgb, s->f.srgb, d->f.srgb);
         vk.vkCmdBlitImage(g_cb, s->img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &r, fl);
@@ -1459,6 +1467,11 @@ static void dlss_eval(const p_dlss *o) {
     VkImageBlit r = {{VK_IMAGE_ASPECT_COLOR_BIT, sl, 0, 1}, {{sx, sy, 0}, {sx + iw, sy + ih, 1}}, {VK_IMAGE_ASPECT_COLOR_BIT, dl, 0, 1}, {{dx, dy, 0}, {dx + ow, dy + oh, 1}}};
     VkFormatProperties fp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, s->f.vk, &fp);
     VkFilter fl = (fp.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+    // PEANUTS: the fallback's blit writes the destination's image: BLIT_DST is asked of it here (copy_t2t's final blit does), and a destination that is no blit
+    // destination leaves the output unwritten rather than making an invalid blit
+    { VkFormatProperties dp; vk.vkGetPhysicalDeviceFormatProperties(V.pd, d->f.vk, &dp);
+      if (!(dp.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+          VRED_ONCE("DLSS stand-in: blit %#x → %#x: the destination's image (VkFormat %d) is no blit destination: not done", ct->d.format, ot->d.format, d->f.vk); return; } }
     vk.vkCmdBlitImage(g_cb, s->img, VK_IMAGE_LAYOUT_GENERAL, d->img, VK_IMAGE_LAYOUT_GENERAL, 1, &r, fl);
     vka_img_written(d); g_stat_ops++;
     vka_barrier(g_cb);
