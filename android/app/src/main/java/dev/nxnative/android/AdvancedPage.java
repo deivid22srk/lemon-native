@@ -79,7 +79,7 @@ final class AdvancedPage {
     }
 
     private static TextView pill(Context a, String s, View.OnClickListener l) {
-        TextView t = Ui.text(a, s, 14, R.color.bn_text, 700);
+        TextView t = Ui.text(a, s, Tokens.TYPE_BODY, R.color.bn_text, 700);   // a tappable chip's label: the button tier's size
         t.setPadding(Ui.dp(a, 12), Ui.dp(a, 8), Ui.dp(a, 12), Ui.dp(a, 8));
         t.setBackground(Ui.ripple(a, Ui.round(Ui.col(a, R.color.bn_tint), Ui.dp(a, 999), 0, 0)));
         t.setOnClickListener(l);

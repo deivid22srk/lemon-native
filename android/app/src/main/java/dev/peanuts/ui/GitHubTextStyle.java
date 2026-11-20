@@ -1,6 +1,7 @@
 package dev.peanuts.ui;
 
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -39,7 +40,7 @@ final class GitHubTextStyle {
 
     /** The text in a view for a sheet or a page: body size, a link opens on a tap; it takes the D-pad's focus (with the covers' ring) so a long text scrolls */
     static TextView view(Context c, String markdown) {
-        TextView t = PUi.text(c, "", 15, R.color.bn_text, 400);
+        TextView t = PUi.text(c, "", Tokens.TYPE_BODY, R.color.bn_text, 400);   // the markdown view: the body size of the type scale
         t.setLineSpacing(PUi.dp(c, 3), 1f);
         t.setText(styled(c, GitHubText.parse(markdown), t.getPaint()));
         t.setOnTouchListener((v, e) -> tapLink((TextView) v, e));

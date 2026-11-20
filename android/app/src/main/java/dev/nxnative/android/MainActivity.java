@@ -305,7 +305,7 @@ public final class MainActivity extends Activity {
 
     private View accessCard() {
         LinearLayout c = Ui.card(this);
-        c.setBackground(Ui.round(Ui.col(this, R.color.bn_warn_tint), dp(20), Ui.col(this, R.color.bn_banana_deep), dp(1)));
+        c.setBackground(Ui.round(Ui.col(this, R.color.bn_warn_tint), dp(20), Ui.col(this, R.color.bn_warn), dp(1)));   // the caution hairline in the warning text colour (bn_warn: 5.2:1 light / 7.9:1 dark on its tint) — state chrome, not the amber heritage
         c.addView(Ui.heading(this, "Allow file access"));
         Ui.add(c, Ui.body(this, "Needed to read a dump folder where it is. A .nup file works without it, and a dump folder can be copied into the app instead."), 4);
         Ui.add(c, Ui.button(this, "Allow", Ui.Kind.PRIMARY, v -> openAccessSettings()), 14, Ui.wrap());
@@ -646,7 +646,7 @@ public final class MainActivity extends Activity {
         c.setPadding(dp(10), dp(14), dp(10), dp(12));
         TextView tile = Ui.tile(this, g.name, 56);
         c.addView(tile);
-        TextView name = Ui.text(this, g.name, 15, R.color.bn_text, 700);
+        TextView name = Ui.text(this, g.name, Tokens.TYPE_BODY, R.color.bn_text, 700);
         // the full name, wrapped over as many lines as it needs (the grid row grows with its tallest tile)
         name.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams np = Ui.fill();

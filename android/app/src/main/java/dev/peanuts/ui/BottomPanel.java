@@ -221,7 +221,7 @@ final class BottomPanel extends Presentation {
         PUi.add(col, t, 16, PUi.wrap());
         String id = BuildConfig.NX_PEANUTS_ID;
         if (id != null && !id.isEmpty()) {
-            TextView v = PUi.text(c, id, 13, R.color.bn_text_2, 600);
+            TextView v = PUi.text(c, id, Tokens.TYPE_SMALL, R.color.bn_text_2, 600);
             v.setGravity(Gravity.CENTER);
             PUi.add(col, v, 4, PUi.wrap());
         }
@@ -244,7 +244,7 @@ final class BottomPanel extends Presentation {
         info.addView(cardName);
         cardMark = PUi.row(c);
         PUi.add(info, cardMark, 8);
-        cardState = PUi.text(c, "", 14, R.color.bn_text, 600);
+        cardState = PUi.text(c, "", Tokens.TYPE_SMALL, R.color.bn_text, 600);   // the card's compact state line: the small size of the type scale
         cardLine1Row = PUi.row(c);
         cardBadge = companionBadge(c);
         cardLine1Row.addView(cardBadge);
@@ -281,11 +281,11 @@ final class BottomPanel extends Presentation {
         top.addView(buildTile);
         LinearLayout info = column(c);
         info.setPadding(PUi.dp(c, 14), 0, 0, 0);
-        buildName = PUi.text(c, "", 17, R.color.bn_text, 700);
+        buildName = PUi.text(c, "", Tokens.TYPE_HEADING, R.color.bn_text, 700);   // the build card's title: the heading tier
         buildName.setMaxLines(2);
         buildName.setEllipsize(TextUtils.TruncateAt.END);
         info.addView(buildName);
-        buildStatus = PUi.text(c, "", 13, R.color.bn_accent, 600);
+        buildStatus = PUi.text(c, "", Tokens.TYPE_SMALL, R.color.bn_accent, 600);
         PUi.add(info, buildStatus, 2);
         top.addView(info, PUi.weight());
         card.addView(top);

@@ -54,7 +54,7 @@ final class GameSettings {
         if (Profile.of(g.titleId) == null || !new File(g.gameDir).exists() || !Pack.shaderUpdateAvailable(new File(g.packDir), g.titleId)) return;
         LinearLayout card = Ui.add(content, Ui.card(a), 12);
         card.setPadding(Ui.dp(a, 14), Ui.dp(a, 12), Ui.dp(a, 14), Ui.dp(a, 12));
-        card.addView(Ui.text(a, "Shader update available", 15, R.color.bn_text, 700));
+        card.addView(Ui.text(a, "Shader update available", Tokens.TYPE_BODY, R.color.bn_text, 700));
         TextView t = Ui.add(card, Ui.small(a, "Optional: the game plays as it does now. This version of " + a.getString(R.string.app_name) + " makes shaders with an updated translator. "   // PEANUTS: the app's own name (upstream: "Banana Native")
                 + "Updating makes this game's shaders again on the phone, which can take a long time for a big game: keep the phone charging."), 6);
         t.setTextSize(Tokens.TYPE_SMALL);
@@ -123,7 +123,7 @@ final class GameSettings {
             // the card shows on Performance; on Game it is built off the page, so the rows it tags (Full vegetation) keep their Recommended / Changed tags
             LinearLayout card = Ui.add(perf ? content : new LinearLayout(a), Ui.card(a), 12);
             card.setPadding(Ui.dp(a, 14), Ui.dp(a, 12), Ui.dp(a, 14), Ui.dp(a, 12));
-            card.addView(Ui.text(a, "Recommended for this phone", 15, R.color.bn_text, 700));
+            card.addView(Ui.text(a, "Recommended for this phone", Tokens.TYPE_BODY, R.color.bn_text, 700));
             Ui.Segmented[] seg = new Ui.Segmented[1];
             seg[0] = Ui.add(card, new Ui.Segmented(a, new String[] {"Recommended", "Custom"}, 0, k -> {
                 if (k == 1) { custom = true; refresh[0].run(); return; }   // Custom keeps the player's values: nothing to change
@@ -372,7 +372,7 @@ final class GameSettings {
             head.setMinimumHeight(Ui.dp(a, Tokens.TOUCH_MIN));
             head.setBackground(Ui.ripple(a, Ui.round(android.graphics.Color.TRANSPARENT, Ui.dp(a, 12), 0, 0)));
             head.addView(Ui.section(a, s.label), Ui.weight());
-            TextView act = Ui.text(a, "", 13, R.color.bn_accent, 700);
+            TextView act = Ui.text(a, "", Tokens.TYPE_SMALL, R.color.bn_accent, 700);
             act.setPadding(Ui.dp(a, 8), 0, Ui.dp(a, 4), 0);
             head.addView(act);
             ImageView ch = new ImageView(a);

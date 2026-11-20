@@ -36,8 +36,8 @@ import android.widget.TextView;
  * The launcher's building blocks, in code like the rest of the launcher (no layouts, no AndroidX), in the Slate & Signal palette (res/values/colors.xml, values-night for dark
  * mode; themes.xml's Theme.Banana). One small design system so every screen looks the same:
  * <ul>
- * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line. The launch screen's
- * game name is the one display-tier text (26 sp, Tokens.TYPE_DISPLAY), alone on its own screen.</li>
+ * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line. The display tier
+ * (26 sp, Tokens.TYPE_DISPLAY) is for the two texts that stand alone on their surface: the launch screen's game name and the Readiness check's verdict mark.</li>
  * <li>Shapes: cards 20 dp corners with a hairline edge; buttons and icon buttons 14 dp corners (a card's big action 16 dp).</li>
  * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 16 dp inside,
  * 12 dp between cards, 24 dp before a section label.</li>

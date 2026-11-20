@@ -87,6 +87,16 @@ Ratios below were computed by script (WCAG 2.1 relative luminance).
   values; overlay-only tokens live in `values/colors.xml` with no night override and say so in their
   comment. Accent drift (`0xFFFFD54F`) is a bug: overlays use the same Signal blue.
 - Progress: `bn_accent` fill on `bn_card_stroke` track (4.2:1 light, 4.84:1 dark — a UI shape needs 3:1, both clear it).
+- Documented exception — the library's building-cover strip (`Library.strip`): its track is `bn_track` (the
+  mode's `bn_bg` at 70% alpha over cover art) and its fill stays `bn_banana_deep`, the harvest amber: a
+  game being built is a brand moment on its cover, and the colour is never the only signal (the chip on
+  the cover reads "Building N %", and BottomScreen mirrors the progress). Pairs: 8.3:1 on the dark track,
+  2.11:1 on the light track — the light pair sits below the 3:1 shape floor and is accepted only here,
+  for this informational 6 dp strip over art.
+- Documented exception — the overlay table's label hues (`FrameStats.LABEL_FPS/GPU/CPU/SOC/MEM`,
+  FrameStats.java:75-78): category colours that tell the row groups apart; none of them means success,
+  caution or danger, so none maps to an overlay token, and FrameStats is pure Java (it holds no
+  resources). The grey default is drawn as `bn_overlay_text_2` by Hud, like the throttle dot's grey.
 - Type floor is `Tokens.TYPE_CAPTION` (12 sp). Documented exception: `Tokens.PANEL_TAB_MIN_SP` (10 sp)
   for the resizable panel's four tabs only. Anything else below 12 sp is a defect.
 

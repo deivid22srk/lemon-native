@@ -1210,7 +1210,7 @@ public final class Library {
         ProgressBar p = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
         p.setMax(100);
         p.setIndeterminate(indeterminate);
-        int track = PUi.col(a, R.color.bn_track);   // the mode's slate at 70 % alpha, as a resource (bn_track): the strip runs over cover art
+        int track = PUi.col(a, R.color.bn_track);   // the mode's bn_bg at 70% alpha over cover art, as a resource (bn_track)
         GradientDrawable fill = PUi.round(PUi.col(a, R.color.bn_banana_deep), PUi.dp(a, 3), 0, 0);
         LayerDrawable ld = new LayerDrawable(new Drawable[] {PUi.round(track, PUi.dp(a, 3), 0, 0), new ClipDrawable(fill, Gravity.START, ClipDrawable.HORIZONTAL)});
         ld.setId(0, android.R.id.background);
@@ -1409,7 +1409,7 @@ public final class Library {
         LinearLayout info = new LinearLayout(a);
         info.setOrientation(LinearLayout.VERTICAL);
         info.setPadding(PUi.dp(a, 14), 0, PUi.dp(a, 4), 0);
-        TextView n = PUi.text(a, name, 17, R.color.bn_text, 700);
+        TextView n = PUi.text(a, name, Tokens.TYPE_HEADING, R.color.bn_text, 700);   // the sheet's game title: the heading tier
         n.setMaxLines(2);
         n.setEllipsize(TextUtils.TruncateAt.END);
         info.addView(n);

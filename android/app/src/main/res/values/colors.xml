@@ -38,10 +38,10 @@
     <color name="bn_overlay_text_2">#FF9DA9B8</color> <!-- overlay-stable: renders over the game in both modes — secondary text (7.3:1 on the card) -->
     <color name="bn_overlay_accent">#FF58A6F5</color> <!-- overlay-stable: renders over the game in both modes — the same Signal blue: selection edges, values, focus (6.8:1 on the card) -->
     <color name="bn_overlay_ok">#FF67C795</color>     <!-- overlay-stable: renders over the game in both modes — success (8.5:1 on the card) -->
-    <color name="bn_overlay_warn">#FFF2C341</color>  <!-- overlay-stable: renders over the game in both modes — the throttle trio's middle (Hud.LEVEL, HistogramSpan, Overlay.DOT): the same amber as bn_warn, kept here because the overlay carries no values-night override (10.5:1 on the overlay card, 12.7:1 on black) -->
+    <color name="bn_overlay_warn">#FFF2C341</color>  <!-- overlay-stable: renders over the game in both modes — the throttle trio's middle (Hud.levels(), HistogramSpan, Overlay.DOT): the same amber as bn_warn, kept here because the overlay carries no values-night override (10.5:1 on the overlay card, 12.7:1 on black) -->
     <color name="bn_overlay_danger">#FFFF8A76</color> <!-- overlay-stable: renders over the game in both modes — danger (7.6:1 on the card) -->
 
-    <!-- The library's building-cover progress strip track (Library.strip): the strip runs over cover art, so its track carries alpha like the in-code composite it
-         replaces (the mode's slate at 70 % alpha) — a resource so no helper holds the hex, with the night value in values-night -->
-    <color name="bn_track">#B3CFD8E3</color>
+    <!-- The library's building-cover progress strip track (Library.strip): the light mode's bn_bg at 70% alpha over cover art — the resource form of the
+         in-code composite it replaces, so no helper holds the hex; the night value (the dark bn_bg at 70% alpha) is in values-night -->
+    <color name="bn_track">#B3F2F4F8</color>
 </resources>

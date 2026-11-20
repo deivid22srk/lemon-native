@@ -24,6 +24,6 @@
     <color name="bn_ok_tint">#FF16301F</color>       <!-- success container (text on it 6.9:1); no call site yet, see values/colors.xml -->
     <color name="bn_control_ripple">#33E8EDF4</color><!-- theme widget highlight/ripple (20% text, Ui.ripple) -->
 
-    <!-- The library's building-cover progress strip track (Library.strip): the dark slate at 70 % alpha, the strip runs over cover art (see values/colors.xml) -->
+    <!-- The library's building-cover progress strip track (Library.strip): the dark mode's bn_bg at 70% alpha over cover art — the light mode derives its value the same way from its bn_bg (see values/colors.xml) -->
     <color name="bn_track">#B30B0E14</color>
 </resources>

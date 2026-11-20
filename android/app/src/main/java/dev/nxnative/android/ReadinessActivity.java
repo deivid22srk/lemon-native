@@ -71,7 +71,7 @@ public final class ReadinessActivity extends Activity {
         // The verdict: a mark, one line, the counts; then Run again and the report. Each check below shows its details on a tap (failures and warnings open)
         LinearLayout top = Ui.add(content, Ui.card(this), 16);
         LinearLayout vr = Ui.row(this);
-        mark = Ui.text(this, "…", 26, R.color.bn_warn, 900);   // the checking state's colour (setMark recolours it on every show: the mark never shows in the amber-fill ink)
+        mark = Ui.text(this, "…", Tokens.TYPE_DISPLAY, R.color.bn_warn, 900);   // the verdict mark: the display tier (the checking state's colour — setMark recolours it on every show, so it never shows in the amber-fill ink)
         mark.setGravity(android.view.Gravity.CENTER);
         mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         vr.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
@@ -236,10 +236,10 @@ public final class ReadinessActivity extends Activity {
                 Ui.dp(this, 16), 0, 0)));
         LinearLayout top = Ui.row(this);
         String m = x.status == Readiness.Status.PASS ? "✓" : x.status == Readiness.Status.WARNING ? "!" : x.status == Readiness.Status.FAIL ? "✕" : "i";
-        TextView st = Ui.text(this, m, 15, x.status == Readiness.Status.FAIL ? R.color.bn_danger : x.status == Readiness.Status.PASS ? R.color.bn_ok : R.color.bn_text_2, 900);
+        TextView st = Ui.text(this, m, Tokens.TYPE_BODY, x.status == Readiness.Status.FAIL ? R.color.bn_danger : x.status == Readiness.Status.PASS ? R.color.bn_ok : R.color.bn_text_2, 900);
         st.setGravity(android.view.Gravity.CENTER);
         top.addView(st, new LinearLayout.LayoutParams(Ui.dp(this, 24), ViewGroup.LayoutParams.WRAP_CONTENT));
-        TextView t = Ui.text(this, x.title, 15, R.color.bn_text, 600);
+        TextView t = Ui.text(this, x.title, Tokens.TYPE_BODY, R.color.bn_text, 600);
         t.setPadding(Ui.dp(this, 8), 0, 0, 0);
         top.addView(t, Ui.weight());
         android.widget.ImageView chev = new android.widget.ImageView(this);   // turned down when closed, up when open

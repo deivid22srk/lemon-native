@@ -11,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 import dev.peanuts.PeanutsPrefs;
 import dev.peanuts.build.PackNote;
 import dev.peanuts.build.Reimport;
@@ -403,12 +404,12 @@ public final class GameSheet {
             case SUPPORTED_OTHER: tint = R.color.bn_warn; note = "Supported, but builds slower the first time (a full shader scan): the shader tables are for " + recommendedText() + "."; break;   // a caution: the warning resource (the banana is a fill, not a text colour)
             default: tint = R.color.bn_danger; note = "Not one of this build's versions. Build anyway may not work, or Choose another… picks the recommended update."; break;   // UNSUPPORTED
         }
-        TextView n = PUi.text(a, note, 13, tint, 600);
+        TextView n = PUi.text(a, note, Tokens.TYPE_SMALL, tint, 600);
         n.setPadding(0, PUi.dp(a, 2), 0, 0);
         col.addView(n);
         LinearLayout row = new LinearLayout(a);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        TextView tile = PUi.text(a, "🧩", 18, R.color.bn_text, 400);   // puzzle piece, matches the mockup's Version row icon
+        TextView tile = PUi.text(a, "🧩", Tokens.TYPE_HEADING, R.color.bn_text, 400);   // puzzle piece, matches the mockup's Version row icon
         tile.setGravity(android.view.Gravity.CENTER);
         tile.setBackground(PUi.round(PUi.col(a, R.color.bn_tint), PUi.dp(a, 12), 0, 0));
         tile.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);

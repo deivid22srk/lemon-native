@@ -193,7 +193,7 @@ final class Folders {
     /** One folder: a soft card with its name, its path (selectable) and its buttons */
     private static void row(MainActivity a, LinearLayout box, String title, String value, String b1, View.OnClickListener l1, String b2, View.OnClickListener l2) {
         LinearLayout c = Ui.inner(a, R.color.bn_tint);
-        c.addView(Ui.text(a, title, 16, R.color.bn_text, 700));
+        c.addView(Ui.text(a, title, Tokens.TYPE_HEADING, R.color.bn_text, 700));   // the folder card's title: the heading tier
         TextView v = Ui.small(a, value);
         v.setTextIsSelectable(true);
         Ui.add(c, v, 4);

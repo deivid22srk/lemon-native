@@ -110,7 +110,7 @@ final class CtrlScreen {
     private static LinearLayout card(GameActivity a) {
         LinearLayout c = new LinearLayout(a); c.setOrientation(LinearLayout.VERTICAL); c.setGravity(Gravity.CENTER_HORIZONTAL);
         int p = Math.round(12 * dp); c.setPadding(p, p, p, p);
-        c.addView(text(a, "", 18, a.getColor(R.color.bn_overlay_text)));   // Player n
+        c.addView(text(a, "", Tokens.TYPE_HEADING, a.getColor(R.color.bn_overlay_text)));   // Player n
         c.addView(text(a, "", Tokens.TYPE_SMALL, a.getColor(R.color.bn_overlay_text)));   // the controller, or Press L + R (the small size of the type scale)
         c.addView(text(a, "", 12, a.getColor(R.color.bn_overlay_text_2)));    // the game's text
         LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(Math.round(150 * dp), Math.round(130 * dp));

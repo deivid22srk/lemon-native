@@ -110,7 +110,7 @@ final class ReleasePage {
         if (run.isEmpty()) return;
         CharSequence s = Updater.styled(a, new ArrayList<>(run));
         if (s.length() == 0) return;
-        TextView t = Ui.text(a, s, 14, R.color.bn_text, 400);
+        TextView t = Ui.text(a, s, Tokens.TYPE_BODY, R.color.bn_text, 400);   // the update log's body prose (links inside), the body size of the type scale
         t.setLineSpacing(Ui.dp(a, 2), 1f);
         t.setMovementMethod(LinkMovementMethod.getInstance());   // links open in the browser
         t.setFocusable(false);

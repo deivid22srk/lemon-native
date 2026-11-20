@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import dev.nxnative.android.BananaBackgroundView;
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -396,7 +397,7 @@ public final class DriverActivity extends Activity {
             LinearLayout head = PUi.row(this);
             LinearLayout col = new LinearLayout(this);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.addView(PUi.text(this, r.title, 17, R.color.bn_text, 700));
+            col.addView(PUi.text(this, r.title, Tokens.TYPE_HEADING, R.color.bn_text, 700));   // a release card's title: the heading tier
             col.addView(PUi.small(this, when + ", " + r.assets.size() + " files."));
             head.addView(col, PUi.weight());
             if (toggle != null) head.addView(toggle);
@@ -415,7 +416,7 @@ public final class DriverActivity extends Activity {
         LinearLayout top = PUi.row(this);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(title != null ? PUi.text(this, title, 17, R.color.bn_text, 700) : PUi.text(this, a.name, 15, R.color.bn_text, 600));
+        col.addView(title != null ? PUi.text(this, title, Tokens.TYPE_HEADING, R.color.bn_text, 700) : PUi.text(this, a.name, 15, R.color.bn_text, 600));   // the file's title in the heading tier, else the asset's name in the body size
         String gpus = DriverMatch.words(a.gpus);
         boolean other = DriverMatch.otherGpu(a.gpus, phone);
         col.addView(PUi.small(this, (when != null ? when + ", " : "") + mb(a.size) + (gpus.isEmpty() ? "." : ", for " + gpus + ".")));
@@ -590,7 +591,7 @@ public final class DriverActivity extends Activity {
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(PUi.dp(this, 6), 0, PUi.dp(this, 8), 0);
-        col.addView(PUi.text(this, title, 16, R.color.bn_text, 600));
+        col.addView(PUi.text(this, title, Tokens.TYPE_BODY, R.color.bn_text, 600));   // the release's row title: the body size, like a setting row's
         if (line != null && line.length() > 0) col.addView(PUi.small(this, line));
         r.addView(col, PUi.weight());
         return r;
