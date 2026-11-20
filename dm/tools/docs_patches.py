@@ -178,6 +178,9 @@ SWITCH_BINDING = [
      'why': f'what iOS does for every game: {DEFAULT_SOON}'}),
     ('present_snap', '', {'what': 'present snapshots', 'now': 'game', 'goal': 'host', 'purpose': 'rendering', 'why': f'a setting the game was tested with: {DEFAULT_SOON}'}),
     ('pso_mtl4', '', {'what': 'MTL4Compiler pipelines on iOS', 'now': 'game', 'goal': 'host', 'purpose': 'rendering', 'why': f'a setting the game was tested with on an iPhone: {DEFAULT_SOON}'}),
+    # PEANUTS: every pipeline a draw misses is made on the frame path (vka_psosync.h VKPS_ALL), none of its draws skipped, while the profile has no prewarm seed.
+    ('pso_sync_all', 'on', {'what': 'a draw whose pipeline the cache lacks is never skipped', 'now': 'game', 'goal': 'host', 'purpose': 'rendering',
+     'why': 'a first run without a seed kept what draws into larger targets made while their pipelines compiled (Hogwarts Legacy: the character creator and a cutscene); a recorded seed takes the key off again, and a general fix for the kept-result class would take it off everywhere'}),
     ('game_env', 'DOTNET_GCRegionRange=', {'what': ".NET's garbage-collector region range", 'now': 'game', 'goal': 'game', 'purpose': 'address space', 'why': "measured for the game's regions"}),
     ('stdalloc_cap', '', {'what': "StandardAllocator's address space", 'now': 'game', 'goal': 'game', 'purpose': 'address space',
      'why': "what the regions after it need, measured by the NSP script's region check; the host's cap is the default"}),
