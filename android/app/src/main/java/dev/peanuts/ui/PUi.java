@@ -1,6 +1,8 @@
 package dev.peanuts.ui;
 
+import dev.nxnative.android.PadFocus;
 import dev.nxnative.android.R;
+import dev.nxnative.android.Tokens;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -28,16 +30,19 @@ import android.widget.TextView;
 
 /**
  * PEANUTS: a verbatim copy of dev.nxnative.android.Ui (package-private upstream) on the same resources, so Peanuts screens look the same without an upstream edit.
- * Check against upstream: diff Ui.java PUi.java | grep -v "^[<>] *\(package\|import dev\|public\)".
+ * Check against upstream: diff Ui.java PUi.java | grep -v "^[<>] *\(package\|import dev\|public\)". The Feel lines marked PEANUTS there are not copied here;
+ * the PUi-only bits below are marked PEANUTS too.
  * The launcher's building blocks, in code like the rest of the launcher (no layouts, no AndroidX), in the banana palette (res/values/colors.xml, values-night for dark
  * mode; themes.xml's Theme.Banana). One small design system so every screen looks the same:
  * <ul>
  * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line.</li>
  * <li>Shapes: cards 20 dp corners with a hairline edge; buttons and icon buttons 14 dp corners (a card's big action 16 dp).</li>
- * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 18 dp inside,
+ * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 16 dp inside,
  * 12 dp between cards, 24 dp before a section label.</li>
  * <li>Button and header icons are vector drawables (res/drawable/ic_*.xml) tinted from the palette, so they look the same on every phone; list rows keep their
  * emoji tiles.</li>
+ * <li>States: every button carries the touch ripple, a hairline accent edge while a D-pad or keyboard focuses it, and a muted fill and label while disabled.
+ * The measures come from {@link Tokens} (the spacing grid, radii, type scale, touch target); the colors come from the palette resources.</li>
  * </ul>
  */
 public final class PUi {
@@ -45,7 +50,7 @@ public final class PUi {
 
     public enum Kind { PRIMARY, TONAL, SOFT, DANGER, QUIET }   // SOFT: an outlined button for use on a tinted surface
 
-    public static final int GAP = 12, SECTION_GAP = 24;
+    public static final int GAP = Tokens.SPACE_3, SECTION_GAP = Tokens.SPACE_6;
 
     public static int dp(Context c, float v) { return Math.round(v * c.getResources().getDisplayMetrics().density); }
     public static int col(Context c, int res) { return c.getColor(res); }
@@ -58,12 +63,24 @@ public final class PUi {
         return g;
     }
 
-    /** A touch ripple in peel brown over a shape (the shape is its mask) */
+    /** A touch ripple over a shape (the shape is its mask), in the palette's widget highlight (bn_control_ripple, day and night) */
     public static Drawable ripple(Context c, GradientDrawable shape) {
         GradientDrawable mask = new GradientDrawable();   // an opaque copy of the shape: a transparent button (QUIET) still shows its ripple
         mask.setColor(Color.BLACK);
         mask.setCornerRadius(shape.getCornerRadius());
-        return new RippleDrawable(ColorStateList.valueOf(0x336B4423), shape, mask);
+        return new RippleDrawable(ColorStateList.valueOf(col(c, R.color.bn_control_ripple)), shape, mask);
+    }
+
+    /**
+     * A clickable view that is not a button (a row, a tab, a chip): the touch ripple while pressed and, while a D-pad or keyboard focuses it, the same hairline
+     * accent edge a button shows (style), so focus reads the same everywhere. fill: the resting fill (Color.TRANSPARENT for a plain row); edge: the focus edge's
+     * color (a filled pill takes the on-banana brown, the accent would vanish on it in dark mode, where the accent is the banana)
+     */
+    private static void touchable(Context c, View v, int fill, float radiusDp, int edgeColorRes) {
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, round(fill, dp(c, radiusDp), col(c, edgeColorRes), dp(c, Tokens.FOCUS_EDGE_DP)));
+        s.addState(new int[]{}, ripple(c, round(fill, dp(c, radiusDp), 0, 0)));
+        v.setBackground(s);
     }
 
     public static Typeface face(int weight) { return Typeface.create(Typeface.SANS_SERIF, weight, false); }
@@ -88,24 +105,25 @@ public final class PUi {
     }
 
     public static TextView title(Context c, CharSequence s) {
-        TextView t = text(c, s, 24, R.color.bn_text, 800);
+        TextView t = text(c, s, Tokens.TYPE_TITLE, R.color.bn_text, 800);
         t.setLetterSpacing(-0.01f);
-        t.setSingleLine(true);
+        t.setMaxLines(2);   // a long title wraps (two lines) rather than ends in an ellipsis
         t.setEllipsize(TextUtils.TruncateAt.END);
         return t;
     }
-    public static TextView heading(Context c, CharSequence s) { return text(c, s, 18, R.color.bn_text, 700); }
-    public static TextView body(Context c, CharSequence s) { return text(c, s, 15, R.color.bn_text, 400); }
-    public static TextView small(Context c, CharSequence s) { return text(c, s, 13, R.color.bn_text_2, 400); }
+    public static TextView heading(Context c, CharSequence s) { return text(c, s, Tokens.TYPE_HEADING, R.color.bn_text, 700); }
+    public static TextView body(Context c, CharSequence s) { return text(c, s, Tokens.TYPE_BODY, R.color.bn_text, 400); }
+    public static TextView small(Context c, CharSequence s) { return text(c, s, Tokens.TYPE_SMALL, R.color.bn_text_2, 400); }
 
     /** A rounded little label (the build tag, a step) */
     public static TextView chip(Context c, CharSequence s) {
-        TextView t = text(c, s, 12, R.color.bn_text_2, 600);
+        TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_text_2, 600);
         t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), 0, 0));
-        t.setPadding(dp(c, 10), dp(c, 5), dp(c, 10), dp(c, 5));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
         return t;
     }
 
+    // PEANUTS begin: PUi-only (Library's build lines); Ui has no joined
     /** Text parts with a faint thin bar between them, instead of a "·" */
     public static CharSequence joined(CharSequence... parts) {
         android.text.SpannableStringBuilder s = new android.text.SpannableStringBuilder();
@@ -141,26 +159,27 @@ public final class PUi {
 
         private static float width(android.graphics.Paint p) { return Math.max(1f, p.getTextSize() / 12f); }
     }
+    // PEANUTS end
 
     /** A group's label above its card (the settings page, a sheet) */
     public static TextView section(Context c, CharSequence s) {
-        TextView t = text(c, s, 12, R.color.bn_text_2, 700);
+        TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_text_2, 700);
         t.setAllCaps(true);
         t.setLetterSpacing(0.08f);
-        t.setPadding(dp(c, 4), 0, 0, 0);
+        t.setPadding(dp(c, Tokens.SPACE_1), 0, 0, 0);
         t.setAccessibilityHeading(true);
         return t;
     }
 
     /** A short state: a colored dot and a word (Ready, Shaders needed, …) */
     public static TextView status(Context c, CharSequence s, int colorRes) {
-        TextView t = text(c, "", 13, colorRes, 600);
+        TextView t = text(c, "", Tokens.TYPE_SMALL, colorRes, 600);
         status(t, s, colorRes);
         return t;
     }
 
     public static void status(TextView t, CharSequence s, int colorRes) {
-        t.setText(TextUtils.concat("●  ", s));   // keeps spans (PUi.joined)
+        t.setText(TextUtils.concat("●  ", s));   // PEANUTS: keeps spans (PUi.joined) where Ui string-concatenates
         t.setContentDescription(s);   // the dot is decoration: a screen reader says the state only
         t.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);   // the state changes while the screen shows (Checking… → Ready): said when it does
         t.setTextColor(col(t.getContext(), colorRes));
@@ -179,7 +198,7 @@ public final class PUi {
             super(c);
             setOrientation(VERTICAL);
             toggle = button(c, "Details", Kind.QUIET, v -> open(!isOpen()));
-            toggle.setPadding(dp(c, 4), 0, dp(c, 4), 0);
+            toggle.setPadding(dp(c, Tokens.SPACE_1), 0, dp(c, Tokens.SPACE_1), 0);
             addView(toggle, wrap());
             text = small(c, "");
             text.setTextIsSelectable(true);
@@ -190,7 +209,7 @@ public final class PUi {
                 if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Peanuts Native details", text.getText()));   // PEANUTS: rebrand
                 android.widget.Toast.makeText(c, "Details copied", android.widget.Toast.LENGTH_SHORT).show();
             });
-            copy.setPadding(dp(c, 4), 0, dp(c, 4), 0);
+            copy.setPadding(dp(c, Tokens.SPACE_1), 0, dp(c, Tokens.SPACE_1), 0);
             copy.setVisibility(GONE);
             addView(copy, wrap());
             open(false);
@@ -223,19 +242,22 @@ public final class PUi {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.addView(body(a, message));
-        if (detail != null && detail.length() > 0) add(box, details(a, detail), 8);
+        if (detail != null && detail.length() > 0) add(box, details(a, detail), Tokens.SPACE_2);
         return sheet(a, title, box);
     }
 
-    /** A small warning chip ("! Pack from other tools") whose tap shows the whole sentence in a small dialog */
+    /** A small warning chip ("! Pack from other tools") whose tap shows the whole sentence in a small dialog: a full touch target that keeps the pill look */
     public static TextView warnChip(Activity a, CharSequence s, CharSequence title, CharSequence message) {
-        TextView t = text(a, "!  " + s, 12, R.color.bn_text, 600);
-        t.setBackground(ripple(a, round(col(a, R.color.bn_warn_tint), dp(a, 999), 0, 0)));
-        t.setPadding(dp(a, 10), dp(a, 5), dp(a, 12), dp(a, 5));
+        TextView t = text(a, "!  " + s, Tokens.TYPE_CAPTION, R.color.bn_text, 600);
+        touchable(a, t, col(a, R.color.bn_warn_tint), 999, R.color.bn_accent);
+        t.setPadding(dp(a, Tokens.SPACE_2), dp(a, Tokens.SPACE_1), dp(a, Tokens.SPACE_3), dp(a, Tokens.SPACE_1));
+        t.setMinimumHeight(dp(a, Tokens.TOUCH_MIN));   // a compact chip that is still the touch target (its tap opens the dialog)
+        t.setGravity(Gravity.CENTER_VERTICAL);
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
         t.setContentDescription(s + ": tap for details");
-        t.setOnClickListener(v -> new AlertDialog.Builder(a).setTitle(title).setMessage(message).setPositiveButton("OK", null).show());
+        t.setFocusable(true);   // a D-pad can reach it like any button (the edge shows the focus)
+        t.setOnClickListener(v -> new PadFocus.Builder(a).setTitle(title).setMessage(message).setPositiveButton("OK", null).show());
         return t;
     }
 
@@ -245,7 +267,7 @@ public final class PUi {
         TextView t = text(c, n.isEmpty() ? "?" : n.substring(0, n.offsetByCodePoints(0, 1)).toUpperCase(java.util.Locale.ROOT), sizeDp * 0.4f, R.color.bn_on_banana, 800);
         t.setGravity(Gravity.CENTER);
         t.setIncludeFontPadding(false);
-        t.setBackground(round(col(c, R.color.bn_banana), dp(c, 16), 0, 0));
+        t.setBackground(round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_INNER), 0, 0));
         t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         t.setLayoutParams(new LinearLayout.LayoutParams(dp(c, sizeDp), dp(c, sizeDp)));
         return t;
@@ -254,24 +276,24 @@ public final class PUi {
     /** Shows a picture (the game's icon) in a tile made by tile(), in place of its letter and with the same rounded corners. Pass null to get the letter back */
     public static void tileIcon(TextView t, android.graphics.Bitmap b) {
         Context c = t.getContext();
-        if (b == null) { t.setTextColor(col(c, R.color.bn_on_banana)); t.setBackground(round(col(c, R.color.bn_banana), dp(c, 16), 0, 0)); return; }
+        if (b == null) { t.setTextColor(col(c, R.color.bn_on_banana)); t.setBackground(round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_INNER), 0, 0)); return; }
         android.graphics.drawable.Drawable d = new android.graphics.drawable.BitmapDrawable(c.getResources(), b);
         t.setBackground(d);
         t.setTextColor(android.graphics.Color.TRANSPARENT);   // only hidden, so the letter is still there if the tile is reused for another game
         t.setOutlineProvider(new android.view.ViewOutlineProvider() {
-            @Override public void getOutline(View v, android.graphics.Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(c, 16)); }
+            @Override public void getOutline(View v, android.graphics.Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(c, Tokens.RADIUS_INNER)); }
         });
         t.setClipToOutline(true);
     }
 
     // ---- Containers ----
 
-    /** A card: rounded, a hairline peel edge, vertical, 18 dp inside */
+    /** A card: rounded, a hairline peel edge, vertical, 16 dp inside */
     public static LinearLayout card(Context c) {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
-        l.setBackground(round(col(c, R.color.bn_card), dp(c, 20), col(c, R.color.bn_card_stroke), dp(c, 1)));
-        int p = dp(c, 18);
+        l.setBackground(round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        int p = dp(c, Tokens.SPACE_4);
         l.setPadding(p, p, p, p);
         return l;
     }
@@ -279,7 +301,7 @@ public final class PUi {
     /** A card for list rows (settings, the Readiness check): the rows reach close to its edges */
     public static LinearLayout listCard(Context c) {
         LinearLayout l = card(c);
-        l.setPadding(dp(c, 6), dp(c, 6), dp(c, 6), dp(c, 6));
+        l.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2));
         return l;
     }
 
@@ -287,8 +309,8 @@ public final class PUi {
     public static LinearLayout inner(Context c, int fillRes) {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
-        l.setBackground(round(col(c, fillRes), dp(c, 16), 0, 0));
-        int p = dp(c, 14);
+        l.setBackground(round(col(c, fillRes), dp(c, Tokens.RADIUS_INNER), 0, 0));
+        int p = dp(c, Tokens.SPACE_4);
         l.setPadding(p, p, p, p);
         return l;
     }
@@ -312,13 +334,13 @@ public final class PUi {
         return v;
     }
 
-    public static View spacer(Context c) { View v = new View(c); v.setLayoutParams(new LinearLayout.LayoutParams(0, 1, 1)); return v; }
+    public static View spacer(Context c) { View v = new View(c); v.setLayoutParams(new LinearLayout.LayoutParams(0, Tokens.HAIRLINE_DP, 1)); return v; }
 
     /** A thin line between a sheet's groups */
     public static View divider(Context c) {
         View v = new View(c);
         v.setBackgroundColor(col(c, R.color.bn_card_stroke));
-        v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, 1)));
+        v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, Tokens.HAIRLINE_DP)));
         return v;
     }
 
@@ -329,12 +351,15 @@ public final class PUi {
      * to edge, targetSdk 35), at a readable width centered on a wide window, with a cream scrim under the status bar so scrolled cards never run under the clock.
      * Returns the column to fill.
      */
-    public static LinearLayout page(Activity a, FrameLayout frame, int maxWidthDp) {
+    public static LinearLayout page(Activity a, FrameLayout frame, int maxWidthDp) { return page(a, frame, maxWidthDp, false); }
+
+    /** The same; with a bar below the page (ReleasePage's Update / Later), which takes the navigation bar's inset itself: the page keeps a plain 16 dp under its last row */
+    public static LinearLayout page(Activity a, FrameLayout frame, int maxWidthDp, boolean barBelow) {
         // Edge to edge on every Android: from Android 15 targetSdk 35 makes it so, but before it the window keeps its content clear of the bars itself and
         // consumes the insets, so the listener below never ran and the column had no gutter and no width limit (cards from edge to edge on Android 13)
         a.getWindow().setDecorFitsSystemWindows(false);
         View scrim = new View(a);
-        scrim.setBackgroundColor((col(a, R.color.bn_bg) & 0x00FFFFFF) | 0xEE000000);
+        scrim.setBackgroundColor((col(a, R.color.bn_bg) & 0x00FFFFFF) | (Tokens.SCRIM_ALPHA << 24));
         ScrollView scroll = new ScrollView(a);
         scroll.setFillViewport(true);
         scroll.setClipToPadding(false);
@@ -347,9 +372,9 @@ public final class PUi {
         scroll.setOnApplyWindowInsetsListener((v, in) -> {
             Insets i = in.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
             int w = a.getResources().getDisplayMetrics().widthPixels;
-            int gutter = dp(a, a.getResources().getConfiguration().screenWidthDp < 360 ? 16 : 20);
+            int gutter = dp(a, a.getResources().getConfiguration().screenWidthDp < 360 ? Tokens.SPACE_4 : Tokens.SPACE_5);
             int side = Math.max(gutter, (w - i.left - i.right - dp(a, maxWidthDp)) / 2);
-            v.setPadding(side + i.left, i.top + dp(a, 8), side + i.right, i.bottom + dp(a, 24));
+            v.setPadding(side + i.left, i.top + dp(a, Tokens.SPACE_2), side + i.right, barBelow ? dp(a, Tokens.SPACE_4) : i.bottom + dp(a, Tokens.SPACE_6));
             scrim.getLayoutParams().height = i.top;
             scrim.requestLayout();
             return in;
@@ -364,21 +389,21 @@ public final class PUi {
     /** The same, with a small line under the title in the accent yellow (Home: the build identifier, Prefs.buildId), or none when null */
     public static LinearLayout header(Context c, View leading, CharSequence title, CharSequence subtitle, View trailing) {
         LinearLayout h = row(c);
-        h.setMinimumHeight(dp(c, 56));
+        h.setMinimumHeight(dp(c, Tokens.HEADER_DP));
         if (leading != null) h.addView(leading);
         TextView t = title(c, title);
         t.setAccessibilityHeading(true);
-        int pad = dp(c, leading != null ? 14 : 4);
+        int pad = dp(c, leading != null ? Tokens.SPACE_4 : Tokens.SPACE_1);
         if (subtitle == null) {
-            t.setPadding(pad, 0, dp(c, 8), 0);
+            t.setPadding(pad, 0, dp(c, Tokens.SPACE_2), 0);
             h.addView(t, weight());
         } else {
             LinearLayout col = new LinearLayout(c);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.setPadding(pad, 0, dp(c, 8), 0);
+            col.setPadding(pad, 0, dp(c, Tokens.SPACE_2), 0);
             col.addView(t);
-            TextView s = text(c, subtitle, 11, R.color.bn_accent, 600);
-            s.setSingleLine(true);
+            TextView s = text(c, subtitle, Tokens.TYPE_CAPTION, R.color.bn_accent, 600);
+            s.setMaxLines(3);   // the build tag and its commit wrap rather than end in an ellipsis
             s.setEllipsize(TextUtils.TruncateAt.END);
             s.setTextIsSelectable(true);
             col.addView(s);
@@ -391,8 +416,79 @@ public final class PUi {
     /** The back button of a page's header */
     public static ImageView back(Context c, View.OnClickListener l) { return iconButton(c, R.drawable.ic_back, "Back", Kind.TONAL, l); }
 
+    /**
+     * Makes a card one touch target that a D-pad or controller can reach: focusable, with an accent ring while focused (the ring replaces the edge, so nothing moves),
+     * and l on a tap or the controller's confirm button. The card's own buttons stay separate stops
+     */
+    public static void focusCard(Context c, LinearLayout card, View.OnClickListener l) {
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
+        s.addState(new int[]{}, card.getBackground());
+        card.setBackground(s);
+        card.setFocusable(true);
+        card.setClickable(true);
+        card.setOnClickListener(l);
+    }
+
+    /** A state line as a pill (the tint, a hairline edge), like the state chip of the settings pages; the words and their color are set by status() */
+    public static TextView pill(TextView t) {
+        Context c = t.getContext();
+        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_1));
+        return t;
+    }
+
+    /** A group's label with an action at its right ("Your games" and Add game) */
+    public static LinearLayout sectionHeader(Context c, CharSequence label, View action) {
+        LinearLayout top = row(c);
+        top.addView(section(c, label), weight());
+        top.addView(action);
+        return top;
+    }
+
+    // ---- States ----
+
+    /**
+     * An empty screen's block, centered: the banana, a heading and a sentence (no games yet, nothing found, no results). A screen adds it to its page and puts
+     * its action under it; it draws no card of its own, the page's background shows. One block, so every screen's empty state tells it the same way
+     */
+    public static LinearLayout emptyState(Context c, CharSequence title, CharSequence body) {
+        LinearLayout v = new LinearLayout(c);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setGravity(Gravity.CENTER_HORIZONTAL);
+        v.setPadding(dp(c, Tokens.SPACE_6), dp(c, Tokens.SPACE_8), dp(c, Tokens.SPACE_6), dp(c, Tokens.SPACE_6));
+        ImageView im = new ImageView(c);
+        im.setImageResource(R.drawable.ic_banana_happy);
+        im.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // decoration: the heading says what is empty
+        v.addView(im, new LinearLayout.LayoutParams(dp(c, Tokens.EMPTY_BANANA_DP), dp(c, Tokens.EMPTY_BANANA_DP)));
+        TextView h = heading(c, title);
+        h.setGravity(Gravity.CENTER);
+        h.setAccessibilityHeading(true);
+        add(v, h, Tokens.SPACE_4, wrap());
+        if (body != null && body.length() > 0) {   // a state that says it all in its heading has no body line
+            TextView t = text(c, body, Tokens.TYPE_BODY, R.color.bn_text_2, 400);
+            t.setGravity(Gravity.CENTER);
+            add(v, t, Tokens.SPACE_2, wrap());
+        }
+        return v;
+    }
+
+    /** The same, with the screen's action under the body (Home's no-games block: Add game) */
+    public static LinearLayout emptyState(Context c, CharSequence title, CharSequence body, View action) {
+        LinearLayout v = emptyState(c, title, body);
+        LinearLayout.LayoutParams lp = wrap();
+        lp.topMargin = dp(c, Tokens.SPACE_4);
+        v.addView(action, lp);
+        return v;
+    }
+
     // ---- Buttons ----
 
+    /**
+     * A button's look across its states: its kind's fill with the touch ripple while pressed, a hairline accent edge while a D-pad or keyboard focuses it (the
+     * shape keeps its size, so nothing moves) and a muted warm fill when disabled (the label fades with it, textColorList). One place, so a button, an action
+     * and an icon button all show the same states
+     */
     private static void style(Context c, View b, Kind k, float radiusDp) {
         int fill, stroke = 0;
         switch (k) {
@@ -402,7 +498,16 @@ public final class PUi {
             case DANGER: fill = col(c, R.color.bn_danger_tint); break;
             default: fill = Color.TRANSPARENT; break;
         }
-        b.setBackground(ripple(c, round(fill, dp(c, radiusDp), stroke, stroke != 0 ? dp(c, 1.5f) : 0)));
+        GradientDrawable shape = round(fill, dp(c, radiusDp), stroke, stroke != 0 ? dp(c, Tokens.HAIRLINE_DP) : 0);
+        GradientDrawable off = round(k == Kind.QUIET || k == Kind.SOFT ? Color.TRANSPARENT : col(c, R.color.bn_tint),
+                dp(c, radiusDp), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP));   // disabled: an outlined, unfilled button reads as off in every kind
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        // the focus edge: the deep gold against cream surfaces, but against the banana fill itself the dark on-banana brown (the gold is the banana in dark mode)
+        s.addState(new int[]{android.R.attr.state_focused},
+                round(fill, dp(c, radiusDp), col(c, k == Kind.PRIMARY ? R.color.bn_on_banana : R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
+        s.addState(new int[]{-android.R.attr.state_enabled}, off);
+        s.addState(new int[]{}, ripple(c, shape));
+        b.setBackground(s);
     }
 
     private static int textColor(Kind k) {
@@ -414,32 +519,37 @@ public final class PUi {
         }
     }
 
+    /** A button kind's label color across states: the muted secondary text while disabled, its own color otherwise (a View's state, not its parent's, picks it) */
+    private static ColorStateList textColorList(Context c, Kind k) {
+        int on = col(c, textColor(k)), off = col(c, R.color.bn_text_2);
+        return new ColorStateList(new int[][]{{-android.R.attr.state_enabled}, {}}, new int[]{off, on});
+    }
+
     /**
      * A button: 48 dp high, 14 dp corners, one line (labels are kept short; the button grows to fit its label, and a half-width one ellipsizes rather than wraps).
-     * PRIMARY banana yellow, TONAL the soft tint, SOFT an outline, DANGER red-orange on its tint, QUIET text only in the accent. Disabled ones fade
+     * PRIMARY banana yellow, TONAL the soft tint, SOFT an outline, DANGER red-orange on its tint, QUIET text only in the accent. Disabled ones fade to the muted
+     * fill and label (style, textColorList); focused ones get a hairline accent edge
      */
     public static Button button(Context c, CharSequence s, Kind k, View.OnClickListener l) {
-        Button b = new Button(c) {
-            @Override public void setEnabled(boolean on) { super.setEnabled(on); setAlpha(on ? 1f : 0.42f); }
-        };
+        Button b = new Button(c);
         b.setText(s);
         b.setAllCaps(false);
-        b.setTextSize(15);
+        b.setTextSize(Tokens.TYPE_BODY);
         b.setTypeface(face(k == Kind.PRIMARY ? 700 : 600));
         b.setLetterSpacing(0f);
         b.setStateListAnimator(null);
-        b.setMinWidth(dp(c, 64));
-        b.setMinimumWidth(dp(c, 64));
-        b.setMinHeight(dp(c, 48));
-        b.setMinimumHeight(dp(c, 48));
-        int h = dp(c, k == Kind.QUIET ? 12 : 18);
+        b.setMinWidth(dp(c, Tokens.BUTTON_MIN_W_DP));
+        b.setMinimumWidth(dp(c, Tokens.BUTTON_MIN_W_DP));
+        b.setMinHeight(dp(c, Tokens.TOUCH_MIN));
+        b.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));
+        int h = dp(c, k == Kind.QUIET ? Tokens.SPACE_3 : Tokens.SPACE_4);
         b.setPadding(h, 0, h, 0);
         b.setSingleLine(true);
         b.setEllipsize(TextUtils.TruncateAt.END);
         b.setGravity(Gravity.CENTER);
         b.setIncludeFontPadding(false);
-        b.setTextColor(col(c, textColor(k)));
-        style(c, b, k, 14);
+        b.setTextColor(textColorList(c, k));
+        style(c, b, k, Tokens.RADIUS_MD);
         b.setOnClickListener(l);
         return b;
     }
@@ -455,19 +565,21 @@ public final class PUi {
             kind = k;
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER);
-            setMinimumHeight(dp(c, 56));
-            setPadding(dp(c, 20), 0, dp(c, 20), 0);
-            style(c, this, k, 16);
+            setMinimumHeight(dp(c, Tokens.ACTION_DP));
+            setPadding(dp(c, Tokens.SPACE_5), 0, dp(c, Tokens.SPACE_5), 0);
+            style(c, this, k, Tokens.RADIUS_INNER);
             setClickable(true);
             setFocusable(true);
             icon = new ImageView(c);
             icon.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(icon, new LinearLayout.LayoutParams(dp(c, 22), dp(c, 22)));
-            label = text(c, s, 17, textColor(k), 700);
+            icon.setImageTintList(textColorList(c, kind));   // the tint follows the label's states (enabled, disabled) through the icon's own state
+            addView(icon, new LinearLayout.LayoutParams(dp(c, Tokens.ICON_DP), dp(c, Tokens.ICON_DP)));
+            label = text(c, s, Tokens.TYPE_HEADING, textColor(k), 700);
+            label.setTextColor(textColorList(c, kind));
             label.setSingleLine(true);
             label.setIncludeFontPadding(false);
             LinearLayout.LayoutParams lp = wrap();
-            lp.leftMargin = dp(c, 10);
+            lp.leftMargin = dp(c, Tokens.SPACE_2);
             addView(label, lp);
             setIcon(drawable);
             setContentDescription(s);
@@ -477,27 +589,31 @@ public final class PUi {
         public void setText(CharSequence s) { label.setText(s); setContentDescription(s); }
 
         public void setIcon(int drawable) {
-            icon.setImageDrawable(drawable == 0 ? null : PUi.icon(getContext(), drawable, textColor(kind)));
+            icon.setImageDrawable(drawable == 0 ? null : getContext().getDrawable(drawable).mutate());   // untinted: the view's tint list colors it per state
             icon.setVisibility(drawable == 0 ? GONE : VISIBLE);
         }
 
-        @Override public void setEnabled(boolean on) { super.setEnabled(on); setAlpha(on ? 1f : 0.42f); }
+        @Override public void setEnabled(boolean on) {
+            super.setEnabled(on);
+            label.setEnabled(on);   // the children do not inherit the state: pass it down, so their color lists fade them with the container
+            icon.setEnabled(on);
+        }
         @Override public CharSequence getAccessibilityClassName() { return Button.class.getName(); }
     }
 
     public static Action action(Context c, int drawable, CharSequence s, Kind k, View.OnClickListener l) { return new Action(c, drawable, s, k, l); }
 
-    /** A square icon button, 44 dp, 14 dp corners (a page's back and settings buttons, a card's ⋯) */
+    /** A square icon button, 48 dp (the touch target), 14 dp corners (a page's back and settings buttons, a card's ⋯) */
     public static ImageView iconButton(Context c, int drawable, String description, Kind k, View.OnClickListener l) {
         ImageView v = new ImageView(c);
         v.setImageDrawable(icon(c, drawable, R.color.bn_text));
         v.setScaleType(ImageView.ScaleType.CENTER);
-        style(c, v, k, 14);
+        style(c, v, k, Tokens.RADIUS_MD);
         v.setContentDescription(description);
         v.setClickable(true);
         v.setFocusable(true);
         v.setOnClickListener(l);
-        v.setLayoutParams(new LinearLayout.LayoutParams(dp(c, 44), dp(c, 44)));
+        v.setLayoutParams(new LinearLayout.LayoutParams(dp(c, Tokens.TOUCH_MIN), dp(c, Tokens.TOUCH_MIN)));
         return v;
     }
 
@@ -510,19 +626,19 @@ public final class PUi {
         r.addView(a, weight());
         if (b != null) {
             LinearLayout.LayoutParams lp = weight();
-            lp.leftMargin = dp(c, 10);
+            lp.leftMargin = dp(c, Tokens.SPACE_2);
             r.addView(b, lp);
         }
         return r;
     }
 
-    /** The banana with a face in a leaf-green circle (Home's header) */
+    /** The banana with a face in the header's badge circle (Home's header): bn_badge, the launcher icon's deep green in BOTH modes — bn_leaf lightens for dark, and on the lightened green the yellow banana would sink (1.4:1; on this deep green 5.6:1) */
     public static ImageView badge(Context c, int sizeDp) {
         ImageView v = new ImageView(c);
         v.setImageDrawable(new android.graphics.drawable.InsetDrawable(c.getDrawable(R.drawable.ic_banana_happy), -0.16f));   // the banana fills more of the circle
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.OVAL);
-        g.setColor(0xFF1E5B3A);
+        g.setColor(col(c, R.color.bn_badge));
         v.setBackground(g);
         v.setScaleType(ImageView.ScaleType.FIT_CENTER);
         v.setLayoutParams(new LinearLayout.LayoutParams(dp(c, sizeDp), dp(c, sizeDp)));
@@ -532,7 +648,7 @@ public final class PUi {
 
     public static ProgressBar progress(Context c) {
         ProgressBar bar = new ProgressBar(c, null, android.R.attr.progressBarStyleHorizontal);
-        bar.setProgressTintList(ColorStateList.valueOf(col(c, R.color.bn_banana_deep)));
+        bar.setProgressTintList(ColorStateList.valueOf(col(c, R.color.bn_accent)));   // the deep gold clears 3:1 against the track where the banana does not
         bar.setProgressBackgroundTintList(ColorStateList.valueOf(col(c, R.color.bn_card_stroke)));
         bar.setScaleY(1.6f);
         return bar;
@@ -540,56 +656,268 @@ public final class PUi {
 
     // ---- List rows ----
 
-    /** One row of a list card or a sheet: an emoji tile, a title over its current value, and a chevron (or a switch); the whole row is the touch target */
+    /**
+     * One row of a list card or a sheet: an emoji tile, a one-line title over its value across the whole width (up to three lines: the value, or for a switch what its
+     * state does, says(…)), a short status line when the setting needs something (status(…): "Needs Prepare again: …"), its tags on a line of their own (so they never
+     * squeeze the text), a muted note, and a chevron (or a switch); the whole row is the touch target (a switch row's tap flips the switch). Compact: 52 dp high, 36 dp tiles
+     */
     public static final class Setting {
         public final LinearLayout view;
-        public final TextView value;
+        public final TextView title, value, status, tag, badge, note;   // tag: Recommended / Changed (Ui.tag); badge: a fixed label such as Experimental; note: a muted line under them
+        public final TextView tile;
+        private final LinearLayout tags;   // the line of the badge and the tag
         public Switch toggle;
 
         public Setting(Context c, String emoji, String title, View.OnClickListener l) {
             view = row(c);
-            view.setPadding(dp(c, 10), dp(c, 8), dp(c, 12), dp(c, 8));
-            view.setMinimumHeight(dp(c, 60));
-            view.setBackground(ripple(c, round(Color.TRANSPARENT, dp(c, 14), 0, 0)));
+            view.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2));
+            view.setMinimumHeight(dp(c, Tokens.ROW_DP));
+            touchable(c, view, Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // the row's ripple, and its own focus edge (no pad ring over it)
             view.setOnClickListener(l);
-            TextView tile = text(c, emoji, 18, R.color.bn_text, 400);
+            tile = text(c, emoji, Tokens.TYPE_HEADING, R.color.bn_text, 400);
             tile.setGravity(Gravity.CENTER);
             tile.setIncludeFontPadding(false);
-            tile.setBackground(round(col(c, R.color.bn_tint), dp(c, 12), 0, 0));
+            tile.setBackground(round(col(c, R.color.bn_tint), dp(c, Tokens.RADIUS_ROW), 0, 0));
             tile.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            view.addView(tile, new LinearLayout.LayoutParams(dp(c, 40), dp(c, 40)));
+            view.addView(tile, new LinearLayout.LayoutParams(dp(c, Tokens.TILE_DP), dp(c, Tokens.TILE_DP)));
             LinearLayout col = new LinearLayout(c);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.setPadding(dp(c, 14), 0, dp(c, 8), 0);
-            TextView t = text(c, title, 16, R.color.bn_text, 600);
-            t.setSingleLine(true);
-            t.setEllipsize(TextUtils.TruncateAt.END);
-            col.addView(t);
+            col.setPadding(dp(c, Tokens.SPACE_3), 0, dp(c, Tokens.SPACE_2), 0);
+            this.title = text(c, title, Tokens.TYPE_BODY, R.color.bn_text, 600);
+            this.title.setMaxLines(3);   // one line at the normal font scale (titles are kept short); a large font scale wraps it rather than cut it
+            this.title.setEllipsize(TextUtils.TruncateAt.END);
+            col.addView(this.title);
             value = small(c, "");
-            value.setMaxLines(2);
+            value.setMaxLines(8);
             value.setEllipsize(TextUtils.TruncateAt.END);
             value.setVisibility(View.GONE);   // shown by value(…) when there is one
-            col.addView(value);
+            LinearLayout.LayoutParams vp = fill();
+            vp.topMargin = dp(c, Tokens.HAIRLINE_DP);
+            col.addView(value, vp);
+            status = text(c, "", Tokens.TYPE_CAPTION, R.color.bn_danger, 600);
+            status.setMaxLines(2);
+            status.setVisibility(View.GONE);   // shown by status(…)
+            LinearLayout.LayoutParams sp = fill();
+            sp.topMargin = dp(c, Tokens.SPACE_1);
+            col.addView(status, sp);
+            tags = row(c);
+            badge = PUi.tag(c, "", true);
+            badge.setVisibility(View.GONE);
+            LinearLayout.LayoutParams bp = wrap();
+            bp.setMarginEnd(dp(c, Tokens.SPACE_2));
+            tags.addView(badge, bp);
+            tag = PUi.tag(c, "", false);
+            tag.setVisibility(View.GONE);
+            tags.addView(tag, wrap());
+            tags.setVisibility(View.GONE);
+            LinearLayout.LayoutParams lp = wrap();
+            lp.topMargin = dp(c, Tokens.SPACE_1);
+            col.addView(tags, lp);
+            note = small(c, "");
+            note.setMaxLines(8);
+            note.setEllipsize(TextUtils.TruncateAt.END);
+            note.setVisibility(View.GONE);   // shown by note(…)
+            col.addView(note);
             view.addView(col, weight());
+        }
+
+        private void line() {
+            tags.setVisibility(tag.getVisibility() == View.VISIBLE || badge.getVisibility() == View.VISIBLE ? View.VISIBLE : View.GONE);
         }
 
         public Setting chevron(Context c) {
             ImageView ch = new ImageView(c);
             ch.setImageDrawable(icon(c, R.drawable.ic_chevron, R.color.bn_text_2));
             ch.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            view.addView(ch, new LinearLayout.LayoutParams(dp(c, 20), dp(c, 20)));
+            view.addView(ch, new LinearLayout.LayoutParams(dp(c, Tokens.CHEVRON_DP), dp(c, Tokens.CHEVRON_DP)));
             return this;
         }
 
+        /** A switch at the end; a tap anywhere on a row without its own action flips it (when it is enabled) */
         public Setting toggle(Context c, boolean on, android.widget.CompoundButton.OnCheckedChangeListener l) {
             toggle = new Switch(c);
             toggle.setChecked(on);
-            toggle.setOnCheckedChangeListener(l);
+            toggle.setOnCheckedChangeListener((b, x) -> { if (l != null) l.onCheckedChanged(b, x); says(); });   // the value line follows the switch (says)
             view.addView(toggle);
+            title.setLabelFor(toggle);   // a screen reader reaches the switch through the row's title (the row's tap flips it too)
+            if (!view.hasOnClickListeners()) view.setOnClickListener(v -> { if (toggle.isEnabled()) toggle.toggle(); });
             return this;
         }
 
         public Setting value(CharSequence s) { value.setText(s); value.setVisibility(s == null || s.length() == 0 ? View.GONE : View.VISIBLE); return this; }
+        /** What the setting needs before it works, in a short line of its own under the value (null: none), so the value still says what the setting does */
+        public Setting status(CharSequence s) { status.setText(s); status.setVisibility(s == null || s.length() == 0 ? View.GONE : View.VISIBLE); return this; }
+        /** The tag on the tags' line (null: none); warn picks the warning tint (Ui.tag) */
+        public Setting tag(Context c, CharSequence s, boolean warn) {
+            if (s == null || s.length() == 0) { tag.setVisibility(View.GONE); line(); return this; }
+            tag.setText(s); styleTag(c, tag, warn); tag.setVisibility(View.VISIBLE);
+            line();
+            return this;
+        }
+        /** A fixed label before the tag (Experimental), in the warning tint (null: none) */
+        public Setting badge(CharSequence s) {
+            badge.setText(s == null ? "" : s);
+            badge.setVisibility(s == null || s.length() == 0 ? View.GONE : View.VISIBLE);
+            line();
+            return this;
+        }
+        /** The muted line under the value (null: none) */
+        public Setting note(CharSequence s) { note.setText(s); note.setVisibility(s == null || s.length() == 0 ? View.GONE : View.VISIBLE); return this; }
+
+        private CharSequence onText, offText;
+        /** A switch row's value line in words for each state (what On does, what Off does): it follows the switch, so it never contradicts it */
+        public Setting says(CharSequence on, CharSequence off) { onText = on; offText = off; says(); return this; }
+        private void says() { if (toggle != null && (onText != null || offText != null)) value(toggle.isChecked() ? onText : offText); }
+
+        /** A row that belongs to the row above it (Resolution's Window, the Upscaler's sharpness): set in, with a smaller tile */
+        Setting sub() {
+            Context c = view.getContext();
+            view.setPaddingRelative(dp(c, Tokens.SPACE_8), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
+            view.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));   // a sub-row is still a full touch target (it opens its setting's dialog)
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) tile.getLayoutParams();
+            lp.width = lp.height = dp(c, Tokens.SUB_TILE_DP);
+            tile.setLayoutParams(lp);
+            tile.setTextSize(Tokens.TYPE_SMALL);
+            title.setTextSize(Tokens.TYPE_SMALL);
+            return this;
+        }
+    }
+
+    /** A choice of a few words side by side in one rounded track (Recommended | Custom): the picked one on banana yellow. pick gets the index when the player picks another */
+    public static final class Segmented extends LinearLayout {
+        private final TextView[] items;
+        private int selected;
+
+        public Segmented(Context c, String[] labels, int sel, java.util.function.IntConsumer pick) {
+            super(c);
+            setOrientation(HORIZONTAL);
+            setBackground(round(col(c, R.color.bn_tint), dp(c, Tokens.RADIUS_MD), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+            int p = dp(c, Tokens.SPACE_1);
+            setPadding(p, p, p, p);
+            items = new TextView[labels.length];
+            for (int k = 0; k < labels.length; k++) {
+                int i = k;
+                TextView t = text(c, labels[k], Tokens.TYPE_BODY, R.color.bn_text, 700);
+                t.setGravity(Gravity.CENTER);
+                t.setSingleLine(true);
+                t.setEllipsize(TextUtils.TruncateAt.END);
+                t.setMinHeight(dp(c, Tokens.TOUCH_MIN));   // a choice is a full touch target, like a button (the track grows with it)
+                t.setPadding(dp(c, Tokens.SPACE_2), 0, dp(c, Tokens.SPACE_2), 0);
+                t.setClickable(true);
+                t.setFocusable(true);
+                t.setOnClickListener(v -> { if (i != selected) { select(i); pick.accept(i); } });
+                items[k] = t;
+                addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            }
+            select(sel);
+        }
+
+        public void select(int k) {
+            selected = k;
+            Context c = getContext();
+            for (int i = 0; i < items.length; i++) {
+                boolean on = i == k;
+                if (on) {   // the picked one on banana, with its own focus edge in the on-banana brown (the accent is the banana in dark mode)
+                    android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+                    s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), col(c, R.color.bn_on_banana), dp(c, Tokens.FOCUS_EDGE_DP)));
+                    s.addState(new int[]{}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), 0, 0));
+                    items[i].setBackground(s);
+                } else touchable(c, items[i], Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);
+                items[i].setTextColor(col(c, on ? R.color.bn_on_banana : R.color.bn_text_2));
+                items[i].setSelected(on);
+            }
+        }
+    }
+
+    /**
+     * A page's tabs under its header (a game's page: Performance, Saves, Storage): the words in a row that scrolls sideways when they do not fit, the current
+     * one in the accent over a short bar, a hairline under them all. pick gets the index when the player picks another
+     */
+    public static LinearLayout tabs(Context c, String[] labels, int sel, java.util.function.IntConsumer pick) {
+        LinearLayout out = new LinearLayout(c);
+        out.setOrientation(LinearLayout.VERTICAL);
+        android.widget.HorizontalScrollView hs = new android.widget.HorizontalScrollView(c);
+        hs.setHorizontalScrollBarEnabled(false);
+        hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout row = row(c);
+        for (int k = 0; k < labels.length; k++) {
+            int i = k;
+            boolean on = k == sel;
+            LinearLayout tab = new LinearLayout(c);
+            tab.setOrientation(LinearLayout.VERTICAL);
+            tab.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));   // a tab is a full touch target, like a button (the bar keeps its place at the bottom)
+            TextView t = text(c, labels[k], Tokens.TYPE_BODY, on ? R.color.bn_accent : R.color.bn_text_2, on ? 700 : 600);
+            t.setSingleLine(true);
+            t.setGravity(Gravity.CENTER);
+            t.setPadding(dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_2));
+            tab.addView(t, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));   // the label takes the height above the bar (the bar stays at the tab's bottom)
+            View bar = new View(c);
+            bar.setBackground(round(col(c, R.color.bn_accent), dp(c, Tokens.SPACE_1 / 2f), 0, 0));   // a 4 dp pill (the radius is half its height)
+            bar.setVisibility(on ? View.VISIBLE : View.INVISIBLE);
+            LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, Tokens.SPACE_1));
+            bl.leftMargin = bl.rightMargin = dp(c, Tokens.SPACE_2);
+            tab.addView(bar, bl);
+            touchable(c, tab, Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // the tab's own focus edge, like a row's
+            tab.setClickable(true);
+            tab.setFocusable(true);
+            tab.setSelected(on);
+            tab.setContentDescription(labels[k] + (on ? ", tab, selected" : ", tab"));
+            tab.setOnClickListener(v -> { if (i != sel) pick.accept(i); });
+            row.addView(tab, wrap());
+        }
+        hs.addView(row);
+        out.addView(hs, fill());
+        out.addView(divider(c));
+        return out;
+    }
+
+    /** One entry of a page's side rail (wide screens: the sections of Game settings): an emoji and a label, the current one on the tint in the accent */
+    public static TextView navItem(Context c, String emoji, CharSequence label, boolean selected, View.OnClickListener l) {
+        TextView t = text(c, emoji + "   " + label, Tokens.TYPE_BODY, selected ? R.color.bn_accent : R.color.bn_text, selected ? 700 : 600);
+        t.setSingleLine(true);
+        t.setEllipsize(TextUtils.TruncateAt.END);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setMinHeight(dp(c, Tokens.TOUCH_MIN));
+        t.setPadding(dp(c, Tokens.SPACE_4), 0, dp(c, Tokens.SPACE_3), 0);
+        touchable(c, t, selected ? col(c, R.color.bn_tint) : Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // its own focus edge, like a row's
+        t.setClickable(true);
+        t.setFocusable(true);
+        t.setSelected(selected);
+        t.setContentDescription(label);
+        t.setOnClickListener(l);
+        return t;
+    }
+
+    /** A page's state chip under its header ("Adreno 840 · Qualcomm 842.44"): a leaf dot and the words, on the tint */
+    public static TextView statusChip(Context c, CharSequence s) {
+        TextView t = text(c, "", Tokens.TYPE_CAPTION, R.color.bn_text, 600);
+        t.setSingleLine(true);
+        t.setEllipsize(TextUtils.TruncateAt.END);
+        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_1));
+        statusChip(t, s);
+        return t;
+    }
+
+    /** A state chip's words again (they become known later) */
+    public static void statusChip(TextView t, CharSequence s) {
+        android.text.SpannableString sp = new android.text.SpannableString("●  " + s);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(col(t.getContext(), R.color.bn_ok)), 0, 1, 0);   // the chip reports a state the launcher is content with (bn_ok, the success resource)
+        t.setText(sp);
+        t.setContentDescription(s);
+    }
+
+    /** A small rounded tag (a row's "Recommended" or "Changed"): the accent on the tint, or with warn the warning colour on the warning tint; both read in light and dark */
+    public static TextView tag(Context c, CharSequence s, boolean warn) {
+        TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_accent, 700);
+        t.setSingleLine(true);
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
+        styleTag(c, t, warn);
+        return t;
+    }
+    private static void styleTag(Context c, TextView t, boolean warn) {
+        t.setTextColor(col(c, warn ? R.color.bn_warn : R.color.bn_accent));   // the warning text resource (the danger red was for errors; a warning is not one)
+        t.setBackground(round(col(c, warn ? R.color.bn_warn_tint : R.color.bn_tint), dp(c, 999), 0, 0));
     }
 
     // ---- Dialogs ----
@@ -599,17 +927,17 @@ public final class PUi {
         ScrollView sv = new ScrollView(a);
         sv.setFillViewport(true);
         sv.setClipToPadding(false);
-        int p = dp(a, 20);
-        content.setPadding(p, dp(a, 4), p, dp(a, 8));
+        int p = dp(a, Tokens.SPACE_5);
+        content.setPadding(p, dp(a, Tokens.SPACE_1), p, dp(a, Tokens.SPACE_2));
         sv.addView(content);
-        return new AlertDialog.Builder(a).setTitle(title).setView(sv);
+        return new PadFocus.Builder(a).setTitle(title).setView(sv);
     }
 
     /**
      * Asks before something is deleted or forgotten: what goes and what stays, in the message; the yes button in the danger color, Cancel the default.
      */
     public static void confirmDanger(Activity a, String title, CharSequence message, String yes, Runnable r) {
-        AlertDialog d = new AlertDialog.Builder(a).setTitle(title).setMessage(message)
+        AlertDialog d = new PadFocus.Builder(a).setTitle(title).setMessage(message)
                 .setPositiveButton(yes, (x, w) -> r.run()).setNegativeButton("Cancel", null).create();
         d.setOnShowListener(x -> {
             Button b = d.getButton(AlertDialog.BUTTON_POSITIVE);

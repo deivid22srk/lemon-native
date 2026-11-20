@@ -189,7 +189,7 @@ public final class Library {
                 if (inFront && Motion.on() && tile != null && coverChip != null && coverChip.isAttachedToWindow()) {
                     // the building cover is on screen: it says Ready and pops, and the rescan that moves it among the Ready games waits until that was seen
                     coverChip.setText("Ready");
-                    coverChip.setTextColor(PUi.col(a, R.color.bn_leaf));
+                    coverChip.setTextColor(PUi.col(a, R.color.bn_ok));   // the cover says Ready: the success resource, not the brand green
                     if (coverStrip != null && !coverStrip.isIndeterminate()) Motion.progress(coverStrip, 100, false);
                     Motion.pop(tile);
                     UI.postDelayed(() -> { if (build == b) build = null; companions.clear(); if (current == Library.this) scan(); }, 400);
@@ -1109,7 +1109,7 @@ public final class Library {
             }
             ok.setGravity(Gravity.CENTER);
             ok.setIncludeFontPadding(false);
-            ok.setBackground(PUi.round(PUi.col(a, R.color.bn_leaf), PUi.dp(a, 999), 0, 0));
+            ok.setBackground(PUi.round(PUi.col(a, R.color.bn_ok), PUi.dp(a, 999), 0, 0));   // the check mark: the success resource (bn_on_leaf still names its text color)
             ok.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(PUi.dp(a, 22), PUi.dp(a, 22), Gravity.TOP | Gravity.END);
             lp.setMargins(p8, p8, p8, p8);
@@ -1498,7 +1498,7 @@ public final class Library {
             if (coverStrip != null) { coverStrip.setVisibility(b.failed ? View.GONE : View.VISIBLE); if (!coverStrip.isIndeterminate()) Motion.progress(coverStrip, b.percent, fresh); }
         }
         if (buildStatus == null) return;
-        PUi.status(buildStatus, stepWords(b), b.failed ? R.color.bn_danger : b.step.equals("done") ? R.color.bn_leaf : R.color.bn_accent);
+        PUi.status(buildStatus, stepWords(b), b.failed ? R.color.bn_danger : b.step.equals("done") ? R.color.bn_ok : R.color.bn_accent);
         if (b.failed) {
             String first = b.error.split("\n")[0].trim();
             LibraryScanner.Title bt = titleFor(b.titleId);

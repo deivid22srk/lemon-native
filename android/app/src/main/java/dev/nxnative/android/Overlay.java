@@ -242,7 +242,7 @@ final class Overlay {
                 s.setSpan(new ForegroundColorSpan(DOT[2]), s.length() - 3, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
-        return dev.peanuts.overlay.Hud.table(ctx, s, rate, fresh, level, mainCap(), batTemp, batLevel, charging, rss, memTotal, memAvail, memLow);   // every line at the overlay's one size (GameActivity.OVERLAY_SP): at 8 sp a smaller second size would no longer read   // PEANUTS: the table style (Hud)
+        return dev.peanuts.overlay.Hud.table(ctx, s, rate, fresh, level, mainCap(), batTemp, batLevel, charging, rss, memTotal, memAvail, memLow);   // every line at the overlay's one size (Tokens.OVERLAY_SP): at 8 sp a smaller second size would no longer read   // PEANUTS: the table style (Hud)
     }
 
     /** The text with its colours (the dot's, "low"), so that a change of colour alone counts as a change of the text */

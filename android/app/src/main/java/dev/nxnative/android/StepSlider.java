@@ -39,8 +39,8 @@ final class StepSlider {
             TextView l = new TextView(c), r = new TextView(c);
             l.setText(left == null ? "" : left);
             r.setText(right == null ? "" : right);
-            l.setTextSize(12);
-            r.setTextSize(12);
+            l.setTextSize(Tokens.TYPE_CAPTION);
+            r.setTextSize(Tokens.TYPE_CAPTION);
             r.setGravity(android.view.Gravity.END);
             ends.addView(l, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
             ends.addView(r, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));

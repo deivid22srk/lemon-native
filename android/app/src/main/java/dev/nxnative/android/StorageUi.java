@@ -91,7 +91,7 @@ final class StorageUi {
             for (int i = 0; i < boxes.size(); i++) if (boxes.get(i).isChecked()) n += order.get(i).bytes;
             total.setText("Found " + StorageScan.bytes(StorageScan.total(items)) + " that can go; " + StorageScan.bytes(n) + " ticked. Saves are never listed or removed.");
         };
-        if (items.isEmpty()) Ui.add(box, Ui.small(a, "Nothing to clean up."), 8);
+        if (items.isEmpty()) Ui.add(box, Ui.emptyState(a, "Nothing to clean up", ""), Tokens.SPACE_2);   // the shared empty state (a heading alone, no body line)
         for (Map.Entry<StorageScan.Kind, List<StorageScan.Item>> e : StorageScan.byKind(items).entrySet()) {
             StorageScan.Kind k = e.getKey();
             Ui.add(box, Ui.section(a, k.title + " · " + StorageScan.bytes(StorageScan.total(e.getValue()))), 16);

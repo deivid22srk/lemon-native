@@ -30,7 +30,7 @@ import android.widget.TextView;
  * <ul>
  * <li>Type: page title 24 sp heavy, heading 18 sp bold, body 15 sp, small 13 sp, section label 12 sp caps; buttons 15 sp semibold, one line.</li>
  * <li>Shapes: cards 20 dp corners with a hairline edge; buttons and icon buttons 14 dp corners (a card's big action 16 dp).</li>
- * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 18 dp inside,
+ * <li>Spacing: every page has the same gutter (20 dp, 16 dp on a narrow screen), the same header (Ui.header: 56 dp, 8 dp under the status bar); cards 16 dp inside,
  * 12 dp between cards, 24 dp before a section label.</li>
  * <li>Button and header icons are vector drawables (res/drawable/ic_*.xml) tinted from the palette, so they look the same on every phone; list rows keep their
  * emoji tiles.</li>
@@ -62,6 +62,18 @@ final class Ui {
         mask.setColor(Color.BLACK);
         mask.setCornerRadius(shape.getCornerRadius());
         return new RippleDrawable(ColorStateList.valueOf(col(c, R.color.bn_control_ripple)), shape, mask);
+    }
+
+    /**
+     * A clickable view that is not a button (a row, a tab, a chip): the touch ripple while pressed and, while a D-pad or keyboard focuses it, the same hairline
+     * accent edge a button shows (style), so focus reads the same everywhere. fill: the resting fill (Color.TRANSPARENT for a plain row); edge: the focus edge's
+     * color (a filled pill takes the on-banana brown, the accent would vanish on it in dark mode, where the accent is the banana)
+     */
+    private static void touchable(Context c, View v, int fill, float radiusDp, int edgeColorRes) {
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, round(fill, dp(c, radiusDp), col(c, edgeColorRes), dp(c, Tokens.FOCUS_EDGE_DP)));
+        s.addState(new int[]{}, ripple(c, round(fill, dp(c, radiusDp), 0, 0)));
+        v.setBackground(s);
     }
 
     static Typeface face(int weight) { return Typeface.create(Typeface.SANS_SERIF, weight, false); }
@@ -100,7 +112,7 @@ final class Ui {
     static TextView chip(Context c, CharSequence s) {
         TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_text_2, 600);
         t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), 0, 0));
-        t.setPadding(dp(c, 10), dp(c, 5), dp(c, 10), dp(c, 5));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
         return t;
     }
 
@@ -109,7 +121,7 @@ final class Ui {
         TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_text_2, 700);
         t.setAllCaps(true);
         t.setLetterSpacing(0.08f);
-        t.setPadding(dp(c, 4), 0, 0, 0);
+        t.setPadding(dp(c, Tokens.SPACE_1), 0, 0, 0);
         t.setAccessibilityHeading(true);
         return t;
     }
@@ -185,19 +197,21 @@ final class Ui {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.addView(body(a, message));
-        if (detail != null && detail.length() > 0) add(box, details(a, detail), 8);
+        if (detail != null && detail.length() > 0) add(box, details(a, detail), Tokens.SPACE_2);
         return sheet(a, title, box);
     }
 
-    /** A small warning chip ("! Pack from other tools") whose tap shows the whole sentence in a small dialog */
+    /** A small warning chip ("! Pack from other tools") whose tap shows the whole sentence in a small dialog: a full touch target that keeps the pill look */
     static TextView warnChip(Activity a, CharSequence s, CharSequence title, CharSequence message) {
         TextView t = text(a, "!  " + s, Tokens.TYPE_CAPTION, R.color.bn_text, 600);
-        t.setBackground(ripple(a, round(col(a, R.color.bn_warn_tint), dp(a, 999), 0, 0)));
-        t.setPadding(dp(a, 10), dp(a, 5), dp(a, 12), dp(a, 5));
+        touchable(a, t, col(a, R.color.bn_warn_tint), 999, R.color.bn_accent);
+        t.setPadding(dp(a, Tokens.SPACE_2), dp(a, Tokens.SPACE_1), dp(a, Tokens.SPACE_3), dp(a, Tokens.SPACE_1));
+        t.setMinimumHeight(dp(a, Tokens.TOUCH_MIN));   // a compact chip that is still the touch target (its tap opens the dialog)
+        t.setGravity(Gravity.CENTER_VERTICAL);
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
         t.setContentDescription(s + ": tap for details");
-        t.setFocusable(true);   // a D-pad can reach it like any button (the ripple shows the focus)
+        t.setFocusable(true);   // a D-pad can reach it like any button (the edge shows the focus)
         t.setOnClickListener(v -> new PadFocus.Builder(a).setTitle(title).setMessage(message).setPositiveButton("OK", null).show());
         return t;
     }
@@ -229,12 +243,12 @@ final class Ui {
 
     // ---- Containers ----
 
-    /** A card: rounded, a hairline peel edge, vertical, 18 dp inside */
+    /** A card: rounded, a hairline peel edge, vertical, 16 dp inside */
     static LinearLayout card(Context c) {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
-        l.setBackground(round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_card_stroke), dp(c, 1)));
-        int p = dp(c, 18);
+        l.setBackground(round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        int p = dp(c, Tokens.SPACE_4);
         l.setPadding(p, p, p, p);
         return l;
     }
@@ -242,7 +256,7 @@ final class Ui {
     /** A card for list rows (settings, the Readiness check): the rows reach close to its edges */
     static LinearLayout listCard(Context c) {
         LinearLayout l = card(c);
-        l.setPadding(dp(c, 6), dp(c, 6), dp(c, 6), dp(c, 6));
+        l.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2));
         return l;
     }
 
@@ -251,7 +265,7 @@ final class Ui {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
         l.setBackground(round(col(c, fillRes), dp(c, Tokens.RADIUS_INNER), 0, 0));
-        int p = dp(c, 14);
+        int p = dp(c, Tokens.SPACE_4);
         l.setPadding(p, p, p, p);
         return l;
     }
@@ -275,13 +289,13 @@ final class Ui {
         return v;
     }
 
-    static View spacer(Context c) { View v = new View(c); v.setLayoutParams(new LinearLayout.LayoutParams(0, 1, 1)); return v; }
+    static View spacer(Context c) { View v = new View(c); v.setLayoutParams(new LinearLayout.LayoutParams(0, Tokens.HAIRLINE_DP, 1)); return v; }
 
     /** A thin line between a sheet's groups */
     static View divider(Context c) {
         View v = new View(c);
         v.setBackgroundColor(col(c, R.color.bn_card_stroke));
-        v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, 1)));
+        v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, Tokens.HAIRLINE_DP)));
         return v;
     }
 
@@ -330,18 +344,18 @@ final class Ui {
     /** The same, with a small line under the title in the accent yellow (Home: the build identifier, Prefs.buildId), or none when null */
     static LinearLayout header(Context c, View leading, CharSequence title, CharSequence subtitle, View trailing) {
         LinearLayout h = row(c);
-        h.setMinimumHeight(dp(c, 56));
+        h.setMinimumHeight(dp(c, Tokens.HEADER_DP));
         if (leading != null) h.addView(leading);
         TextView t = title(c, title);
         t.setAccessibilityHeading(true);
-        int pad = dp(c, leading != null ? 14 : 4);
+        int pad = dp(c, leading != null ? Tokens.SPACE_4 : Tokens.SPACE_1);
         if (subtitle == null) {
-            t.setPadding(pad, 0, dp(c, 8), 0);
+            t.setPadding(pad, 0, dp(c, Tokens.SPACE_2), 0);
             h.addView(t, weight());
         } else {
             LinearLayout col = new LinearLayout(c);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.setPadding(pad, 0, dp(c, 8), 0);
+            col.setPadding(pad, 0, dp(c, Tokens.SPACE_2), 0);
             col.addView(t);
             TextView s = text(c, subtitle, Tokens.TYPE_CAPTION, R.color.bn_accent, 600);
             s.setMaxLines(3);   // the build tag and its commit wrap rather than end in an ellipsis
@@ -363,7 +377,7 @@ final class Ui {
      */
     static void focusCard(Context c, LinearLayout card, View.OnClickListener l) {
         android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
-        s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_accent), dp(c, 2.5f)));
+        s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_card), dp(c, Tokens.RADIUS_LG), col(c, R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
         s.addState(new int[]{}, card.getBackground());
         card.setBackground(s);
         card.setFocusable(true);
@@ -374,8 +388,8 @@ final class Ui {
     /** A state line as a pill (the tint, a hairline edge), like the state chip of the settings pages; the words and their color are set by status() */
     static TextView pill(TextView t) {
         Context c = t.getContext();
-        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, 1)));
-        t.setPadding(dp(c, 10), dp(c, 4), dp(c, 12), dp(c, 4));
+        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_1));
         return t;
     }
 
@@ -401,14 +415,25 @@ final class Ui {
         ImageView im = new ImageView(c);
         im.setImageResource(R.drawable.ic_banana_happy);
         im.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // decoration: the heading says what is empty
-        v.addView(im, new LinearLayout.LayoutParams(dp(c, 72), dp(c, 72)));
+        v.addView(im, new LinearLayout.LayoutParams(dp(c, Tokens.EMPTY_BANANA_DP), dp(c, Tokens.EMPTY_BANANA_DP)));
         TextView h = heading(c, title);
         h.setGravity(Gravity.CENTER);
         h.setAccessibilityHeading(true);
         add(v, h, Tokens.SPACE_4, wrap());
-        TextView t = text(c, body, Tokens.TYPE_BODY, R.color.bn_text_2, 400);
-        t.setGravity(Gravity.CENTER);
-        add(v, t, Tokens.SPACE_2, wrap());
+        if (body != null && body.length() > 0) {   // a state that says it all in its heading has no body line
+            TextView t = text(c, body, Tokens.TYPE_BODY, R.color.bn_text_2, 400);
+            t.setGravity(Gravity.CENTER);
+            add(v, t, Tokens.SPACE_2, wrap());
+        }
+        return v;
+    }
+
+    /** The same, with the screen's action under the body (Home's no-games block: Add game) */
+    static LinearLayout emptyState(Context c, CharSequence title, CharSequence body, View action) {
+        LinearLayout v = emptyState(c, title, body);
+        LinearLayout.LayoutParams lp = wrap();
+        lp.topMargin = dp(c, Tokens.SPACE_4);
+        v.addView(action, lp);
         return v;
     }
 
@@ -428,13 +453,13 @@ final class Ui {
             case DANGER: fill = col(c, R.color.bn_danger_tint); break;
             default: fill = Color.TRANSPARENT; break;
         }
-        GradientDrawable shape = round(fill, dp(c, radiusDp), stroke, stroke != 0 ? dp(c, 1.5f) : 0);
+        GradientDrawable shape = round(fill, dp(c, radiusDp), stroke, stroke != 0 ? dp(c, Tokens.HAIRLINE_DP) : 0);
         GradientDrawable off = round(k == Kind.QUIET || k == Kind.SOFT ? Color.TRANSPARENT : col(c, R.color.bn_tint),
-                dp(c, radiusDp), col(c, R.color.bn_card_stroke), dp(c, 1));   // disabled: an outlined, unfilled button reads as off in every kind
+                dp(c, radiusDp), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP));   // disabled: an outlined, unfilled button reads as off in every kind
         android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
         // the focus edge: the deep gold against cream surfaces, but against the banana fill itself the dark on-banana brown (the gold is the banana in dark mode)
         s.addState(new int[]{android.R.attr.state_focused},
-                round(fill, dp(c, radiusDp), col(c, k == Kind.PRIMARY ? R.color.bn_on_banana : R.color.bn_accent), dp(c, 2f)));
+                round(fill, dp(c, radiusDp), col(c, k == Kind.PRIMARY ? R.color.bn_on_banana : R.color.bn_accent), dp(c, Tokens.FOCUS_EDGE_DP)));
         s.addState(new int[]{-android.R.attr.state_enabled}, off);
         s.addState(new int[]{}, ripple(c, shape));
         b.setBackground(s);
@@ -468,11 +493,11 @@ final class Ui {
         b.setTypeface(face(k == Kind.PRIMARY ? 700 : 600));
         b.setLetterSpacing(0f);
         b.setStateListAnimator(null);
-        b.setMinWidth(dp(c, 64));
-        b.setMinimumWidth(dp(c, 64));
+        b.setMinWidth(dp(c, Tokens.BUTTON_MIN_W_DP));
+        b.setMinimumWidth(dp(c, Tokens.BUTTON_MIN_W_DP));
         b.setMinHeight(dp(c, Tokens.TOUCH_MIN));
         b.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));
-        int h = dp(c, k == Kind.QUIET ? 12 : 18);
+        int h = dp(c, k == Kind.QUIET ? Tokens.SPACE_3 : Tokens.SPACE_4);
         b.setPadding(h, 0, h, 0);
         b.setSingleLine(true);
         b.setEllipsize(TextUtils.TruncateAt.END);
@@ -495,7 +520,7 @@ final class Ui {
             kind = k;
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER);
-            setMinimumHeight(dp(c, 56));
+            setMinimumHeight(dp(c, Tokens.ACTION_DP));
             setPadding(dp(c, Tokens.SPACE_5), 0, dp(c, Tokens.SPACE_5), 0);
             style(c, this, k, Tokens.RADIUS_INNER);
             setClickable(true);
@@ -503,13 +528,13 @@ final class Ui {
             icon = new ImageView(c);
             icon.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             icon.setImageTintList(textColorList(c, kind));   // the tint follows the label's states (enabled, disabled) through the icon's own state
-            addView(icon, new LinearLayout.LayoutParams(dp(c, 22), dp(c, 22)));
+            addView(icon, new LinearLayout.LayoutParams(dp(c, Tokens.ICON_DP), dp(c, Tokens.ICON_DP)));
             label = text(c, s, Tokens.TYPE_HEADING, textColor(k), 700);
             label.setTextColor(textColorList(c, kind));
             label.setSingleLine(true);
             label.setIncludeFontPadding(false);
             LinearLayout.LayoutParams lp = wrap();
-            lp.leftMargin = dp(c, 10);
+            lp.leftMargin = dp(c, Tokens.SPACE_2);
             addView(label, lp);
             setIcon(drawable);
             setContentDescription(s);
@@ -556,19 +581,19 @@ final class Ui {
         r.addView(a, weight());
         if (b != null) {
             LinearLayout.LayoutParams lp = weight();
-            lp.leftMargin = dp(c, 10);
+            lp.leftMargin = dp(c, Tokens.SPACE_2);
             r.addView(b, lp);
         }
         return r;
     }
 
-    /** The banana with a face in a leaf-green circle (Home's header) */
+    /** The banana with a face in the header's badge circle (Home's header): bn_badge, the launcher icon's deep green in BOTH modes — bn_leaf lightens for dark, and on the lightened green the yellow banana would sink (1.4:1; on this deep green 5.6:1) */
     static ImageView badge(Context c, int sizeDp) {
         ImageView v = new ImageView(c);
         v.setImageDrawable(new android.graphics.drawable.InsetDrawable(c.getDrawable(R.drawable.ic_banana_happy), -0.16f));   // the banana fills more of the circle
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.OVAL);
-        g.setColor(0xFF1E5B3A);
+        g.setColor(col(c, R.color.bn_badge));
         v.setBackground(g);
         v.setScaleType(ImageView.ScaleType.FIT_CENTER);
         v.setLayoutParams(new LinearLayout.LayoutParams(dp(c, sizeDp), dp(c, sizeDp)));
@@ -600,19 +625,19 @@ final class Ui {
 
         Setting(Context c, String emoji, String title, View.OnClickListener l) {
             view = row(c);
-            view.setPadding(dp(c, 10), dp(c, 7), dp(c, 10), dp(c, 7));
-            view.setMinimumHeight(dp(c, 52));
-            view.setBackground(ripple(c, round(Color.TRANSPARENT, dp(c, Tokens.RADIUS_ROW), 0, 0)));
+            view.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_2));
+            view.setMinimumHeight(dp(c, Tokens.ROW_DP));
+            touchable(c, view, Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // the row's ripple, and its own focus edge (no pad ring over it)
             view.setOnClickListener(dev.peanuts.ui.Feel.row(l));   // PEANUTS: a row's tap ticks and dips (dev.peanuts.ui.Feel; null stays null)
             tile = text(c, emoji, Tokens.TYPE_HEADING, R.color.bn_text, 400);
             tile.setGravity(Gravity.CENTER);
             tile.setIncludeFontPadding(false);
-            tile.setBackground(round(col(c, R.color.bn_tint), dp(c, 11), 0, 0));
+            tile.setBackground(round(col(c, R.color.bn_tint), dp(c, Tokens.RADIUS_ROW), 0, 0));
             tile.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            view.addView(tile, new LinearLayout.LayoutParams(dp(c, 36), dp(c, 36)));
+            view.addView(tile, new LinearLayout.LayoutParams(dp(c, Tokens.TILE_DP), dp(c, Tokens.TILE_DP)));
             LinearLayout col = new LinearLayout(c);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.setPadding(dp(c, 12), 0, dp(c, 8), 0);
+            col.setPadding(dp(c, Tokens.SPACE_3), 0, dp(c, Tokens.SPACE_2), 0);
             this.title = text(c, title, Tokens.TYPE_BODY, R.color.bn_text, 600);
             this.title.setMaxLines(3);   // one line at the normal font scale (titles are kept short); a large font scale wraps it rather than cut it
             this.title.setEllipsize(TextUtils.TruncateAt.END);
@@ -622,26 +647,26 @@ final class Ui {
             value.setEllipsize(TextUtils.TruncateAt.END);
             value.setVisibility(View.GONE);   // shown by value(…) when there is one
             LinearLayout.LayoutParams vp = fill();
-            vp.topMargin = dp(c, 1);
+            vp.topMargin = dp(c, Tokens.HAIRLINE_DP);
             col.addView(value, vp);
             status = text(c, "", Tokens.TYPE_CAPTION, R.color.bn_danger, 600);
             status.setMaxLines(2);
             status.setVisibility(View.GONE);   // shown by status(…)
             LinearLayout.LayoutParams sp = fill();
-            sp.topMargin = dp(c, 2);
+            sp.topMargin = dp(c, Tokens.SPACE_1);
             col.addView(status, sp);
             tags = row(c);
             badge = Ui.tag(c, "", true);
             badge.setVisibility(View.GONE);
             LinearLayout.LayoutParams bp = wrap();
-            bp.setMarginEnd(dp(c, 6));
+            bp.setMarginEnd(dp(c, Tokens.SPACE_2));
             tags.addView(badge, bp);
             tag = Ui.tag(c, "", false);
             tag.setVisibility(View.GONE);
             tags.addView(tag, wrap());
             tags.setVisibility(View.GONE);
             LinearLayout.LayoutParams lp = wrap();
-            lp.topMargin = dp(c, 3);
+            lp.topMargin = dp(c, Tokens.SPACE_1);
             col.addView(tags, lp);
             note = small(c, "");
             note.setMaxLines(8);
@@ -659,7 +684,7 @@ final class Ui {
             ImageView ch = new ImageView(c);
             ch.setImageDrawable(icon(c, R.drawable.ic_chevron, R.color.bn_text_2));
             ch.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            view.addView(ch, new LinearLayout.LayoutParams(dp(c, 20), dp(c, 20)));
+            view.addView(ch, new LinearLayout.LayoutParams(dp(c, Tokens.CHEVRON_DP), dp(c, Tokens.CHEVRON_DP)));
             return this;
         }
 
@@ -669,6 +694,7 @@ final class Ui {
             toggle.setChecked(on);
             toggle.setOnCheckedChangeListener((b, x) -> { dev.peanuts.ui.Feel.toggled(b, x); if (l != null) l.onCheckedChanged(b, x); says(); });   // the value line follows the switch (says)   // PEANUTS: Feel.toggled, a switch's haptic
             view.addView(toggle);
+            title.setLabelFor(toggle);   // a screen reader reaches the switch through the row's title (the row's tap flips it too)
             if (!view.hasOnClickListeners()) view.setOnClickListener(v -> { if (toggle.isEnabled()) toggle.toggle(); });
             return this;
         }
@@ -701,10 +727,10 @@ final class Ui {
         /** A row that belongs to the row above it (Resolution's Window, the Upscaler's sharpness): set in, with a smaller tile */
         Setting sub() {
             Context c = view.getContext();
-            view.setPaddingRelative(dp(c, 30), dp(c, 4), dp(c, 10), dp(c, 4));
-            view.setMinimumHeight(dp(c, 46));
+            view.setPaddingRelative(dp(c, Tokens.SPACE_8), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
+            view.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));   // a sub-row is still a full touch target (it opens its setting's dialog)
             LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) tile.getLayoutParams();
-            lp.width = lp.height = dp(c, 28);
+            lp.width = lp.height = dp(c, Tokens.SUB_TILE_DP);
             tile.setLayoutParams(lp);
             tile.setTextSize(Tokens.TYPE_SMALL);
             title.setTextSize(Tokens.TYPE_SMALL);
@@ -720,8 +746,8 @@ final class Ui {
         Segmented(Context c, String[] labels, int sel, java.util.function.IntConsumer pick) {
             super(c);
             setOrientation(HORIZONTAL);
-            setBackground(round(col(c, R.color.bn_tint), dp(c, Tokens.RADIUS_MD), col(c, R.color.bn_card_stroke), dp(c, 1)));
-            int p = dp(c, 3);
+            setBackground(round(col(c, R.color.bn_tint), dp(c, Tokens.RADIUS_MD), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+            int p = dp(c, Tokens.SPACE_1);
             setPadding(p, p, p, p);
             items = new TextView[labels.length];
             for (int k = 0; k < labels.length; k++) {
@@ -730,8 +756,8 @@ final class Ui {
                 t.setGravity(Gravity.CENTER);
                 t.setSingleLine(true);
                 t.setEllipsize(TextUtils.TruncateAt.END);
-                t.setMinHeight(dp(c, 40));
-                t.setPadding(dp(c, 10), 0, dp(c, 10), 0);
+                t.setMinHeight(dp(c, Tokens.TOUCH_MIN));   // a choice is a full touch target, like a button (the track grows with it)
+                t.setPadding(dp(c, Tokens.SPACE_2), 0, dp(c, Tokens.SPACE_2), 0);
                 t.setClickable(true);
                 t.setFocusable(true);
                 t.setOnClickListener(v -> { if (i != selected) { dev.peanuts.ui.Feel.picked(v); select(i); pick.accept(i); } });   // PEANUTS: Feel.picked, the choice's haptic
@@ -746,7 +772,12 @@ final class Ui {
             Context c = getContext();
             for (int i = 0; i < items.length; i++) {
                 boolean on = i == k;
-                items[i].setBackground(on ? round(col(c, R.color.bn_banana), dp(c, 11), 0, 0) : ripple(c, round(Color.TRANSPARENT, dp(c, 11), 0, 0)));
+                if (on) {   // the picked one on banana, with its own focus edge in the on-banana brown (the accent is the banana in dark mode)
+                    android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+                    s.addState(new int[]{android.R.attr.state_focused}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), col(c, R.color.bn_on_banana), dp(c, Tokens.FOCUS_EDGE_DP)));
+                    s.addState(new int[]{}, round(col(c, R.color.bn_banana), dp(c, Tokens.RADIUS_ROW), 0, 0));
+                    items[i].setBackground(s);
+                } else touchable(c, items[i], Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);
                 items[i].setTextColor(col(c, on ? R.color.bn_on_banana : R.color.bn_text_2));
                 items[i].setSelected(on);
             }
@@ -769,18 +800,19 @@ final class Ui {
             boolean on = k == sel;
             LinearLayout tab = new LinearLayout(c);
             tab.setOrientation(LinearLayout.VERTICAL);
+            tab.setMinimumHeight(dp(c, Tokens.TOUCH_MIN));   // a tab is a full touch target, like a button (the bar keeps its place at the bottom)
             TextView t = text(c, labels[k], Tokens.TYPE_BODY, on ? R.color.bn_accent : R.color.bn_text_2, on ? 700 : 600);
             t.setSingleLine(true);
             t.setGravity(Gravity.CENTER);
-            t.setPadding(dp(c, 12), dp(c, 10), dp(c, 12), dp(c, 8));
-            tab.addView(t);
+            t.setPadding(dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_2));
+            tab.addView(t, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));   // the label takes the height above the bar (the bar stays at the tab's bottom)
             View bar = new View(c);
-            bar.setBackground(round(col(c, R.color.bn_accent), dp(c, 2), 0, 0));
+            bar.setBackground(round(col(c, R.color.bn_accent), dp(c, Tokens.SPACE_1 / 2f), 0, 0));   // a 4 dp pill (the radius is half its height)
             bar.setVisibility(on ? View.VISIBLE : View.INVISIBLE);
-            LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, 3));
-            bl.leftMargin = bl.rightMargin = dp(c, 8);
+            LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(c, Tokens.SPACE_1));
+            bl.leftMargin = bl.rightMargin = dp(c, Tokens.SPACE_2);
             tab.addView(bar, bl);
-            tab.setBackground(ripple(c, round(Color.TRANSPARENT, dp(c, 10), 0, 0)));
+            touchable(c, tab, Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // the tab's own focus edge, like a row's
             tab.setClickable(true);
             tab.setFocusable(true);
             tab.setSelected(on);
@@ -800,9 +832,9 @@ final class Ui {
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
         t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setMinHeight(dp(c, 46));
-        t.setPadding(dp(c, 14), 0, dp(c, 12), 0);
-        t.setBackground(ripple(c, round(selected ? col(c, R.color.bn_tint) : Color.TRANSPARENT, dp(c, Tokens.RADIUS_ROW), 0, 0)));
+        t.setMinHeight(dp(c, Tokens.TOUCH_MIN));
+        t.setPadding(dp(c, Tokens.SPACE_4), 0, dp(c, Tokens.SPACE_3), 0);
+        touchable(c, t, selected ? col(c, R.color.bn_tint) : Color.TRANSPARENT, Tokens.RADIUS_ROW, R.color.bn_accent);   // its own focus edge, like a row's
         t.setClickable(true);
         t.setFocusable(true);
         t.setSelected(selected);
@@ -816,8 +848,8 @@ final class Ui {
         TextView t = text(c, "", Tokens.TYPE_CAPTION, R.color.bn_text, 600);
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
-        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, 1)));
-        t.setPadding(dp(c, 10), dp(c, 5), dp(c, 12), dp(c, 5));
+        t.setBackground(round(col(c, R.color.bn_tint), dp(c, 999), col(c, R.color.bn_card_stroke), dp(c, Tokens.HAIRLINE_DP)));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_3), dp(c, Tokens.SPACE_1));
         statusChip(t, s);
         return t;
     }
@@ -825,21 +857,21 @@ final class Ui {
     /** A state chip's words again (they become known later) */
     static void statusChip(TextView t, CharSequence s) {
         android.text.SpannableString sp = new android.text.SpannableString("●  " + s);
-        sp.setSpan(new android.text.style.ForegroundColorSpan(col(t.getContext(), R.color.bn_leaf)), 0, 1, 0);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(col(t.getContext(), R.color.bn_ok)), 0, 1, 0);   // the chip reports a state the launcher is content with (bn_ok, the success resource)
         t.setText(sp);
         t.setContentDescription(s);
     }
 
-    /** A small rounded tag (a row's "Recommended" or "Changed"): the accent on the tint, or with warn the danger colour on the warning tint; both read in light and dark */
+    /** A small rounded tag (a row's "Recommended" or "Changed"): the accent on the tint, or with warn the warning colour on the warning tint; both read in light and dark */
     static TextView tag(Context c, CharSequence s, boolean warn) {
         TextView t = text(c, s, Tokens.TYPE_CAPTION, R.color.bn_accent, 700);
         t.setSingleLine(true);
-        t.setPadding(dp(c, 8), dp(c, 2), dp(c, 8), dp(c, 2));
+        t.setPadding(dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1), dp(c, Tokens.SPACE_2), dp(c, Tokens.SPACE_1));
         styleTag(c, t, warn);
         return t;
     }
     private static void styleTag(Context c, TextView t, boolean warn) {
-        t.setTextColor(col(c, warn ? R.color.bn_danger : R.color.bn_accent));
+        t.setTextColor(col(c, warn ? R.color.bn_warn : R.color.bn_accent));   // the warning text resource (the danger red was for errors; a warning is not one)
         t.setBackground(round(col(c, warn ? R.color.bn_warn_tint : R.color.bn_tint), dp(c, 999), 0, 0));
     }
 
@@ -850,8 +882,8 @@ final class Ui {
         ScrollView sv = new ScrollView(a);
         sv.setFillViewport(true);
         sv.setClipToPadding(false);
-        int p = dp(a, 20);
-        content.setPadding(p, dp(a, 4), p, dp(a, 8));
+        int p = dp(a, Tokens.SPACE_5);
+        content.setPadding(p, dp(a, Tokens.SPACE_1), p, dp(a, Tokens.SPACE_2));
         sv.addView(content);
         return new PadFocus.Builder(a).setTitle(title).setView(sv);
     }

@@ -339,8 +339,8 @@ public final class GameSheet {
         int tint;
         String note;
         switch (vs) {
-            case RECOMMENDED: tint = R.color.bn_leaf; note = "Matches this build's shader tables."; break;
-            case SUPPORTED_OTHER: tint = R.color.bn_banana; note = "Supported, but builds slower the first time (a full shader scan): the shader tables are for " + recommendedText() + "."; break;
+            case RECOMMENDED: tint = R.color.bn_ok; note = "Matches this build's shader tables."; break;   // a positive note: the success resource
+            case SUPPORTED_OTHER: tint = R.color.bn_warn; note = "Supported, but builds slower the first time (a full shader scan): the shader tables are for " + recommendedText() + "."; break;   // a caution: the warning resource (the banana is a fill, not a text colour)
             default: tint = R.color.bn_danger; note = "Not one of this build's versions. Build anyway may not work, or Choose another… picks the recommended update."; break;   // UNSUPPORTED
         }
         TextView n = PUi.text(a, note, 13, tint, 600);

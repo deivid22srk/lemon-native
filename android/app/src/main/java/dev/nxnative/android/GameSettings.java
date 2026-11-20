@@ -57,7 +57,7 @@ final class GameSettings {
         card.addView(Ui.text(a, "Shader update available", 15, R.color.bn_text, 700));
         TextView t = Ui.add(card, Ui.small(a, "Optional: the game plays as it does now. This version of " + a.getString(R.string.app_name) + " makes shaders with an updated translator. "   // PEANUTS: the app's own name (upstream: "Banana Native")
                 + "Updating makes this game's shaders again on the phone, which can take a long time for a big game: keep the phone charging."), 6);
-        t.setTextSize(13);
+        t.setTextSize(Tokens.TYPE_SMALL);
         Ui.add(card, Ui.action(a, 0, "Update shaders", Ui.Kind.PRIMARY, v -> a.updateShaders(g)), 10);
     }
 
@@ -134,7 +134,7 @@ final class GameSettings {
                         .setNegativeButton("Cancel", (x, w) -> seg[0].select(1)).setOnCancelListener(x -> seg[0].select(1)).show();
             }), 10);
             TextView values = Ui.add(card, Ui.body(a, recLine), 8);
-            values.setTextSize(14);
+            values.setTextSize(Tokens.TYPE_BODY);
             TextView changed = Ui.add(card, Ui.small(a, ""), 2);
             refresh[0] = () -> {
                 List<Recommend.State> now = Prefs.recStates(a, id);
@@ -328,7 +328,8 @@ final class GameSettings {
         LinearLayout h = Ui.row(a);
         h.setMinimumHeight(Ui.dp(a, 56));
         h.addView(Ui.back(a, v -> close.run()));
-        TextView t = Ui.text(a, g.name, g.name.length() > 30 ? 19 : 22, R.color.bn_text, 800);
+        // the page title at the scale's title stop (Tokens.TYPE_TITLE, what Ui.title sets); a long name drops to the heading stop (a little smaller) so it fits its two lines
+        TextView t = Ui.text(a, g.name, g.name.length() > 30 ? Tokens.TYPE_HEADING : Tokens.TYPE_TITLE, R.color.bn_text, 800);
         t.setMaxLines(2);
         t.setEllipsize(android.text.TextUtils.TruncateAt.END);
         t.setAccessibilityHeading(true);
@@ -368,7 +369,7 @@ final class GameSettings {
                 continue;
             }
             LinearLayout head = Ui.row(a);   // its label and Show / Hide: the whole line is the touch target
-            head.setMinimumHeight(Ui.dp(a, 44));
+            head.setMinimumHeight(Ui.dp(a, Tokens.TOUCH_MIN));
             head.setBackground(Ui.ripple(a, Ui.round(android.graphics.Color.TRANSPARENT, Ui.dp(a, 12), 0, 0)));
             head.addView(Ui.section(a, s.label), Ui.weight());
             TextView act = Ui.text(a, "", 13, R.color.bn_accent, 700);
@@ -425,7 +426,7 @@ final class GameSettings {
     /** The small line under a section's card */
     private static TextView info(MainActivity a, LinearLayout parent, String s) {
         TextView t = Ui.add(parent, Ui.small(a, s), 6);
-        t.setTextSize(12);
+        t.setTextSize(Tokens.TYPE_CAPTION);
         t.setPadding(Ui.dp(a, 4), 0, Ui.dp(a, 4), 0);
         return t;
     }
@@ -798,7 +799,7 @@ final class GameSettings {
         t.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         t.setMinLines(4);
         t.setTypeface(android.graphics.Typeface.MONOSPACE);
-        t.setTextSize(13);
+        t.setTextSize(Tokens.TYPE_SMALL);
         t.setHint("DM_WATCH_STALL=25");
         t.setText(Prefs.gameEnv(a, g.titleId));
         LinearLayout box = new LinearLayout(a);

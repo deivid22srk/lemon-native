@@ -10,6 +10,8 @@ final class PanelLook {
 
     static final String[] NAMES = {"Small", "Normal", "Large"};
     static final int NORMAL = 1;
+    // Small's 40 dp rows sit below the 48 dp touch target on purpose: the player picks Small to keep the in-game panel over as little of the game as
+    // possible (Normal, the default, is 48 dp, and the tab bar keeps 48 dp whatever the preset — SidePanel.tabBar)
     private static final int[] WIDTH_DP = {340, 420, 520}, ROW_DP = {40, 48, 60};
     private static final float[] WIDTH_SHARE = {0.45f, 0.55f, 0.7f}, TEXT = {0.85f, 1f, 1.2f};
 

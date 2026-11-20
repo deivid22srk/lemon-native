@@ -138,7 +138,7 @@ final class Lsfg {
         box.addView(on);
         TextView st = new TextView(c);
         st.setText(status);
-        st.setTextSize(12);
+        st.setTextSize(Tokens.TYPE_CAPTION);
         box.addView(st);
         TextView l2 = new TextView(c); l2.setText("Target frame rate"); opts.addView(l2);
         opts.addView(choice(c, TARGETS, target(c), new String[]{"Fixed", "60", "90", "120"}, v -> { prefs(c).edit().putInt("lsfg_target", v).commit(); vis.run(); apply.run(); }));
@@ -149,7 +149,7 @@ final class Lsfg {
         opts.addView(choice(c, FLOWS, flow(c), new String[]{"25%", "50%", "75%", "100%"}, v -> { prefs(c).edit().putInt("lsfg_flow", v).commit(); apply.run(); }));
         TextView mode = new TextView(c);   // Eden ports only the performance shader set (lossless_dll.h PerformanceShader); the quality set would need its own chain
         mode.setText("Mode: performance (the only shader set Eden's LSFG uses)");
-        mode.setTextSize(12);
+        mode.setTextSize(Tokens.TYPE_CAPTION);
         opts.addView(mode);
         box.addView(opts);
         vis.run();

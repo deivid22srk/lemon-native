@@ -43,7 +43,7 @@ final class AdvancedPage {
                 : "For " + name + " only; these win over Settings > Advanced. Auto writes nothing. A change applies at the next start."), 6);
         EditText q = new EditText(a);
         q.setHint("Search a name, a symptom or DM_...");
-        q.setTextSize(15);
+        q.setTextSize(Tokens.TYPE_BODY);
         q.setSingleLine(true);
         q.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         Ui.add(content, q, 8);
@@ -63,7 +63,7 @@ final class AdvancedPage {
             String query = q.getText().toString().trim();
             if (!query.isEmpty()) {
                 List<AdvancedTable.Row> hits = AdvancedTable.visible(rows, titleId, dev, query);
-                if (hits.isEmpty()) list.addView(note(a, "Nothing matches" + (dev ? "." : ". Turn on Developer to search every switch.")));
+                if (hits.isEmpty()) list.addView(Ui.emptyState(a, "Nothing matches", dev ? "" : "Turn on Developer to search every switch."));
                 for (AdvancedTable.Row r : hits) list.addView(row(a, r, titleId));
             } else if (dev) areas(a, list, rows, titleId, fill[0]);
             else common(a, list, rows, titleId);
@@ -87,6 +87,7 @@ final class AdvancedPage {
         return t;
     }
 
+    /** A quiet line under a section's list (the footer; the lists' empty states are Ui.emptyState) */
     private static TextView note(Context a, String s) {
         TextView t = Ui.small(a, s);
         t.setPadding(0, Ui.dp(a, 10), 0, Ui.dp(a, 4));
@@ -99,7 +100,7 @@ final class AdvancedPage {
         for (String tier : new String[] {"friendly", "advanced"})
             for (AdvancedTable.Row r : AdvancedTable.visible(rows, titleId, false, ""))
                 if (r.editable() && r.tier.equals(tier) && (experimental || !r.experimental())) { list.addView(row(a, r, titleId)); n++; }
-        if (n == 0) list.addView(note(a, "Nothing to set here" + (experimental ? "." : ". Experimental shows the rest.")));
+        if (n == 0) list.addView(Ui.emptyState(a, "Nothing to set here", experimental ? "" : "Experimental shows the rest."));
         list.addView(note(a, "Search finds more switches."));
     }
 

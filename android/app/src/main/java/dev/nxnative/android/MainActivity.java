@@ -584,7 +584,7 @@ public final class MainActivity extends Activity {
             if (j == null) {   // no update runs for this card: say why instead of "updating" with no count
                 String why = Ondevice.busy(this) ? "Ready · shader update waits for the other game's preparing"
                         : Ondevice.deltaShaders(new File(g.packDir), g.titleId) < 0 ? "Ready · update" : "Ready · shader update starting";
-                Ui.status(e.getKey(), why, R.color.bn_leaf);
+                Ui.status(e.getKey(), why, R.color.bn_ok);
                 continue;
             }
             String s = j.state();
@@ -593,8 +593,8 @@ public final class MainActivity extends Activity {
                 if (!key.equals(updateDone)) { updateDone = key; done = true; }
                 continue;
             }
-            if (j.currentStep().equals("rewrite")) { Ui.status(e.getKey(), s.equals("running") ? "Ready · updating game code" : "Ready · game code update paused", R.color.bn_leaf); continue; }   // (its progress once the rewrite step reports one)
-            Ui.status(e.getKey(), ShaderLibs.updatingText(java.util.Locale.getDefault(), j.shadersDone(), j.shadersTotal(), Job.etaText(j.shadersEta()), !s.equals("running")), R.color.bn_leaf);
+            if (j.currentStep().equals("rewrite")) { Ui.status(e.getKey(), s.equals("running") ? "Ready · updating game code" : "Ready · game code update paused", R.color.bn_ok); continue; }   // (its progress once the rewrite step reports one)
+            Ui.status(e.getKey(), ShaderLibs.updatingText(java.util.Locale.getDefault(), j.shadersDone(), j.shadersTotal(), Job.etaText(j.shadersEta()), !s.equals("running")), R.color.bn_ok);
         }
         if (done) { refresh(); return; }   // the new library is in: the cards' states are checked again ("Ready")
         updateUi.postDelayed(updateRun, 2000);
@@ -616,34 +616,23 @@ public final class MainActivity extends Activity {
         dev.peanuts.ui.Library.fill(this, gameBox, games, Ondevice.cardView(), Ondevice::shows, this::gameCard, this::manage, this::refresh);   // PEANUTS: the library is Home's game list (the cover grid, the Building filter with the build card and the progress card)
     }
 
-    /** No game yet: the banana, the three steps, and Add game */
+    /** No game yet: the shared empty state (Ui.emptyState: the banana, the heading, the sentence) with the three steps and the Add game action */
     private View emptyCard() {
-        LinearLayout c = Ui.card(this);
-        c.setGravity(Gravity.CENTER_HORIZONTAL);
-        c.setPadding(dp(20), dp(28), dp(20), dp(20));
-        ImageView im = new ImageView(this);
-        im.setImageResource(R.drawable.ic_banana_happy);
-        im.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        c.addView(im, new LinearLayout.LayoutParams(dp(80), dp(80)));
-        TextView h = Ui.heading(this, "Add your game");
-        h.setGravity(Gravity.CENTER);
-        Ui.add(c, h, 12, Ui.wrap());
-        TextView t = Ui.small(this, "Pick your dump folder, the one with base/ (and updates/), or your game's .nup or .nsp file.");
-        t.setGravity(Gravity.CENTER);
-        Ui.add(c, t, 6, Ui.wrap());
         LinearLayout steps = Ui.row(this);
         steps.setGravity(Gravity.CENTER);
         String[] s = {"1  Pick dump", "2  Prepare", "3  Play"};
         for (int k = 0; k < s.length; k++) {
             LinearLayout.LayoutParams lp = Ui.wrap();
-            if (k > 0) lp.leftMargin = dp(6);
+            if (k > 0) lp.leftMargin = dp(Tokens.SPACE_2);
             TextView chip = Ui.chip(this, s[k]);
             chip.setSingleLine(true);
             steps.addView(chip, lp);
         }
-        Ui.add(c, steps, 16, Ui.wrap());
-        Ui.add(c, Ui.action(this, R.drawable.ic_add, "Add game", Ui.Kind.PRIMARY, v -> addGame()), 20);
-        return c;
+        LinearLayout empty = Ui.emptyState(this, "Add your game",
+                "Pick your dump folder, the one with base/ (and updates/), or your game's .nup or .nsp file.",
+                Ui.action(this, R.drawable.ic_add, "Add game", Ui.Kind.PRIMARY, v -> addGame()));
+        empty.addView(steps, 3, Ui.wrap());   // the steps between the body and the action (Ui.emptyState: icon, heading, body, action)
+        return empty;
     }
 
     /**
@@ -666,7 +655,7 @@ public final class MainActivity extends Activity {
         GameMeta.loadControl(new File(g.gameDir), Edition.control(this, g), m -> { if (m.icon != null) Ui.tileIcon(tile, m.icon); });   // with the edition switch on, program 1's icon
         boolean other = Profile.of(g.titleId) == null;   // no profile in this APK: it cannot run here (Profile.missing says why)
         TextView st = other ? Ui.status(this, getString(R.string.not_supported_yet), R.color.bn_danger) : Ui.status(this, "Checking\u2026", R.color.bn_text_2);   // PEANUTS: shared unsupported-game label
-        st.setTextSize(12);
+        st.setTextSize(Tokens.TYPE_CAPTION);
         st.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams sp = Ui.wrap();
         sp.topMargin = dp(8);
@@ -808,9 +797,9 @@ public final class MainActivity extends Activity {
                 if (info.getParent() == null) return;
                 // An APK update's new shaders: made in the background with no question when the pack's older library is one the delta manifest knows (Ondevice.autoUpdate)
                 if (!variant && problem != null && problem.shadersOnly && problem.prepare) Ondevice.autoUpdate(this, new File(g.gameDir), new File(g.packDir), g.titleId);   // PEANUTS: !variant (above)
-                if (problem == null) Ui.status(st, "Ready", R.color.bn_leaf);
+                if (problem == null) Ui.status(st, "Ready", R.color.bn_ok);
                 else if (problem.playable && Pack.deltaShaders(new File(g.packDir), g.titleId) < 0) Ui.status(st, "Ready · update", R.color.bn_accent);   // an optional shader update: the game's page offers it (GameSettings.shaderUpdateCard)
-                else if (problem.playable) { Ui.status(st, "Ready · updating shaders", R.color.bn_leaf); updating.put(st, g); updateTick(); }   // the count follows (updateTick)
+                else if (problem.playable) { Ui.status(st, "Ready · updating shaders", R.color.bn_ok); updating.put(st, g); updateTick(); }   // the count follows (updateTick)
                 else if (problem.legacy) Ui.status(st, "Ready · shaders need one update", R.color.bn_accent);
                 else Ui.status(st, problem.label, problem.prepare || problem.anyway ? R.color.bn_accent : R.color.bn_danger);
                 if (problem != null && !problem.playable && !problem.legacy && (!problem.reason.isEmpty() || !problem.detail.isEmpty())) {   // why, and what the chip does, behind a badge
@@ -852,9 +841,9 @@ public final class MainActivity extends Activity {
                 // the card says so like a shader update. Play stays on: the new code is swapped in only when the rewrite is complete
                 if (own) {
                     if (Ondevice.autoCodeUpdate(this, new File(g.gameDir), new File(g.packDir))) {
-                        Ui.status(st, "Ready · updating game code", R.color.bn_leaf);
+                        Ui.status(st, "Ready · updating game code", R.color.bn_ok);
                         updating.put(st, g); updateTick();
-                    } else Ui.status(st, "Ready · game code update waits", R.color.bn_leaf);   // a game or another job runs (or it was tried this run): the next check starts it
+                    } else Ui.status(st, "Ready · game code update waits", R.color.bn_ok);   // a game or another job runs (or it was tried this run): the next check starts it
                     return;
                 }
                 // A pack whose code other tools made shows no chip: it usually runs; the game page offers Prepare again
@@ -889,7 +878,7 @@ public final class MainActivity extends Activity {
             saves.addView(new Ui.Setting(this, "🗑", "Delete save data", v -> SaveUi.delete(this, g)).value("Backed up first; the game starts from the beginning").chevron(this).view);   // PEANUTS
             File save = Folders.save(this, g);
             TextView where = Ui.add(content, Ui.small(this, "The save: " + (save != null ? save.getPath() : "not set")), 6);
-            where.setTextSize(12);
+            where.setTextSize(Tokens.TYPE_CAPTION);
             where.setTextIsSelectable(true);
             where.setPadding(dp(4), 0, dp(4), 0);
             return;
@@ -938,7 +927,7 @@ public final class MainActivity extends Activity {
         Ui.Details info = Ui.details(this, "Title ID: " + g.titleId + "\nGame: " + (PickedNup.is(this, g.gameDir) ? new File(g.gameDir).getName() + " (.nup used where it is, picked with the file picker)"
                 : g.gameDir + (Nup.isNup(new File(g.gameDir)) ? " (.nup)" : "")) + "\nPack: " + g.packDir
                 + "\nShaders: " + (lp == null ? "present (" + BuildConfig.NX_DMSH_VK_CHAIN + ")" : lp) + "\nSaves: " + (save != null ? save.getPath() : "not set"));
-        info.text.setTextSize(12);
+        info.text.setTextSize(Tokens.TYPE_CAPTION);
         Ui.add(content, info, 8);
         Ui.add(content, Ui.divider(this), 12, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         Ui.add(content, Ui.button(this, "Remove from list", Ui.Kind.DANGER, v -> { page(false); confirmRemove(g); }), 12, Ui.wrap());

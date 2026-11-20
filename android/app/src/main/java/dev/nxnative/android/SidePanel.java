@@ -271,7 +271,7 @@ final class SidePanel extends FrameLayout {
             t.setGravity(Gravity.CENTER);
             t.setMaxLines(1);
             t.setIncludeFontPadding(false);
-            t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);   // one size for every tab, set once the bar is laid out (tabTextSize)
+            t.setTextSize(TypedValue.COMPLEX_UNIT_SP, Tokens.TYPE_BODY);   // one size for every tab, set once the bar is laid out (tabTextSize)
             t.setPadding(pad, 0, pad, 0);
             t.setTypeface(on ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
             t.setTextColor(on ? 0xFF000000 : 0xFFE8EAED);
@@ -285,7 +285,7 @@ final class SidePanel extends FrameLayout {
         TextView x = new TextView(act);
         x.setText("✕");
         x.setGravity(Gravity.CENTER);
-        x.setTextSize(18);
+        x.setTextSize(Tokens.TYPE_HEADING);
         x.setTextColor(0xFFE8EAED);
         x.setFocusable(true);
         x.setOnClickListener(v -> close());
@@ -294,21 +294,21 @@ final class SidePanel extends FrameLayout {
         tabs.post(this::tabTextSize);
     }
 
-    /** One text size for all tab labels: the largest (16 sp at most, 10 at least) at which the widest label, in bold as when selected, fits its tab.
+    /** One text size for all tab labels: the largest (the body stop at most, PANEL_TAB_MIN_SP at least) at which the widest label, in bold as when selected, fits its tab.
      *  Auto-sizing each label on its own shrank "Performance" alone and set it lower than the others */
     private void tabTextSize() {
         if (tabs.getChildCount() <= TAB_NAMES.length) return;
-        float sp = getResources().getDisplayMetrics().scaledDensity, fit = 16;
+        float sp = getResources().getDisplayMetrics().scaledDensity, fit = Tokens.TYPE_BODY;
         android.graphics.Paint p = new android.graphics.Paint();
         p.setTypeface(Typeface.DEFAULT_BOLD);
-        p.setTextSize(16 * sp);
+        p.setTextSize(Tokens.TYPE_BODY * sp);
         for (int i = 0; i < TAB_NAMES.length; i++) {
             TextView t = (TextView) tabs.getChildAt(i);
             int room = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight();
             float w = p.measureText(TAB_NAMES[i]);
-            if (room > 0 && w > room) fit = Math.min(fit, 16 * room / w);
+            if (room > 0 && w > room) fit = Math.min(fit, Tokens.TYPE_BODY * room / w);   // scaled from the labels' nominal size (the body stop, measured above)
         }
-        float size = Math.max(10, (float) Math.floor(fit * 2) / 2);
+        float size = Math.max(Tokens.PANEL_TAB_MIN_SP, (float) Math.floor(fit * 2) / 2);
         for (int i = 0; i < TAB_NAMES.length; i++) ((TextView) tabs.getChildAt(i)).setTextSize(TypedValue.COMPLEX_UNIT_SP, size);
     }
 
@@ -362,7 +362,7 @@ final class SidePanel extends FrameLayout {
         TextView h = new TextView(act);
         h.setText(t);
         h.setTypeface(Typeface.DEFAULT_BOLD);
-        h.setTextSize(15);
+        h.setTextSize(Tokens.TYPE_BODY);
         h.setPadding(0, Math.round(18 * getResources().getDisplayMetrics().density), 0, 0);
         box.addView(h);
         return h;
@@ -371,7 +371,7 @@ final class SidePanel extends FrameLayout {
     private TextView note(String t) {
         TextView n = new TextView(act);
         n.setText(t);
-        n.setTextSize(12);
+        n.setTextSize(Tokens.TYPE_CAPTION);
         n.setTextColor(Color.LTGRAY);
         box.addView(n);
         return n;
@@ -806,7 +806,7 @@ final class SidePanel extends FrameLayout {
         map.setStateListAnimator(null);
         map.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         map.setTextColor(new TextView(act).getTextColors());   // the colour of the panel's other rows
-        map.setTextSize(14);
+        map.setTextSize(Tokens.TYPE_SMALL);
         map.setSingleLine(true);
         map.setEllipsize(android.text.TextUtils.TruncateAt.END);
         map.setMinWidth(0);

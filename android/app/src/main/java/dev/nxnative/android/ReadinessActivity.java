@@ -221,7 +221,7 @@ public final class ReadinessActivity extends Activity {
     /** The verdict's mark: ✓ on leaf green, ! on banana, ✕ on red-orange; … while checking */
     private void setMark(int level) {
         mark.setText(level == 0 ? "✓" : level == 1 ? "!" : level == 2 ? "✕" : "…");
-        int fill = level == 0 ? R.color.bn_leaf : level == 2 ? R.color.bn_danger : R.color.bn_banana;
+        int fill = level == 0 ? R.color.bn_ok : level == 2 ? R.color.bn_danger : R.color.bn_banana;   // the pass mark: the success resource (bn_ok, the leaf green's semantic name)
         mark.setTextColor(Ui.col(this, level == 0 ? R.color.bn_on_leaf : level == 2 ? R.color.bn_card : R.color.bn_on_banana));
         mark.setBackground(Ui.round(Ui.col(this, fill), Ui.dp(this, 999), 0, 0));
     }
@@ -236,7 +236,7 @@ public final class ReadinessActivity extends Activity {
                 Ui.dp(this, 16), 0, 0)));
         LinearLayout top = Ui.row(this);
         String m = x.status == Readiness.Status.PASS ? "✓" : x.status == Readiness.Status.WARNING ? "!" : x.status == Readiness.Status.FAIL ? "✕" : "i";
-        TextView st = Ui.text(this, m, 15, x.status == Readiness.Status.FAIL ? R.color.bn_danger : x.status == Readiness.Status.PASS ? R.color.bn_leaf : R.color.bn_text_2, 900);
+        TextView st = Ui.text(this, m, 15, x.status == Readiness.Status.FAIL ? R.color.bn_danger : x.status == Readiness.Status.PASS ? R.color.bn_ok : R.color.bn_text_2, 900);
         st.setGravity(android.view.Gravity.CENTER);
         top.addView(st, new LinearLayout.LayoutParams(Ui.dp(this, 24), ViewGroup.LayoutParams.WRAP_CONTENT));
         TextView t = Ui.text(this, x.title, 15, R.color.bn_text, 600);

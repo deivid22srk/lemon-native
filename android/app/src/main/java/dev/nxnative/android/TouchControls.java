@@ -560,7 +560,7 @@ final class TouchControls extends View {
             c.drawRoundRect(rect, 8 * u, 8 * u, line);
         }
         float bw = 74 * u, bh = 34 * u, gap = 8 * u, x = (w - (TOOL.length * bw + (TOOL.length - 1) * gap)) / 2, y = 14 * u;
-        text.setTextSize(15 * u);
+        text.setTextSize(Tokens.TYPE_BODY * u);
         for (int k = 0; k < TOOL.length; k++, x += bw + gap) {
             if (tool[k] == null) tool[k] = new RectF();
             tool[k].set(x, y, x + bw, y + bh);
@@ -572,7 +572,7 @@ final class TouchControls extends View {
             text.setColor(k == 4 || cur ? Color.BLACK : Color.WHITE);
             c.drawText(TOOL[k], tool[k].centerX(), tool[k].centerY() - (text.descent() + text.ascent()) / 2, text);
         }
-        text.setTextSize(13 * u);
+        text.setTextSize(Tokens.TYPE_SMALL * u);
         text.setColor(Color.argb(230, 255, 255, 255));
         String hint = dragG >= 0 && dragG < GROUPS ? GROUP_NAME[dragG] + ": drag to move, a second finger to resize (" + Math.round(gsc[dragG] * 100) + " %)"
                 : dragG == GROUPS ? "picture: drag into the black bars" : "Drag a control or the picture; pinch a control to resize it";

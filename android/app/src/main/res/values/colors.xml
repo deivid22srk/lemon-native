@@ -16,13 +16,16 @@
     <color name="bn_text_2">#FF7A6347</color>        <!-- secondary text (5.6:1 on card, 5.3:1 on bg, 5.0:1 on tint) -->
     <color name="bn_accent">#FF925F00</color>        <!-- check boxes, switches, dialog buttons, tags, quiet buttons: a deep gold that reads on cream
                                                           (5.3:1 on card, 5.1:1 on bg, 4.8:1 on tint, 4.1:1 on card_stroke) -->
-    <color name="bn_leaf">#FF1E5B3A</color>          <!-- the brand green: status dot (7.9:1 on card), the badge behind the banana -->
+    <color name="bn_leaf">#FF1E5B3A</color>          <!-- the brand green: the badge circle behind the banana in Home's header (Ui.badge) is bn_badge, not this -->
+    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — bn_leaf lightens
+                                                          for dark, and on the lightened green the yellow banana would sink (1.4:1; on this deep green 5.6:1) -->
     <color name="bn_on_leaf">#FFFFF6E0</color>       <!-- text on leaf green (7.5:1) -->
     <color name="bn_danger">#FFB83A12</color>        <!-- error text, danger button label (5.7:1 on card, 4.7:1 on danger_tint and warn_tint) -->
     <color name="bn_danger_tint">#FFFDE3D8</color>   <!-- danger button container (text on it 4.7:1) -->
     <color name="bn_warn_tint">#FFFFE7B0</color>     <!-- warning container, warning chips (text on it 11.3:1) -->
     <color name="bn_ok">#FF1E5B3A</color>            <!-- success text: shares the leaf green (7.9:1 on card, 6.8:1 on ok_tint) -->
     <color name="bn_warn">#FF8A5200</color>          <!-- warning text (6.3:1 on card, 5.3:1 on warn_tint) -->
-    <color name="bn_ok_tint">#FFDFF0E0</color>       <!-- success container (text on it 6.8:1) -->
+    <color name="bn_ok_tint">#FFDFF0E0</color>       <!-- success container (text on it 6.8:1); declared for the first success surface that needs it — the Readiness
+                                                          check's pass rows stay on the card, so the fail and warn rows stand out -->
     <color name="bn_control_ripple">#336B4423</color><!-- theme widget highlight/ripple (Ui.ripple's peel brown at 20%) -->
 </resources>

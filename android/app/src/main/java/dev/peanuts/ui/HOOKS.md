@@ -4,7 +4,9 @@ Banana's Home (`dev.nxnative.android.MainActivity`) is the one home: its game bo
 its pickers' results pass through `LibrarySettings.result`, its Manage sheet has one Peanuts row (`GameSheet.open`). The look comes from `PUi`, a verbatim copy of
 upstream's package-private `Ui` on the same `R.color`/`R.drawable` resources (`diff Ui.java PUi.java | grep -v '^[<>] *\(package\|import dev\|public\)'` is the
 drift check; re-copy when upstream changes `Ui.java`). The five `dev.peanuts.ui.Feel` lines of `Ui.java` (marked `PEANUTS`) are not copied: Peanuts' screens
-call `Haptics` themselves, and both would play.
+call `Haptics` themselves, and both would play. `PUi` imports upstream's `R`, and the public `Tokens` and `PadFocus.Builder` (made public for this copy), so
+the copy stays line-for-line. The PUi-only bits are marked `PEANUTS` in the file: `PUi.joined` (the thin-bar separator `Library`'s build lines use) and
+`PUi.status`'s `TextUtils.concat` (it keeps `joined`'s spans where `Ui` string-concatenates). Everything else must match.
 
 ## Upstream hooks (each one line, tagged `PEANUTS`)
 

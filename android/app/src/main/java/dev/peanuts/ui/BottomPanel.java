@@ -564,7 +564,7 @@ final class BottomPanel extends Presentation {
             TextView ok = PUi.text(c, "✓", 12, R.color.bn_on_leaf, 700);
             ok.setGravity(Gravity.CENTER);
             ok.setIncludeFontPadding(false);
-            ok.setBackground(PUi.round(PUi.col(c, R.color.bn_leaf), PUi.dp(c, 999), 0, 0));
+            ok.setBackground(PUi.round(PUi.col(c, R.color.bn_ok), PUi.dp(c, 999), 0, 0));   // the ready check mark: the success resource
             ok.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             cardMark.addView(ok, new LinearLayout.LayoutParams(PUi.dp(c, 22), PUi.dp(c, 22)));
             cardState.setText(k.state);

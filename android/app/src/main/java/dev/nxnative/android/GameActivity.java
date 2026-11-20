@@ -174,7 +174,7 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
         pausedView = new TextView(this);
         pausedView.setText("Paused\n\nTap to continue  (A or Start on a gamepad)");
         pausedView.setTextColor(Color.WHITE);
-        pausedView.setTextSize(22);
+        pausedView.setTextSize(Tokens.TYPE_TITLE);
         pausedView.setGravity(Gravity.CENTER);
         pausedView.setBackgroundColor(0x99000000);
         pausedView.setVisibility(View.GONE);
@@ -205,13 +205,12 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
 
     /** The overlay's text (build tag, stats, log lines): all one small size, 8 sp (at 11-12 sp they covered the touch buttons games put in the corners), white with a
      *  shadow on a faint dark pill with tight padding, so it reads over any scene; touches pass through to the controls */
-    static final int OVERLAY_SP = 8;
     private TextView overlayText(int gravity, float alpha) {
         TextView t = new TextView(this);
         float dp = getResources().getDisplayMetrics().density;
         t.setTextColor(Color.WHITE);
         t.setShadowLayer(2, 0, 0, Color.BLACK);
-        t.setTextSize(OVERLAY_SP);
+        t.setTextSize(Tokens.OVERLAY_SP);
         t.setGravity(gravity);
         t.setAlpha(alpha);
         t.setPadding(Math.round(3 * dp), Math.round(1 * dp), Math.round(3 * dp), Math.round(1 * dp));
@@ -278,7 +277,7 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
                 prewarmCover.setClickable(true);
                 prewarmText = new TextView(this);
                 prewarmText.setTextColor(Color.WHITE);
-                prewarmText.setTextSize(20);
+                prewarmText.setTextSize(Tokens.TYPE_HEADING);
                 prewarmText.setGravity(Gravity.CENTER);
                 prewarmCover.addView(prewarmText);
                 prewarmBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -334,7 +333,7 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
         TextView h = new TextView(this);
         h.setText(SkipNotice.noMesh(st) ? SkipNotice.textNoMesh(pct) : SkipNotice.text(pct, drv == null ? null : drv.label()));
         h.setTextColor(Color.WHITE);
-        h.setTextSize(13);
+        h.setTextSize(Tokens.TYPE_SMALL);
         float dp = getResources().getDisplayMetrics().density;
         int p = Math.round(10 * dp);
         h.setPadding(p, p, p, p);
@@ -720,7 +719,7 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
             box.setPadding(p, p / 2, p, 0);
             TextView t = new TextView(this);
             t.setText(msg + "\n\nDetails are also in Settings › Readiness check.");
-            t.setTextSize(15);
+            t.setTextSize(Tokens.TYPE_BODY);
             box.addView(t);
             again.setText("Don't show this again");
             box.addView(again);
@@ -1278,7 +1277,7 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
         TextView h = new TextView(this);
         h.setText("Menu: swipe in from the right edge, or press Back" + pad);
         h.setTextColor(Color.WHITE);
-        h.setTextSize(14);
+        h.setTextSize(Tokens.TYPE_SMALL);
         float dp = getResources().getDisplayMetrics().density;
         int p = Math.round(10 * dp);
         h.setPadding(p, p, p, p);

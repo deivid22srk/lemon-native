@@ -236,7 +236,7 @@ public final class DriverActivity extends Activity {
             bar.setIndeterminate(true);
             PUi.add(content, bar, 12);
         } else if (fileResult != null) {
-            PUi.add(content, PUi.status(this, fileResult, fileFailed ? R.color.bn_danger : R.color.bn_leaf), 12);
+            PUi.add(content, PUi.status(this, fileResult, fileFailed ? R.color.bn_danger : R.color.bn_ok), 12);   // an installed file: the success resource, not the brand green
         }
         if (focus != null) { View f = focus; f.post(f::requestFocus); focusSource = null; }
     }
@@ -422,7 +422,7 @@ public final class DriverActivity extends Activity {
         boolean installed = from.containsKey(a.url);
         boolean mine = job != null && job.url.equals(a.url);
         if (other) PUi.add(col, PUi.status(this, "Not made for this phone's " + DriverPort.gpu(), R.color.bn_danger), 2);
-        else if (installed && !(mine && job.finished)) PUi.add(col, PUi.status(this, "Installed from this file", R.color.bn_leaf), 2);   // else the install's own line says it
+        else if (installed && !(mine && job.finished)) PUi.add(col, PUi.status(this, "Installed from this file", R.color.bn_ok), 2);   // else the install's own line says it
         top.addView(col, PUi.weight());
         Button b = PUi.button(this, installed ? "Install again" : "Install", other || installed ? PUi.Kind.TONAL : PUi.Kind.PRIMARY, v -> {
             if (!other) { download(a); return; }
@@ -441,7 +441,7 @@ public final class DriverActivity extends Activity {
                 PUi.add(box, jobText, 4);
                 progress();
             } else {
-                PUi.add(box, PUi.status(this, job.result, job.failed ? R.color.bn_danger : R.color.bn_leaf), 8);
+                PUi.add(box, PUi.status(this, job.result, job.failed ? R.color.bn_danger : R.color.bn_ok), 8);
             }
         }
         return box;

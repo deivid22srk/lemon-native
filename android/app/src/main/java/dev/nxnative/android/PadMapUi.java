@@ -58,7 +58,7 @@ final class PadMapUi {
     private static void capture(Activity a, int sw, java.util.function.IntConsumer picked) {
         FrameLayout f = new FrameLayout(a);
         TextView t = Ui.small(a, "Press the controller button for Switch " + PadMap.SWITCH_NAMES[sw] + ".");
-        t.setTextSize(16);
+        t.setTextSize(Tokens.TYPE_BODY);
         f.addView(t);
         f.setFocusable(true);
         f.setFocusableInTouchMode(true);
