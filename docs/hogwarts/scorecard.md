@@ -9,6 +9,7 @@ with device evidence.
 | Round | Commit | CI run (build-apk.yml) | APK | Nota | Veredito |
 |---|---|---|---|---|---|
 | 01 | 8c5f600 + bdea7d2 + fa04b42 | 44953972167 (`success`, APK job) | `LemonNative-fix-hogwarts-legacy-gpu-artifacts-r1-fa04b428.apk` (artifact `LemonNative`, 19.1 MB) | **5.6** | Continuar |
+| 02 | 6bfe805 (the round-1 Critic's findings closed) | 44957668138 (`success`, APK job) | `LemonNative-fix-hogwarts-legacy-gpu-artifacts-r2-6bfe805.apk` (artifact `LemonNative`) | pendente (Crítico) | — |
 
 ## Rodada 01 — Nota geral: 5.6 / 10   (anterior: —)
 
