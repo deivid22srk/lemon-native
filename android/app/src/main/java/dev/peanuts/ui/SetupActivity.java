@@ -345,7 +345,7 @@ public final class SetupActivity extends Activity {
         boolean back = to < step;
         step = to;
         build();
-        Motion.enterPage(content, content.indexOfChild(stepBody), back);   // the whole step enters — the Ready step's Appearance card and section included (the index cuts the header and the pills off)
+        Motion.enterPage(content, Math.max(0, content.indexOfChild(stepBody)), back);   // the whole step enters — the Ready step's Appearance card and section included (the index cuts the header and the pills off; the max guards a stepBody that is somehow not a child)
     }
 
     /** Get started / Skip setup: the setup is done (PeanutsPrefs.setupDone), Home takes over and keeps its first-run card while a game folder is missing */
