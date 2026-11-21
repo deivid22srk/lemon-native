@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pt-BR: the launcher's strings in Brazilian Portuguese (LEMON). The string resources are the app's
+     user-facing text surface; the older Java literals are extracted to resources as the screens that own
+     them are touched (docs/ui-audit.md section 5 records the known gap). -->
+<resources>
+    <string name="not_supported_yet">Ainda não suportado</string>
+    <string name="render_res_title">Resolução</string>
+    <string name="render_upscale_title">Qualidade do upscaling</string>
+    <string name="render_gfx_title">Qualidade gráfica</string>
+    <string name="render_res_height">%1$dp</string>
+    <string name="render_res_original">%1$dp (original em modo dock)</string>
+    <string name="render_heavy">%1$s (pesado)</string>
+    <string name="render_restart_note">Esta mudança será aplicada ao reiniciar o jogo.</string>
+    <string name="cheats_title">Truques</string>
+    <string name="cheats_caution">Valores alterados por truques são gravados quando o jogo salva.</string>
+    <string name="cheats_on">Lista de truques no painel do jogo (Geral). Valores alterados são gravados quando o jogo salva</string>
+    <string name="cheats_off">Sem truques</string>
+    <string name="cheats_files_title">Arquivos de truques</string>
+    <string name="cheats_files_note">O arquivo do próprio jogo e arquivos em formato Atmosphère importados para a build deste jogo</string>
+    <string name="cheats_shipped">%1$s (vem com o app)</string>
+    <string name="cheats_shipped_missing">O arquivo do próprio jogo: prepare de novo para adicioná-lo ao pack deste jogo</string>
+    <string name="cheats_import_file">Importar arquivo de truques…</string>
+    <string name="cheats_export">Exportar truques…</string>
+    <string name="cheats_import_zip">Importar truques…</string>
+    <string name="cheats_remove">Remover</string>
+    <string name="cheats_imported">%1$s importado. Os truques aparecem no painel do jogo a partir da próxima partida.</string>
+    <string name="cheats_refused">Não importado: %1$s</string>
+    <string name="cheats_zip_done">%1$d arquivos de truques e as chaves dos truques importados.</string>
+    <string name="cheats_exported">Truques exportados.</string>
+    <string name="import_pack_title">Importar pack</string>
+    <string name="import_pack_stage_staging">Lendo o zip…</string>
+    <string name="import_pack_stage_checking">Validando o pack…</string>
+    <string name="import_pack_stage_installing">Instalando…</string>
+    <string name="import_pack_hide">Ocultar</string>
+    <!-- LEMON -->
+    <string name="lemon_hero_play">Jogar</string>
+    <string name="lemon_hero_manage">Gerenciar</string>
+    <string name="lemon_hero_caption_ready">Pronto para jogar</string>
+    <string name="lemon_hero_caption_companion">Pronto para jogar · Companion na segunda tela</string>
+    <string name="lemon_appearance">Aparência</string>
+    <string name="lemon_appearance_dark">Escuro</string>
+    <string name="lemon_appearance_light">Claro</string>
+    <string name="lemon_appearance_system">Seguir o sistema</string>
+    <string name="lemon_appearance_note">O escuro é a referência visual da Lemon; o tema claro é o mesmo sistema remapeado.</string>
+    <string name="lemon_step_import">Importar</string>
+    <string name="lemon_step_prepare">Preparar</string>
+    <string name="lemon_step_companion">Companion</string>
+    <string name="lemon_step_state_done">concluído</string>
+    <string name="lemon_step_state_running">em andamento</string>
+    <string name="lemon_step_state_waiting">aguardando</string>
+    <string name="lemon_step_state_stopped">parado</string>
+    <string name="lemon_step_a11y">Etapa de build %1$s, %2$s</string>
+</resources>

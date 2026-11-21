@@ -17,6 +17,7 @@ public final class Tokens {
     // Corner radii: small controls (rows, tiles), buttons and icon buttons, cards; ROW and INNER are the two in-between tiers the system draws
     // (a row's touch ripple, a card inside a card and a game tile). RADIUS_PILL (999) stays a literal in Ui: a fully rounded pill, not a tier
     public static final int RADIUS_SM = 8, RADIUS_ROW = 12, RADIUS_MD = 14, RADIUS_INNER = 16, RADIUS_LG = 20;
+    public static final int RADIUS_SHEET = 28;   // LEMON: sheets and dialogs (bn_dialog_bg's 28 dp; the design contract's sheet tier — docs/design-system.md §3)
 
     // Type scale (sp): the six sizes every text is set in — section labels and tags, secondary text, body and buttons, headings, page titles, and the display
     // tier (the launch screen's game name and the Readiness check's verdict mark, the two texts that stand alone on their surface, a step above the page

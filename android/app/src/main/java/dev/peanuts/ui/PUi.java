@@ -85,7 +85,7 @@ public final class PUi {
         v.setBackground(s);
     }
 
-    public static Typeface face(int weight) { return Typeface.create(Typeface.SANS_SERIF, weight, false); }
+    static Typeface face(int weight) { return dev.peanuts.ui.theme.LemonType.face(weight); }   // LEMON: type — the bundled Manrope (dev.peanuts.ui.theme.LemonType, docs/design-system.md §3); falls back to the system sans serif until LemonType.init runs
 
     /** A vector icon (res/drawable/ic_*.xml) tinted with a palette color */
     public static Drawable icon(Context c, int drawable, int colorRes) {

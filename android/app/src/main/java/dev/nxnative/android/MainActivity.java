@@ -320,6 +320,7 @@ public final class MainActivity extends Activity {
         content.addView(Ui.header(this, Ui.back(this, v -> page(false)), "Settings", null));
 
         dev.peanuts.ui.LibrarySettings.add(this, content);   // PEANUTS: Settings › Library (folders, keys, fonts, rescan, the companions catalog)
+        dev.peanuts.settings.AppearanceSection.add(this, content);   // LEMON: Settings › Appearance (dark default, light, follow the system — dev.peanuts.settings.AppearanceSection)
         // Updates first, so the version and the check are easy to find (Updater: the release app also checks at every fresh start)
         Ui.add(content, Ui.section(this, "Updates"), 16);
         LinearLayout upd = settingsCard(content);

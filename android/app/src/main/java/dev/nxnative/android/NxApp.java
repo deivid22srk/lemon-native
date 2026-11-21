@@ -7,6 +7,8 @@ public final class NxApp extends Application {
     @Override public void onCreate() {
         super.onCreate();
         PickedNup.install(this);
+        dev.peanuts.ui.theme.LemonType.init(this);   // LEMON: the bundled Manrope and JetBrains Mono load once per process (docs/design-system.md §3)
+        dev.peanuts.settings.AppearanceSection.applyDefault(this);   // LEMON: the first run starts dark (the design contract's default; Settings › Appearance changes it)
         dev.peanuts.ui.AppScreens.install(this);   // PEANUTS: the app's pages in other processes keep the second display's page (dev.peanuts.ui.AppScreens)
     }
 }

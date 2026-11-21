@@ -48,4 +48,22 @@
     <string name="import_pack_stage_checking">Validating the pack…</string>
     <string name="import_pack_stage_installing">Installing…</string>
     <string name="import_pack_hide">Hide</string>
+    <!-- LEMON: the Lemon design system\'s own strings (docs/design-system.md). Every new UI text goes here (en) and in values-pt-rBR (pt-BR) -->
+    <string name="lemon_hero_play">Play</string>
+    <string name="lemon_hero_manage">Manage</string>
+    <string name="lemon_hero_caption_ready">Ready to play</string>
+    <string name="lemon_hero_caption_companion">Ready to play · Companion on the second screen</string>
+    <string name="lemon_appearance">Appearance</string>
+    <string name="lemon_appearance_dark">Dark</string>
+    <string name="lemon_appearance_light">Light</string>
+    <string name="lemon_appearance_system">Follow system</string>
+    <string name="lemon_appearance_note">Dark is Lemon\'s reference look; the light theme is the same system re-mapped.</string>
+    <string name="lemon_step_import">Import</string>
+    <string name="lemon_step_prepare">Prepare</string>
+    <string name="lemon_step_companion">Companion</string>
+    <string name="lemon_step_state_done">done</string>
+    <string name="lemon_step_state_running">running</string>
+    <string name="lemon_step_state_waiting">waiting</string>
+    <string name="lemon_step_state_stopped">stopped</string>
+    <string name="lemon_step_a11y">Build step %1$s, %2$s</string>
 </resources>

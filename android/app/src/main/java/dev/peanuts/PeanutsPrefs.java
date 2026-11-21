@@ -196,4 +196,15 @@ public final class PeanutsPrefs {
         if (v == null || v.isEmpty()) e.remove(k); else e.putString(k, v);
         e.apply();
     }
+
+    // ---- Appearance (LEMON) ----
+    // Settings › Appearance (dev.peanuts.settings.AppearanceSection): the app's night mode through
+    // UiModeManager.setApplicationNightMode (Android 12's per-app night mode). "dark" is the design
+    // contract's default and the first run's one-shot choice ("night_default_done" guards it, so the
+    // player's later pick wins); "light" and "system" are the two alternatives. The values live in this
+    // class (the package's one prefs door) and not in the section, as every other pref here does.
+    public static String nightMode(Context c) { return of(c).getString("night_mode", "dark"); }
+    public static void nightMode(Context c, String v) { put(c, "night_mode", v); }
+    public static boolean nightDefaultDone(Context c) { return of(c).getBoolean("night_default_done", false); }
+    public static void nightDefaultDone(Context c, boolean v) { of(c).edit().putBoolean("night_default_done", v).apply(); }
 }

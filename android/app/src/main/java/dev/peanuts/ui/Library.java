@@ -148,6 +148,7 @@ public final class Library {
     // the build card's live parts (null when it is not on screen)
     private TextView buildStatus, buildBody, buildPct;
     private ProgressBar buildBar;
+    private View buildSteps;   // LEMON: the build card's stepper (dev.peanuts.ui.components.BuildStepper, null when the card is off screen)
     // the building game's cover marks (null when the Building filter shows the card instead)
     private TextView coverChip;
     private ProgressBar coverStrip;
@@ -807,7 +808,7 @@ public final class Library {
         box.removeAllViews();
         tiles.clear(); keyed.clear();
         lostKey = null; restoreKey = null;   // the removal above is not a focus lost to restore at the next rebuild
-        buildStatus = null; buildBody = null; buildPct = null; buildBar = null; coverChip = null; coverStrip = null; firstCover = null;
+        buildStatus = null; buildBody = null; buildPct = null; buildBar = null; buildSteps = null; coverChip = null; coverStrip = null; firstCover = null;
         if (ondeviceCard != null && ondeviceCard.getParent() instanceof ViewGroup) ((ViewGroup) ondeviceCard.getParent()).removeView(ondeviceCard);
         shown = sig;
         if (setup) PUi.add(box, setupCard(), 0);
@@ -850,6 +851,20 @@ public final class Library {
         LinearLayout.LayoutParams flp = PUi.wrap(); flp.leftMargin = PUi.dp(a, 8);
         top.addView(findB, flp);
         PUi.add(box, top, setup ? 16 : 2);
+
+        // LEMON: the hero ("Continue playing", docs/design-system.md §4): the last-used Ready game at the top of Home, one tap to play (the brief's two-tap
+        // rule). It stands only on Home's full list (no filter, no Find, nothing on the first run), so it never competes with a search or a section
+        if (!setup && filter == ALL && find.isEmpty() && !rd.isEmpty() && rd.get(0).game != null) {
+            Row h = rd.get(0);
+            Runnable manage = () -> manage.accept(h.game);
+            View hero = dev.peanuts.ui.components.HeroCard.view(a, h.name(), icons.get(h.id()),
+                    a.getString(companionInstalled(h) ? R.string.lemon_hero_caption_companion : R.string.lemon_hero_caption_ready),
+                    null, () -> play(h), manage);
+            focusRing(hero, Color.TRANSPARENT);
+            track(hero, "hero:" + h.id(), null);
+            hero.setOnKeyListener(shoulders);
+            PUi.add(box, hero, 10);
+        }
         TextView note = null;   // the scan's line, or the empty library's: it fades in when the last rebuild did not have it
         if (scanning) {
             int n = PeanutsPrefs.roots(a).size();
@@ -893,6 +908,9 @@ public final class Library {
                 .append('|').append(all).append(',').append(ready).append(',').append(toBuild).append(',').append(noProfile).append(',').append(building)
                 .append('|').append(scanning ? PeanutsPrefs.roots(a).size() : -1).append('|').append(PeanutsPrefs.gameDir(a))
                 .append('|').append(pc == null ? 0 : System.identityHashCode(pc)).append('|').append(buildCard);
+        Row hero = null;   // LEMON: the hero is the last-used Ready row; its identity belongs in what a rebuild depends on
+        if (filter == ALL && find.isEmpty()) for (Row r : show) if (!isBuilding(r) && r.status() == READY && r.game != null) { hero = r; break; }
+        s.append('|').append(hero == null ? "-" : hero.id());
         if (b != null) s.append('|').append(b.id).append(',').append(b.step).append(',').append(b.failed).append(',').append(b.code).append(',').append(b.error.hashCode());
         for (Row r : show) {
             s.append('\n').append(r.id()).append('\t').append(r.name()).append('\t').append(r.status()).append('\t').append(isBuilding(r) ? 1 : 0)
@@ -1426,7 +1444,10 @@ public final class Library {
         buildBar = PUi.progress(a);
         buildBar.setMax(100);
         PUi.add(c, buildBar, 10);
+        buildSteps = dev.peanuts.ui.components.BuildStepper.view(a);   // LEMON: the job's steps as pills (docs/design-system.md §4)
+        PUi.add(c, buildSteps, 8);
         buildPct = PUi.small(a, "");
+        buildPct.setTypeface(dev.peanuts.ui.theme.LemonType.mono(a));   // LEMON: a numeric readout in JetBrains Mono (docs/design-system.md §3)
         PUi.add(c, buildPct, 6);
         PUi.Details details = PUi.details(a, b.failed ? b.error : "");
         PUi.add(c, details, 4);
@@ -1500,6 +1521,7 @@ public final class Library {
         }
         if (buildStatus == null) return;
         PUi.status(buildStatus, stepWords(b), b.failed ? R.color.bn_danger : b.step.equals("done") ? R.color.bn_ok : R.color.bn_accent);
+        dev.peanuts.ui.components.BuildStepper.update(a, buildSteps, b.step, b.failed);   // LEMON: the pills follow the job (unknown steps degrade to the status line)
         if (b.failed) {
             String first = b.error.split("\n")[0].trim();
             LibraryScanner.Title bt = titleFor(b.titleId);
