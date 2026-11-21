@@ -3,7 +3,6 @@ package dev.peanuts.ui.components;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -28,7 +27,7 @@ public final class HeroCard {
     private HeroCard() {}
 
     /** The hero card for a Ready row with a launchable game (Library builds the actions and wires the focus). */
-    public static View view(Activity a, CharSequence name, Bitmap icon, CharSequence caption, CharSequence played,
+    public static View view(Activity a, String name, Bitmap icon, CharSequence caption, CharSequence played,
                             Runnable onPlay, Runnable onManage) {
         LinearLayout c = new LinearLayout(a);
         c.setOrientation(LinearLayout.VERTICAL);
@@ -43,7 +42,7 @@ public final class HeroCard {
         LinearLayout top = PUi.row(a);
         TextView tile = PUi.tile(a, name, 64);
         if (icon != null) PUi.tileIcon(tile, icon);
-        top.addView(tile, new FrameLayout.LayoutParams(PUi.dp(a, 64), PUi.dp(a, 64)));
+        top.addView(tile, new LinearLayout.LayoutParams(PUi.dp(a, 64), PUi.dp(a, 64)));
 
         LinearLayout info = new LinearLayout(a);
         info.setOrientation(LinearLayout.VERTICAL);

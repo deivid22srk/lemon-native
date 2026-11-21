@@ -856,10 +856,10 @@ public final class Library {
         // rule). It stands only on Home's full list (no filter, no Find, nothing on the first run), so it never competes with a search or a section
         if (!setup && filter == ALL && find.isEmpty() && !rd.isEmpty() && rd.get(0).game != null) {
             Row h = rd.get(0);
-            Runnable manage = () -> manage.accept(h.game);
+            Runnable heroManage = () -> manage.accept(h.game);
             View hero = dev.peanuts.ui.components.HeroCard.view(a, h.name(), icons.get(h.id()),
                     a.getString(companionInstalled(h) ? R.string.lemon_hero_caption_companion : R.string.lemon_hero_caption_ready),
-                    null, () -> play(h), manage);
+                    null, () -> play(h), heroManage);
             focusRing(hero, Color.TRANSPARENT);
             track(hero, "hero:" + h.id(), null);
             hero.setOnKeyListener(shoulders);

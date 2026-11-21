@@ -24,13 +24,17 @@ import dev.peanuts.PeanutsPrefs;
  * primitives or a predefined effect when the view declines (USAGE_TOUCH, so the system's setting gates that path too). Every word has a minimum gap, a focus
  * tick is dropped right after a stronger word (one haptic per action) and while a direction is held (a buzz at the key repeat rate), and nothing is ever
  * played from a background thread. The in-game pad (TouchControls) and the second screen (CompanionPresentation) have their own.
+ *
+ * LEMON: the class and Word are public now — the Lemon components (dev.peanuts.ui.components.HeroCard) and
+ * the settings section (dev.peanuts.settings.AppearanceSection) play the same words through this one door;
+ * nothing outside dev.peanuts.* calls it.
  */
-final class Haptics {
+public final class Haptics {
     private Haptics() {}
 
     /** TICK: the focus moved by one press. CLICK: an action was accepted. HEAVY: a weighty commit or a context menu (Play, Build, Y). EDGE: the focus cannot
      *  go further. DONE: a long job ended well. REJECT: the app refused, or a job failed */
-    enum Word { TICK, CLICK, HEAVY, EDGE, DONE, REJECT }
+    public enum Word { TICK, CLICK, HEAVY, EDGE, DONE, REJECT }
 
     private static final long[] GAP_MS = {120, 60, 60, 250, 0, 300};   // by Word.ordinal()
     private static final long AFTER_STRONG_MS = 150;
@@ -67,12 +71,12 @@ final class Haptics {
     }
 
     /** Whether the app's own setting leaves haptics on (the haptics the system plays for a view by itself, the long press, are switched with it) */
-    static boolean enabled() { return !off; }
+    public static boolean enabled() { return !off; }   // LEMON
 
     /** No TICK and no EDGE for this long: the focus is about to be moved by code (after a rebuild, a filter step, a dialog opening) */
     static void quiet(long ms) { quietUntil = Math.max(quietUntil, SystemClock.uptimeMillis() + ms); }
 
-    static void play(View v, Word w) { play(v, w, constant(w)); }
+    public static void play(View v, Word w) { play(v, w, constant(w)); }   // LEMON: public for dev.peanuts.ui.components / dev.peanuts.settings
 
     /** A switch: CLICK when it turns on, TICK when it turns off (the platform's own toggle constants from API 34) */
     static void toggle(View v, boolean on) {
@@ -160,5 +164,5 @@ final class Haptics {
     }
 
     /** A click listener that plays w, then runs l */
-    static View.OnClickListener on(Word w, View.OnClickListener l) { return v -> { play(v, w); if (l != null) l.onClick(v); }; }
+    public static View.OnClickListener on(Word w, View.OnClickListener l) { return v -> { play(v, w); if (l != null) l.onClick(v); }; }   // LEMON
 }

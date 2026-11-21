@@ -39,7 +39,6 @@ public final class StatusChip {
     /** A chip view (the caller sizes it: wrap content, 8 dp margins where it sits beside siblings). */
     public static TextView chip(Context c, CharSequence s, Tone tone) {
         TextView t = PUi.text(c, s, Tokens.TYPE_SMALL, tone.text, 600);
-        t.setTypeface(PUi.face(600));
         t.setBackground(PUi.round(PUi.col(c, tone.fill), PUi.dp(c, Tokens.RADIUS_ROW), 0, 0));
         int px = PUi.dp(c, 10), py = PUi.dp(c, 4);
         t.setPadding(px, py, px, py);
