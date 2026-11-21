@@ -6,8 +6,8 @@ per round (build-apk.yml = the APK, peanuts.yml = the fork's checks + the palett
 
 | Round | Commit | Nota | Critério < 9.0 | Build | Relatório |
 |---|---|---|---|---|---|
-| 0 (baseline) | `3647c8c` rebrand | — (no UI round: the renamed upstream, CI baseline) | — | build-apk: fixed after 44924410924's compile error (Signer brace) + 44924993648; peanuts: fixed after 44924410858's two test assertions | — |
-| 1 | `ui(round-01)` | pending the Critic | pending | pending | below |
+| 0 (baseline) | `3647c8c` rebrand | — (no UI round: the renamed upstream, CI baseline) | — | build-apk: fixed after 44924410924's compile error (Signer brace) and 44927648571's res/font license error, then green (job 44926143837's "GPL APK", 5m55s; the run stays open 1 h by the expire job by design); peanuts green (44924993605) | — |
+| 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | pending the Critic | pending | apk job green: 44928256881 (run 44927648571 failed on the round's compile: Haptics visibility, PUi.face's public, the hero's shadowed local, HeroCard's tile params); peanuts green: 44928256899 | below |
 
 ## Round 1 — ui(round-01): the Lemon design system
 
