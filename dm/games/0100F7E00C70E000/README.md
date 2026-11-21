@@ -62,8 +62,39 @@ Status: **bring-up / not tested upstream**. SDK 16.2.3, Unreal Engine 4, NVN, Ww
   skipped by kind, the third being the profile's sync-all rule;
   `DM_VK_TEX_STATS=<fragment shader key>` scans a lit material's input
   textures' contents.
-- current (hypothesis, not corrected): on the 7.2 GB device (`MemAvailable`
-  1.1 GB at boot, image cache pruning from 4,300 live images) the engine's
-  streaming may discard textures, which would leave silhouettes without
-  texture. The 8 GB note above; a device with 12 GB would separate memory
-  pressure from rendering.
+- 2026-11-20, third capture (`0100F7E00C70E000-20261120-204814.log`, the
+  audited build `ce55ba6`): the picture is the same with `pso_sync_all on` —
+  the pipelines line counts 382 draws not skipped by the profile's sync-all
+  rule, no `draw skipped, its pipeline not made yet` line (the
+  `DM_VK_PSO_SKIPLOG` lines, default 8), and 878 "draws skipped waiting" that
+  are compute dispatches, which the sync-all rule does not cover. So the
+  kept-result look of a skipped draw was closed and the picture has another
+  cause. The same capture: no `DLSS stand-in:` line (the game's upscale is its
+  own compute, NVN2's OP_DLSS is not issued), the texture pool's feedback read
+  94 IDs and made 9 images (2.3 MiB, its 8 reporting modules are the pool-only
+  class, the materials' handles are traced statically), and the same picture
+  with the game's data from a second source (`Hogwarts-Compilado`, the
+  imported compiled pack) and a second driver (Turnip Amaral 27.0.0-devel
+  beside T30 Mr_Purple): the fault is in the replay, not the game's dump, the
+  driver build, or the APK's own build — recompiling the game's data changes
+  nothing.
+- current (hypothesis, corrected 2026-11-20): the engine's streamed compressed
+  material textures are registered with empty storage and first sampled before
+  their mips land, so they were classified GPU content (`ST_ZERO`,
+  `vka_tex.c` `storage_mode`: the NVN2 first-sampled rule
+  `nvn2_sampled_content` took only uncompressed formats) and the streamer's
+  later CPU writes never reached the image — the creator's model samples
+  saturated garbage (its flat green coat) or zeros (black skin), the cutscene
+  draws flat silhouettes with a blown white region, the geometry, lighting and
+  2D portraits (packaged, created with data) right. The capture shows no
+  `written by the CPU before its first use` line at all: no texture took the
+  first-sampled path, as the compressed exclusion predicts for a game whose
+  streamed textures are all compressed. The fix lets compressed formats join
+  the rule (the GPU cannot render into them, a copy still ends the tracking),
+  and logs the class (`first sampled with its storage empty (NVN2)`). On the
+  next capture the class's lines must appear while the creator loads, and the
+  model's textures must fill; `DM_VK_STORAGE_FIRST_USE=0` is the A/B (the
+  picture should return to the broken one). The memory-pressure hypothesis
+  stays open as a second cause the fixed build can now separate (on the
+  7.2 GB device, `MemAvailable` 1.1 GB at boot: a streamed texture that fills
+  and is then evicted blackens late, not from the first frame).

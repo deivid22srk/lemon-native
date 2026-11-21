@@ -710,6 +710,12 @@ static int mem_any_mapped(const uint8_t *c, const tex_t *t) {
 // flags 0x24) into reused slots before nvnTextureInitialize and never flushes them: as zero images its ground beside the roads came out flat and untextured. A texture first used
 // as an attachment, a copy destination or a shader image stays GPU content. The rule and the finding follow kartnative (pahorema/kartnative, MIT: "Switch 2: uncompressed storage
 // the CPU wrote before a texture's first sample", nvn_mtl.m tex_cpu_content). DM_VK_STORAGE_FIRST_USE=0 turns it off (to measure it)
+// Hogwarts Legacy (0100F7E00C70E000, UE4, 2026-11-20) streams its compressed (BCn) material textures the same way, with empty storage at the first sample: the rule above took
+// only uncompressed formats, so a streamed compressed texture was GPU content (ST_ZERO, its storage's zeros uploaded once) and the streamer's later CPU writes never reached the
+// image — the character creator's model sampled saturated garbage (its flat bright green coat) or zeros (black skin) with the geometry, lighting and 2D portraits right, and the
+// cutscene drew flat silhouettes with a blown white region. Compressed formats join the rule: the GPU cannot render into them (no attachment class to steal), a copy into their
+// storage still ends the tracking (gpu_owned, the GPU's content wins), and a pool that cannot be write-protected still falls to ST_FILL below. The class's textures are logged
+// (first sampled with empty storage) so a capture names what it tracked.
 static _Thread_local int g_first_sampled;
 static int img_pool_dead(vka_img *im);
 static int gpu_image_over(const uint8_t *mem) {   // caller holds g_tmu; images of finalized pools do not count (a new pool may lie at the same address)
@@ -719,7 +725,7 @@ static int gpu_image_over(const uint8_t *mem) {   // caller holds g_tmu; images 
 static int nvn2_sampled_content(const tex_t *t, const vka_fmt *f, unsigned pf, int sampled) {
     static int on = -1; if (on < 0) on = VKA_ENV("DM_VK_STORAGE_FIRST_USE", 1) != 0 && vka_nvn2();   // (vka_nvn2: captures too)
     const nvn_texdesc *d = &t->d;
-    if (!on || !sampled || !t->pool || t->has_layout || compressed(f) || f->kind >= 3) return 0;
+    if (!on || !sampled || !t->pool || t->has_layout || f->kind >= 3) return 0;   // (compressed joins the rule: a streamed BCn texture's storage is empty at its first sample; the GPU cannot render into it)
     if (pf & (NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS | NVN_MEMORY_POOL_FLAGS_VIRTUAL)) return 0;
     if (d->flags & (NVN_TEXTURE_FLAGS_IMAGE | NVN_TEXTURE_FLAGS_COMPRESSIBLE | NVN_TEXTURE_FLAGS_LINEAR | NVN_TEXTURE_FLAGS_LINEAR_RENDER_TARGET | NVN_TEXTURE_FLAGS_SPARSE)) return 0;
     return !gpu_image_over(t->mem);
@@ -745,6 +751,9 @@ static int storage_mode(const tex_t *t, const uint8_t *c, const vka_fmt *f, int 
         int any = mem_any_mapped(c, t); uint64_t k = g_nvn2_first[!any]++; want = ST_TRACK;
         if (any && k < 4) VLOG("texture serial %llu %ux%ux%u format %#x pool flags %#x: written by the CPU before its first use, a sample (NVN2): uploaded from its storage, re-uploaded when it changes (%llu so far, %llu more with empty storage)",
                                (unsigned long long)t->serial, d->width, d->height, d->depth, d->format, pf, (unsigned long long)k + 1, (unsigned long long)g_nvn2_first[1]);
+        if (!any && k < 8) VLOG("texture serial %llu %ux%ux%u levels %u format %#x%s target %d flags %#x pool flags %#x: first sampled with its storage empty (NVN2): tracked from zeros, the streamer's later CPU writes are re-uploaded (%llu with data, %llu from zeros so far)",
+                                (unsigned long long)t->serial, d->width, d->height, d->depth, d->levels, d->format, comp ? " compressed" : "", d->target, d->flags, pf,
+                                (unsigned long long)g_nvn2_first[0], (unsigned long long)g_nvn2_first[1]);
     }
     else if (!(d->flags & NVN_TEXTURE_FLAGS_COMPRESSIBLE) && t->pool && ((pf & (NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS | NVN_MEMORY_POOL_FLAGS_CPU_UNCACHED)) || nvn_flushed(t->mem, t->L.size))
              && mem_any_mapped(c, t)) want = ST_FILL;
