@@ -2634,6 +2634,17 @@ static uint8_t *g_sdflag;
 static VkDescriptorSetLayout g_dsl; static VkDescriptorPool g_dpool; static VkDescriptorSet g_set;
 static uint32_t g_ntex_slots, g_nsamp_slots, g_nimg_slots;
 typedef struct { samp_par p; VkSampler s; } samp_ent; static samp_ent *g_samp; static int g_nsamp;
+// LEMON: sampler experiment flags (docs/hogwarts/experiments.md; the A5 texture-quality experiments). All default 0 = the game's
+// own state; read live (ctl.txt/env), so a hogwarts-scoped capture sets them in env-<title ID>.txt. Part of the cache key: a
+// live change re-keys the cache, and samplers registered after the change pick it up (the game's already-registered states keep
+// their handles until the game re-registers them, which a scene change does)
+typedef struct { float lod_bias; float aniso; float mip_floor; } samp_dbg;
+static void samp_dbg_of(samp_dbg *d) {
+    char s[64];
+    d->lod_bias = vka_env_str("DM_VK_SAMP_LOD_BIAS", s, sizeof s) ? strtof(s, NULL) : 0.0f;
+    d->aniso = vka_env_str("DM_VK_SAMP_ANISO", s, sizeof s) ? (int)strtol(s, NULL, 0) : 0;
+    d->mip_floor = vka_env_str("DM_VK_SAMP_MIP_FLOOR", s, sizeof s) ? strtof(s, NULL) : 0.0f;
+}
 static VkSampler *g_sres; static int g_nsres;   // the sampler of each registered ID, found once per registration (sampler_of searches every distinct sampler)
 static VkImageView g_null_view;
 
@@ -2871,11 +2882,16 @@ static VkSamplerAddressMode wrap(int w) {
     }
 }
 static VkSampler sampler_of(const samp_par *p) {
-    for (int i = 0; i < g_nsamp; i++) if (!memcmp(&g_samp[i].p, p, sizeof *p)) return g_samp[i].s;
+    samp_dbg dbg; samp_dbg_of(&dbg);
+    for (int i = 0; i < g_nsamp; i++) if (!memcmp(&g_samp[i].p, p, sizeof *p) && !memcmp(&g_samp[i].dbg, &dbg, sizeof dbg)) return g_samp[i].s;
     if (g_nsamp >= (int)g_nsamp_slots) { VRED_ONCE("more than %u distinct samplers", g_nsamp_slots); return VK_NULL_HANDLE; }
     int mip = p->minf >= NVN_MIN_FILTER_NEAREST_MIPMAP_NEAREST;
     float aniso = p->aniso > 1 ? (p->aniso < V.props.limits.maxSamplerAnisotropy ? p->aniso : V.props.limits.maxSamplerAnisotropy) : 1;
-    float bias = p->lod_bias, bl = V.props.limits.maxSamplerLodBias; if (bias > bl) bias = bl; if (bias < -bl) bias = -bl;
+    if (dbg.aniso > 1) { float a = dbg.aniso < V.props.limits.maxSamplerAnisotropy ? dbg.aniso : V.props.limits.maxSamplerAnisotropy; if (a > aniso) aniso = a; }   // LEMON: DM_VK_SAMP_ANISO raises the floor, never past the device's max
+    float bias = p->lod_bias + dbg.lod_bias, bl = V.props.limits.maxSamplerLodBias; if (bias > bl) bias = bl; if (bias < -bl) bias = -bl;   // LEMON: DM_VK_SAMP_LOD_BIAS
+    float lod_min = p->lod_min; if (dbg.mip_floor > 0.0f && lod_min < dbg.mip_floor) lod_min = dbg.mip_floor;   // LEMON: DM_VK_SAMP_MIP_FLOOR keeps the sampler out of the low mips
+    static _Atomic int dbg_logged_; if ((dbg.lod_bias || dbg.aniso || dbg.mip_floor) && !atomic_fetch_add(&dbg_logged_, 1))
+        VLOG("sampler debug flags on: lod_bias %g aniso %g mip_floor %g (DM_VK_SAMP_*, docs/hogwarts/experiments.md)", (double)dbg.lod_bias, (double)dbg.aniso, (double)dbg.mip_floor);
     int white = p->border[0] > 0.5f && p->border[3] > 0.5f, opaque = p->border[3] > 0.5f;
     VkSamplerCreateInfo ci = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .magFilter = p->magf == NVN_MAG_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST,
@@ -2884,7 +2900,7 @@ static VkSampler sampler_of(const samp_par *p) {
         .addressModeU = wrap(p->ws), .addressModeV = wrap(p->wt), .addressModeW = wrap(p->wr), .mipLodBias = bias,
         .anisotropyEnable = aniso > 1, .maxAnisotropy = aniso, .compareEnable = p->cmp_mode == NVN_COMPARE_MODE_COMPARE_R_TO_TEXTURE,
         .compareOp = p->cmp_func >= 1 && p->cmp_func <= 8 ? (VkCompareOp)(p->cmp_func - 1) : VK_COMPARE_OP_NEVER,
-        .minLod = p->lod_min, .maxLod = mip ? p->lod_max : (p->lod_min < 0.25f ? 0.25f : p->lod_min),
+        .minLod = lod_min, .maxLod = mip ? p->lod_max : (lod_min > p->lod_min ? lod_min : p->lod_min < 0.25f ? 0.25f : p->lod_min),   // LEMON: maxLod follows the mip floor so min <= max stays true
         .borderColor = white ? VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE : opaque ? VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK : VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK};
     // Reduction: a filtered sample takes the min or max of the texels it covers instead of their weighted average (NVN 1 min, 2 max: Vulkan's own numbers).
     // samplerFilterMinmax guarantees it for the depth formats and R32_SFLOAT among others (Vulkan 1.2, "Required Format Support"), the formats depth pyramids use
@@ -2895,7 +2911,7 @@ static VkSampler sampler_of(const samp_par *p) {
     } else if (p->reduction) VRED_ONCE("sampler reduction mode %d not applied: not an NVN reduction mode", p->reduction);
     VkSampler s = VK_NULL_HANDLE;
     if (vk.vkCreateSampler(V.dev, &ci, NULL, &s)) return VK_NULL_HANDLE;
-    g_samp = realloc(g_samp, (size_t)(g_nsamp + 1) * sizeof *g_samp); g_samp[g_nsamp++] = (samp_ent){*p, s};
+    g_samp = realloc(g_samp, (size_t)(g_nsamp + 1) * sizeof *g_samp); g_samp[g_nsamp++] = (samp_ent){*p, dbg, s};
     return s;
 }
 static VkComponentSwizzle swz1(int n) { return n >= 0 && n <= 5 ? (VkComponentSwizzle)(n + 1) : VK_COMPONENT_SWIZZLE_IDENTITY; }   // NVN ZERO ONE R G B A = Vulkan's minus 1
