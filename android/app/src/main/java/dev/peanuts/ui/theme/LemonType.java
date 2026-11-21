@@ -48,7 +48,7 @@ public final class LemonType {
     /** Numeric readouts, versions and hashes (Library's build percent, CompanionVersions): JetBrains Mono. */
     public static Typeface mono(Context c) {
         if (monoFace == null) {
-            try { monoFace = c.getResources().getFont(R.font.jbmono_regular); }
+            try { monoFace = c.getResources().getFont(R.font.jbmono_medium); }
             catch (RuntimeException e) { return Typeface.MONOSPACE; }
         }
         return monoFace;
