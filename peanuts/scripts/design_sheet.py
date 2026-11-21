@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 REPO = Path(__file__).resolve().parents[2]
 RES = REPO / 'android/app/src/main/res'
-FONT = Path('/home/z/my-project/lemon-native/android/app/src/main/res/font')
+FONT = RES / 'font'
 OUT = REPO / 'docs/images/lemon-design-sheet.png'
 
 def palette(path):

@@ -7,7 +7,7 @@ per round (build-apk.yml = the APK, peanuts.yml = the fork's checks + the palett
 | Round | Commit | Nota | Critério < 9.0 | Build | Relatório |
 |---|---|---|---|---|---|
 | 0 (baseline) | `3647c8c` rebrand | — (no UI round: the renamed upstream, CI baseline) | — | build-apk: fixed after 44924410924's compile error (Signer brace) and 44924993648's res/font license error, then green (job 44926143837's "GPL APK", 5m55s; the run stays open 1 h by the expire job by design); peanuts green (44924993605) | — |
-| 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | **6.9** (média ponderada recomputada pelo Crítico) | nenhum (< 5: não houve) |
+| 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | **6.9** (média ponderada recomputada pelo Crítico) | nenhum (< 5: não houve) | apk job green: 44928256881 (run 44927648571 failed on the round's compile: Haptics visibility, PUi.face's public, the hero's shadowed local, HeroCard's tile params); peanuts green: 44928256899 | below |
 | 2 | `31507a7` + `0e86711` (compile fix, brief 7.1) | **7.4** (Δ +0.5) | nenhum (mínimo 6.5) | 1ª subida quebrou o compile (mono fallback pedindo a fonte apagada, run 44930204099); HEAD verde: apk job 44930627236, peanuts 44930627252 | abaixo, após o relatório da rodada 1 |
 | 3 | `18c5101` | **7.9** (Δ +0.5) | nenhum (mínimo 6.5) | verde no primeiro push: apk job 44932920431, peanuts 44932920438 | abaixo, após o relatório da rodada 2 |
 | 4 | `3e1ab15` | **8.0** (Δ +0.1) | nenhum (mínimo 7.5) | verde no primeiro push: apk job 44934513757, peanuts 44934513839 | abaixo, após o relatório da rodada 3 |
@@ -176,3 +176,78 @@ Manage com superfície própria provado no diff; foco dono da superfície provad
 
 ### Veredito
 **Continuar.** A rodada 4 precisa: (a) regerar a folha com o herói fiel nos dois estados e citá-la de fato em DESIGN-ui/scorecard; (b) zerar a anotação escura 6.5→6.6 e sincronizar os três pontos de doc; (c) apresentar o app rodando — sem isso identidade fica limitada a 8 e o programa não fecha.
+
+## Round 4 — Relatório do Crítico (verbatim, sub-agente isolado)
+
+## Rodada 04 — Nota final: 8.0 / 10   (rodada anterior: 7.9, Δ +0.1)
+
+### Notas por critério
+| Critério | Nota | Justificativa (1 linha) |
+|---|---|---|
+| Identidade visual e coesão (15%) | 8.0 | A folha agora é fiel (rampa de largura inteira nos dois estados, conteúdo completo, 32/32 swatches exatos — verifiquei pixel a pixel) e citada em dois docs; o teto que eu mesmo impus na rodada 3 (identidade ≤ 8 sem app rodando) segue vigendo. |
+| Layout e hierarquia (15%) | 7.5 | O render finalmente suporta a hierarquia que o código desenha (tile→título→legenda→chip→ações nos dois cartões); nenhum trabalho de layout no código e a prova continua sendo spec render, não vidro. |
+| Navegação e fluxo UX (15%) | 8.0 | Nada mudou em navegação (o diff não toca Library); o estado focado ficou higienizado (instância própria do gradiente, HeroCard.java:102-105) e guarda/wiring de pé. |
+| Cor e contraste (10%) | 9.0 | Rodei `check-palette.py`: PALETTE OK, 60 verificações (33 claro + 27 escuro); a anotação escura 6.6 bate com os 6.61 do script e a `bn_secondary` escura 12.5/11.7 bate com 12.46/11.66 — a última dessincronia de contraste do programa morreu. |
+| Tipografia (10%) | 8.0 | Fontes do app intocadas e corretas; mas o render do herói desenha o título a 22 px/700 contra o tier real 24 sp/800 (Tokens.java:24, HeroCard.java:46) num PNG rotulado "the tokens, drawn as specified". |
+| Eficiência e desempenho (10%) | 8.5 | A segunda instância do gradiente custa 1 drawable por herói, construído uma vez (negligível); segunda rodada consecutiva verde no primeiro push. |
+| Handheld, dual-screen e gamepad (10%) | 8.0 | A história de foco no código segue certa (superfície sob anel no raio do cartão, sem drawable compartilhado); prova em execução segue impossível neste ambiente. |
+| Movimento e feedback (5%) | 7.5 | Intocado; banda 150–300 ms, reduced-motion e `Haptics.Word` preservados (diff não toca Motion/Haptics). |
+| Acessibilidade e i18n (5%) | 8.5 | Sem texto novo (§6.4 trivialmente OK); resta o chip fixo "Ready to play" divergindo da legenda companion (aberto desde a rodada 3). |
+| Qualidade de código e componentes (5%) | 7.5 | Primeira rodada do programa com mensagem de commit 100% coberta pelo diff (verifiquei linha a linha); mas o bookkeeping introduziu defeito novo na linha 3 do scorecard (ver Falhas). |
+
+**Média ponderada recomputada:** 1.20+1.125+1.20+0.90+0.80+0.85+0.80+0.375+0.425+0.375 = **8.05 → 8.0** (meio-dígito resolvido para baixo — o mesmo ceticismo das rodadas 1 e 3).
+
+### Travas aplicadas
+- **Build vermelho na rodada: NÃO.** APK job green no HEAD no primeiro push (job "GPL APK" do run 44934513757) e peanuts green (44934513839).
+- **Regressão funcional contra ui-audit: NÃO encontrada** (diff de 6 arquivos, nenhum caminho de fluxo; §3 de pé; contrato Ui/PUi são; testes JVM OK).
+- **Critério < 5: NÃO** (mínimo 7.5). **Bookkeeping:** linha da rodada 3 + relatório verbatim presentes — mas a linha 3 carregou células viciadas (MODERADA).
+
+### Falhas
+**[BLOQUEANTE]** nenhuma.
+**[GRAVE]** nenhuma — os dois Graves da rodada 3 fechados com prova reproduzida.
+**[MODERADA]** docs/ui-scorecard.md:12 — a linha da rodada 3 tem 8 células contra as 6 do cabeçalho, com a história de CI da rodada 1 colada nela (o lixo da linha 2 foi movido, não apagado).
+**[MODERADA]** (limite do ambiente) Evidência em execução impossível — sem SDK/emulador; julgo que spec render + código + CI é o máximo de prova que este ambiente produz, e a rodada produziu esse máximo.
+**[POLIMENTO]** Título do herói no render a 22 px/700 contra o tier real 24 sp/800; o gerador da folha vive fora do repo (PNG não reproduzível do checkout); o scorecard ainda não cita a folha; name tables não-RIBBI (inócuo).
+
+### O que melhorou desde a última rodada (com evidência)
+Folha regerada e auditada por mim com PIL (rampa integral nos dois cartões, conteúdo completo, swatches 32/32 exatos, anel = bn_accent 3 px no focado); citações reais em DESIGN-ui §4 e design-system.md; anotação escura 6.5→6.6 batendo com o script; segunda instância do gradiente em focusBackground; primeira mensagem de commit 100% coberta pelo diff; CI verde no primeiro push.
+
+### Veredito
+**Continuar.** Todo item code-side dos meus três vereditos está fechado. A única condição da seção 7.2 que falta é "app rodando" — que este ambiente não tem como produzir. A rodada 5 deve: (a) limpar as células viciadas da linha 3 e registrar a linha 4 + este relatório; (b) comitar o gerador da folha dentro do repo e alinhar o tier do título; (c) ou o owner apresenta o app rodando, ou declara formalmente o spec render como evidência terminal.
+
+## Round 5 — Relatório do Crítico (verbatim, sub-agente isolado)
+
+## Rodada 05 — Nota final: 8.0 / 10   (rodada anterior: 8.0, Δ +0.0)
+
+### Notas por critério
+| Critério | Nota | Justificativa (1 linha) |
+|---|---|---|
+| Identidade visual e coesão (15%) | 8.0 | Medição pixel da folha: título do herói agora no tier real (altura de glifo 23 px, entre Heading 17 px e Display 25 px), truncado com "…" e SEM estourar o cartão; swatches 32/32 fiéis a `values[-night]`; identidade segue no teto honesto declarado — sem vidro, não sobe. |
+| Layout e hierarquia (15%) | 7.5 | A folha desenha a hierarquia verdadeira dos tiers pela primeira vez (Display 26 → Caption 12 com pesos corretos) e os dois estados do herói completos; código de layout intocado nesta rodada. |
+| Navegação e fluxo UX (15%) | 8.0 | Nenhuma mudança de fluxo no diff; o estado focado desenhado na folha é fiel ao código — anel accent de exatamente 3 px, raio 20, gradiente sob o anel (varredura de pixels) — mas continua sem prova em execução. |
+| Cor e contraste (10%) | 8.5 | Rodei `check-palette.py`: PALETTE OK, 60 verificações (33 claro + 27 escuro); anotações honestas; spot-check dos swatches contra os XMLs: 16/16 escuro e 16/16 claro idênticos. |
+| Tipografia (10%) | 9.0 | A folha agora desenha a escala real com as fontes embarcadas — medi: título 23 px ≈ tier 24, Display 25 px, Heading 17 px; fontes sem mudança desde a rodada 3. |
+| Eficiência e desempenho (10%) | 8.5 | Nenhum trabalho de performance; o gerador não entra no APK (peanuts/scripts); terceira rodada consecutiva verde no primeiro push (apk run 44935950833 "GPL APK", peanuts green). |
+| Handheld, dual-screen e gamepad (10%) | 8.0 | Código do foco intocado e fielmente representado na folha (anel 3 px só no cartão focado, confirmado por pixels e por inspeção visual); o D-pad segue sem prova em vidro. |
+| Movimento e feedback (5%) | 7.5 | Motion intocado; banda 150–300 ms, reduced-motion e `Haptics.Word` preservados. |
+| Acessibilidade e i18n (5%) | 8.5 | Nada mudou; a divergência chip "Ready"/legenda companion continua aberta (conhecida desde a rodada 3). |
+| Qualidade de código e componentes (5%) | 6.0 | O gerador embarca e reproduz o PNG exato do commit, mas `FONT` é um caminho absoluto da máquina — provei empiricamente que um checkout fresco falha — e a mensagem do commit alega "the round-4 Critic report is recorded verbatim" e o relatório não existe: terceira alegação inflada do programa. |
+
+**Média ponderada recomputada:** 1.20+1.125+1.20+0.85+0.90+0.85+0.80+0.375+0.425+0.30 = **8.0** (platô por compensação, não por inércia).
+
+### Travas aplicadas
+- **Build vermelho na rodada: NÃO** (terceira rodada consecutiva verde no primeiro push). **Regressão funcional: NÃO possível e NÃO encontrada** (diff toca PNG, scorecard e o script novo — nenhum .java). **Critério < 5: NÃO** (mínimo 6.0). **Bookkeeping: PARCIAL** (relatório da rodada 4 prometido e ausente).
+- **Julgamento da declaração de evidência terminal: HONESTA — não merece teto menor.** O parágrafo declara sem rodeio o teto do ambiente; as citações prometidas existem nos três pontos. Ressalva: a reprodutibilidade herda o defeito do caminho de fonte (GRAVE 2).
+
+### Falhas
+**[BLOQUEANTE]** nenhuma.
+**[GRAVE]** docs/ui-scorecard.md — a mensagem do commit afirma "the round-4 Critic report is recorded verbatim" e o relatório da rodada 4 não existe no arquivo. Correção: gravar os relatórios das rodadas 4 e 5.
+**[GRAVE]** peanuts/scripts/design_sheet.py:15 — `FONT` é caminho absoluto preso a esta máquina (provei com git archive + renomeação da pasta: OSError em checkout fresco). Correção: `FONT = RES / 'font'` e regerar.
+**[MODERADA]** docs/ui-scorecard.md linha 1 — 4 células contra 6 do header; as células de CI da rodada 1 pertencem a ela.
+**[POLIMENTO]** A folha trunca o título em UMA linha (o app usa maxLines 2 + ellipsis); o gerador fica fora do escopo de lint do CI e a dependência Pillow só existe no docstring.
+
+### O que melhorou desde a última rodada (com evidência)
+Higiene da tabela (linha 3 com as próprias células; linha 4 com os runs da rodada); gerador embarcado reproduzindo o PNG byte-a-byte; fidelidade do herói medida por glifos (24/800 real, truncamento dentro do cartão); declaração de evidência terminal honesta com citações verificadas; re-execução do gate (PALETTE OK, swatches 32/32, testes OK); todos os itens code-side dos quatro vereditos fechados.
+
+### Veredito
+**Continuar** — mas o programa não fecha nesta rodada: a condição 7.2 que falta (app rodando) só o ambiente do owner produz. A rodada 6 deve, no ambiente daqui: (a) gravar verbatim os relatórios das rodadas 4 e 5; (b) `FONT = RES / 'font'` e regerar; (c) completar a higiene da linha 1. A nota é um platô honesto — identidade/tipografia só ultrapassam 8-9 com pixels em vidro.
