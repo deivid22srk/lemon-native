@@ -12,6 +12,7 @@ import android.provider.Settings;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import dev.nxnative.android.R;
 import dev.peanuts.PeanutsPrefs;
 
 import java.io.File;

@@ -308,7 +308,7 @@ public final class SetupActivity extends Activity {
     }
 
     /** One checklist row: a StatusChip (Done in the success tone, Later neutral — never color alone: the word is there), the item's name and its value line */
-    private void check(LinearLayout parent, String name, String value, boolean done) {
+    private void check(LinearLayout parent, String name, CharSequence value, boolean done) {
         LinearLayout row = PUi.row(this);
         StatusChip.Tone tone = done ? StatusChip.Tone.OK : StatusChip.Tone.NEUTRAL;
         TextView chip = StatusChip.chip(this, getString(done ? R.string.lemon_setup_check_done : R.string.lemon_setup_check_later), tone);
