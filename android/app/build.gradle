@@ -33,8 +33,10 @@ if (nxRelease && nxApp != 'peanuts' && nxApp != 'lemon') throw new GradleExcepti
 def nxVersion = providers.gradleProperty('nxVersion').getOrElse('0.1-bringup')
 def nxVersionCode = providers.gradleProperty('nxVersionCode').getOrElse('1') as int
 def signStore = System.getenv('NX_SIGN_STORE'), signAlias = System.getenv('NX_SIGN_ALIAS'), signPass = System.getenv('NX_SIGN_PASS')
-if ((nxLive || nxRelease) && !(signStore && signAlias && signPass && new File(signStore).isFile()))   // PEANUTS: nxRelease too
+if ((nxLive || nxRelease) && nxApp != 'lemon' && !(signStore && signAlias && signPass && new File(signStore).isFile()))   // PEANUTS: nxRelease too; LEMON: the lemon app needs no release key from the environment
     throw new GradleException('nxLive and nxRelease need the release key: NX_SIGN_STORE (an existing keystore), NX_SIGN_ALIAS and NX_SIGN_PASS')   // PEANUTS: nxRelease too
+// LEMON: the lemon app (-PnxApp=lemon) always signs with the fixed keystore committed at android/app/lemon-sign.jks (docs/signing.md): every APK, from CI or a local
+// build, carries the same signature, so an update installs over the last one with no key kept outside the repository. -PnxRelease=true with -PnxApp=lemon skips the release key above
 def nxLabel = providers.gradleProperty('nxLabel').getOrElse(nxApp ? (nxApp == 'lemon' ? 'Lemon Native' : "Lemon Native $nxApp") : '')   // LEMON: rebrand
 def nxAppId = providers.gradleProperty('nxAppId').getOrElse(nxApp)   // PEANUTS: -PnxAppId=<suffix> (with -PnxApp=peanuts) installs a development build beside the Peanuts Native app, with its own data
 if (nxAppId && !(nxAppId ==~ /[a-z][a-z0-9]*/)) throw new GradleException("nxAppId must be lower-case letters and digits, not $nxAppId")   // PEANUTS
@@ -364,13 +366,14 @@ android {
     }
     signingConfigs {
         if (nxLive || nxRelease) live { storeFile file(signStore); storePassword signPass; keyAlias signAlias; keyPassword signPass }   // PEANUTS: nxRelease too
+        lemon { storeFile file('lemon-sign.jks'); storePassword 'lemon-native'; keyAlias 'lemon-native'; keyPassword 'lemon-native' }   // LEMON: the fixed signature (docs/signing.md); the key and its password live in this repository by choice, not as a secret
     }
     buildTypes {
-        debug { jniDebuggable true }
+        debug { jniDebuggable true; signingConfig nxApp == 'lemon' ? signingConfigs.lemon : signingConfigs.debug }   // LEMON: the lemon app's debug builds carry the fixed signature too
         release {
             minifyEnabled false
             debuggable !(nxLive || nxRelease)       // bring-up builds: run-as and the app's files stay reachable over adb; the release is not debuggable (PEANUTS: nxRelease too)
-            signingConfig nxLive || nxRelease ? signingConfigs.live : signingConfigs.debug
+            signingConfig nxApp == 'lemon' ? signingConfigs.lemon : nxLive || nxRelease ? signingConfigs.live : signingConfigs.debug   // LEMON: the lemon app always carries the fixed signature; PEANUTS: nxRelease too
         }
     }
     externalNativeBuild {
