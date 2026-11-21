@@ -15,6 +15,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import dev.nxnative.android.BananaBackgroundView;   // the launcher's drifting lemon grid behind the page (public, another package: the import is needed)
 import dev.nxnative.android.R;
 import dev.nxnative.android.Tokens;
 import dev.peanuts.PeanutsPrefs;
