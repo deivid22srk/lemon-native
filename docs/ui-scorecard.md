@@ -85,3 +85,51 @@ Baseline 3647c8c → HEAD: (1) paleta Signal blue → Lemon olive-charcoal/limã
 
 ### Veredito
 **Continuar.** Condições para a rodada 2 valer acima de ~7: (a) corrigir o AA do gradiente do hero e ensinar o check-palette.py os pares dele; (b) tornar o hero focável ou remover o wiring morto e corrigir o DESIGN-ui; (c) ou adotar StatusChip/RADIUS_SHEET de fato ou reescrever as promessas nos docs; (d) apresentar evidência em tela — qualquer emulador/cloud device — porque identidade visual sem um único pixel renderizado é o teto desta nota; e (e) commits da rodada com conteúdo da rodada, sem escondê-lo sob rótulo "ci:".
+
+## Round 2 — Relatório do Crítico (verbatim, sub-agente isolado)
+
+## Rodada 02 — Nota final: 7.4 / 10   (rodada anterior: 6.9, Δ +0.5)
+
+### Notas por critério
+| Critério | Nota | Justificativa (1 linha) |
+|---|---|---|
+| Identidade visual e coesão (15%) | 8.0 | O fim folha do gradiente virou recurso checado (`bn_hero_end`, ambos os modos), o comentário "Slate & Signal" morreu e o Ready chip dá coesão ao hero; mas continua sem um único pixel renderizado e o estado focado apaga a superfície (ver Falhas). |
+| Layout e hierarquia (15%) | 7.0 | A fileira do chip (HeroCard.java:70-74) acrescenta um nível de hierarquia real; nada mais mudou e a prova em vidro continua inexistente. |
+| Navegação e fluxo UX (15%) | 7.0 | O hero agora é um stop de foco de verdade, tap/A joga (Library.java:863-866, antes de qualquer early return, condições intactas na linha 858); o D-pad chega ao cartão — mas ao chegar o cartão perde o gradiente (foco com corpo transparente). |
+| Cor e contraste (10%) | 6.5 | Rodei `check-palette.py`: PALETTE OK, 60 verificações (33 claro + 27 escuro), os 4 pares do hero existem e passam, e recalculei à mão — batem com o script; mas a legenda do botão Manage (`bn_accent` QUIET sobre o fim folha) dá **3.63:1 claro < 4.5** (5.85 escuro, passa) e não está nos pares checados. |
+| Tipografia (10%) | 8.0 | JetBrains Mono Medium é o mono nos dois caminhos (LemonType.init:37 + mono():51), sem bold sintético (StatusChip:52, Library:1451), a instância morta saiu do APK; verifiquei por outlines que o corte é de fato mais pesado (1323/1331 glifos maiores que o regular, Δ médio +4.7 u) — metadado OS/2 porco (436/REGULAR). |
+| Eficiência e desempenho (10%) | 8.5 | A guarda por tag (BuildStepper.java:37-39) é correta e o call site é o mesmo (Library.java:1528): os pills só refazem quando `step`/`failed` mudam; init e reconstrução por assinatura intactos. |
+| Handheld, dual-screen e gamepad (10%) | 7.0 | O wiring de foco/ombros/háptica saiu do código morto e `Haptics.Word.HEAVY` no tap segue a porta única; o `focusRing` reutilizado troca o fundo do cartão por anel transparente no foco e arredonda a 14 dp (cartão é 20 dp). |
+| Movimento e feedback (5%) | 7.5 | Nada de movimento novo (Motion intocado); banda 150–300 ms e reduced-motion preservados. |
+| Acessibilidade e i18n (5%) | 8.0 | 46/46 strings + os 2 arrays (`render_upscale` 5 itens, `render_gfx` 2) casados en/pt-BR (script próprio, verificado agora); contentDescription no hero — com a variante "companion" ignorada (Library.java:866). |
+| Qualidade de código e componentes (5%) | 6.5 | RADIUS_SHEET realmente removido (grep: só sobra no histórico do scorecard), StatusChip com 2º consumidor e docs verdadeiros, BuildStepper limpo; mas o build da 1ª subida quebrou de novo e a mensagem do commit alega uma correção que não existe no diff. |
+
+**Média ponderada recomputada:** 1.20+1.05+1.05+0.65+0.80+0.85+0.70+0.375+0.40+0.325 = **7.4**
+
+### Travas aplicadas
+- **Build vermelho na rodada: SIM, de novo.** A subida 31507a7 apagou `jbmono_regular.ttf` mas `LemonType.mono()` ainda pedia `R.font.jbmono_regular` — run 44930204099 falhou; corrigido em 0e86711 (rotulado "CI gate correction", brief 7.1 — honesto, mas é o 2º round consecutivo que abre com compile error). HEAD 0e86711 = apk job green (run 44930627236) e peanuts green (44930627252).
+- **Regressão funcional contra ui-audit: NÃO encontrada.** As condições do hero (Library.java:858) e os 6 fluxos do §3 seguem de pé; a guarda do stepper só pula estados idênticos; o contrato Ui/PUi não foi tocado nesta rodada; `test_github_text.py`: OK.
+- **Algum critério < 5: NÃO** (mínimo 6.5). Teto de 7,5 não aplicado.
+
+### Falhas
+**[BLOQUEANTE]** nenhuma — HEAD compila (CI green) e nenhum fluxo auditado regrediu.
+
+**[GRAVE]** HeroCard.java:80-86 + PUi.java:502,520 + check-palette.py — o botão **Manage (Kind.QUIET = fundo transparente, rótulo `bn_accent`)** senta embaixo do gradiente, perto do fim folha: `bn_accent` sobre `bn_hero_end` = **3.63:1 no modo claro** (<4.5; 5.85:1 no escuro). O par não está em CORE_PAIRS e o Javadoc do HeroCard afirma que "check-palette.py proves" o texto nas duas pontas. Correção: no hero, o quiet action vira TONAL/SOFT com superfície própria (ou mapeia `bn_accent`×`bn_hero_end` no script e re-deriva o claro de `bn_hero_end`).
+
+**[GRAVE]** Library.java:867 + 1001-1010 — `focusRing(hero, Color.TRANSPARENT)` troca o fundo do cartão por um StateListDrawable cujo **estado focado é só o anel accent + corpo TRANSPARENT** (o gradiente fica apenas no estado default) — ao receber foco do D-pad, o cartão-farol perde a superfície limão→folha — e o anel usa r=14 dp enquanto o cartão é RADIUS_LG=20. Correção: estado focado empilha o fundo original sob o anel e usa o raio do cartão.
+
+**[GRAVE]** Mensagem do commit 31507a7 — alegação de correção que não foi entregue: "the bn_banana light annotation states its real informational ratio (2.4:1, icon/art only)". Verificado: `values/colors.xml:21` **continua** "(3.3:1 on card)" (real: 2.38:1). A rodada se anuncia "every Grave and the cheap Moderadas" e inclui na lista um fix que não está em diff nenhum.
+
+**[MODERADA]** Anotação inflada contra o próprio checador: `bn_text` sobre `bn_hero_end` = o script imprime **9.38:1**, a anotação diz 10.2:1. Correção: 9.4 nos dois lugares.
+
+**[MODERADA]** Evidência sem vidro (aberta desde a rodada 1): nenhum SDK/emulador, zero screenshot — o estado focado quebrado, o flash de tema claro na 1ª run e a legibilidade do modo claro seguem sem prova em execução.
+
+**[MODERADA]** Bookkeeping do scorecard: a rodada 2 não tinha registrado linha/runs antes da revisão (corrigido no commit docs deste ciclo).
+
+**[POLIMENTO]** `bn_ok_tint` escuro ainda diz "no call site yet" (StatusChip.OK consome nos dois modos); `bn_secondary` anotado "hero gradient end" quando a ponta agora é `bn_hero_end`; contentDescription do hero usa sempre "Ready to play" mesmo na variante companion; metadado de fontes (Manrope "ExtraLight" nas name tables; `jbmono_medium` com usWeightClass 436/REGULAR em vez de 500/MEDIUM).
+
+### O que melhorou desde a última rodada (com evidência)
+1. Gradiente provado de verdade (bn_hero_end recurso + 4 pares no script, PALETTE OK rodado pelo Crítico); legendas bn_text. 2. Foco do hero vivo (focusable/clickable/description antes de qualquer early return). 3. StatusChip com escopo verdadeiro (2º consumidor + docs). 4. RADIUS_SHEET fora. 5. Mono honesto (Medium nos dois caminhos, regular apagado, outlines mais pesadas provadas). 6. Stepper com guarda por tag. 7. i18n 46/46 + arrays pt-BR. 8. Polimentos reais (themes.xml, BuildStepper javadoc, run-id do scorecard).
+
+### Veredito
+**Continuar.** A rodada 3 precisa: consertar o Manage no gradiente (e ensinar o par ao script), consertar o fundo focado do hero, zerar alegações que não estão no diff, registrar a linha da rodada no scorecard — e apresentar a primeira imagem renderizada, sem a qual identidade visual segue sem nota acima de 8.
