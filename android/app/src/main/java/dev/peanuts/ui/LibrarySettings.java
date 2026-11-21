@@ -388,7 +388,7 @@ public final class LibrarySettings {
     private static void keysLanded(Activity a) {
         // A firmware picked before the keys said "add your prod.keys first" and stayed so after the keys came, until it was picked a second time (seen on a
         // fresh install; GitHub issue #42 reads like it): with keys in the app it is read now
-        if (PeanutsPrefs.hasKeys(a) && fontsState != null && fontsState.startsWith("Firmware not added: add your prod.keys")) { fontsState = null; firmwareTried = null; }
+        if (PeanutsPrefs.hasKeys(a) && fontsState != null && fontsState.startsWith("Firmware not added: add your prod.keys")) { fontsStop(FONTS_IDLE, null); firmwareTried = null; }
         firmwareAfterAccess(a);
         refreshRows();
         if (GameSheet.current != null) GameSheet.current.keysChanged();

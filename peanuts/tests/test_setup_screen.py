@@ -88,8 +88,9 @@ class TwoLocale(unittest.TestCase):
     def test_firmware_states_through_one_door(self):
         # every firmware-read end state goes through fontsStop (kind and detail together), so no path can move one without the other
         ls = (UI / 'LibrarySettings.java').read_text(encoding='utf-8')
-        self.assertIn('private static void fontsStop(int kind, String state) { fontsKind = kind; fontsState = state; }', ls, 'one door, defined once')
-        self.assertNotIn('fontsState = "Firmware not added', ls, 'failure details ride on fontsStop, not on naked writes')
+        self.assertRegex(ls, r'private static void fontsStop\(int kind, String state\) \{ fontsKind = kind; fontsState = state; \}', 'one door, defined once')
+        naked = [l for l in ls.splitlines() if 'fontsState = ' in l and 'fontsStop' not in l and 'private static String fontsState' not in l]
+        self.assertEqual(naked, [], 'no naked writes to the firmware state: every one rides the door')
         self.assertIn('fontsStop(FONTS_FAILED, "Firmware not added: add your prod.keys first', ls, 'the keys-missing failure names itself')
         self.assertIn('fontsStop(r == 0 ? FONTS_IDLE : FONTS_FAILED', ls, 'the importer verdict names itself, success and failure')
         self.assertIn('fontsStop(FONTS_FAILED, "Firmware not added: could not copy the zip', ls, 'the zip-copy failure names itself')
