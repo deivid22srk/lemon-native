@@ -45,6 +45,8 @@ jobs:
             echo "::endgroup::"
           done
           exit $fail
+      - name: Lemon palette contrast (WCAG 2.1, peanuts/scripts/check-palette.py)
+        run: python3 peanuts/scripts/check-palette.py
       - name: Profiles, runtime profile and runtime version
         run: |
           sh peanuts/scripts/check-profiles.sh

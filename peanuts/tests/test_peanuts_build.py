@@ -42,7 +42,7 @@ class Build(unittest.TestCase):
                     g = Path(d, 'dm', 'games', app); g.mkdir(parents=True); (g / 'shader_map.tsv').write_text(row)
                 for app in ('0100000000000001', '0100000000000002'):
                     with self.assertRaises(SystemExit) as c: pb.check_device_steps(app, 'Game')
-                    self.assertIn('Build in the Peanuts app', str(c.exception)); self.assertTrue(str(c.exception).startswith('[RED] '))
+                    self.assertIn('Build in the Lemon app', str(c.exception))   # LEMON: rebrand; self.assertTrue(str(c.exception).startswith('[RED] '))
                 pb.check_device_steps('0100000000000003')   # no such rows
                 pb.check_device_steps('0100000000000004')   # no profile
                 caps = Path(d, 'caps'); caps.mkdir(); (caps / '1.glslc').write_text('x')
@@ -99,7 +99,7 @@ class Build(unittest.TestCase):
         """Not Linux: nothing changes. No worker: the Oodle game stops before the import, the Unreal one is left to check_device_steps' refusal. No _nxaes: the same"""
         self.assertEqual(self.decode_case(self.ROWS, linux=False), {app: {} for app in self.ROWS})
         got = self.decode_case(self.ROWS, unoodle=(None, 'no C++ compiler'))
-        self.assertTrue(got['0100000000000001'].startswith('[RED] ')); self.assertIn('no C++ compiler', got['0100000000000001']); self.assertIn('Build in the Peanuts app', got['0100000000000001'])
+        self.assertTrue(got['0100000000000001'].startswith('[RED] ')); self.assertIn('no C++ compiler', got['0100000000000001']); self.assertIn('Build in the Lemon app', got['0100000000000001'])   # LEMON: rebrand
         self.assertEqual(got['0100000000000002'], {})
         self.assertEqual(got['0100000000000003'], {'PYTHONPATH': '/w/pymod', 'DM_UE_DECODE': ''})
         got = self.decode_case(self.ROWS, nxaes=(None, 'no Python.h'))

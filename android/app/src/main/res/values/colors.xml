@@ -3,45 +3,49 @@
     <!-- The icon's background (Lemon: rebrand — the design system's dark surface) behind the lemon, reads on light and dark wallpapers -->
     <color name="ic_launcher_background">#FF14160F</color>
 
-    <!-- The launcher's palette (Ui.java, themes.xml): "Slate & Signal" — cool slate surfaces told apart by fill and hairline edge, one Signal blue for every primary
-         action, focus ring and selected state, and the harvest amber kept for brand moments (the header badge's glyph, the empty state). values-night has the dark
-         reference set. Contrast ratios (WCAG 2.1, checked by script; text needs 4.5:1, UI shapes and icons 3:1) name the pair each color is drawn in -->
-    <color name="bn_bg">#FFF2F4F8</color>            <!-- the screen (text on bg 15.1:1, secondary text on bg 5.7:1) -->
-    <color name="bn_card">#FFFFFFFF</color>          <!-- cards, dialogs, sheets (text on card 16.6:1, secondary text 6.3:1, accent 6.0:1) -->
-    <color name="bn_card_stroke">#FFCFD8E3</color>   <!-- hairlines, dividers, progress track -->
-    <color name="bn_tint">#FFEBEFF5</color>          <!-- tonal chips, icon tiles (accent on tint 5.2:1) -->
-    <color name="bn_accent">#FF0A5FC7</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (5.5:1 on bg, 6.0:1 on card, 5.0:1 on accent_tint, 4.2:1 vs stroke) -->
-    <color name="bn_on_accent">#FFFFFFFF</color>     <!-- label on accent fill (6.0:1) -->
-    <color name="bn_accent_tint">#FFDFEBF9</color>   <!-- tonal accent container: selected segments, chips -->
-    <color name="bn_banana">#FFF7C03A</color>        <!-- secondary accent, brand moments only (the header badge's glyph, the empty state): never a button fill -->
-    <color name="bn_banana_deep">#FFD9A02F</color>   <!-- pressed secondary accent -->
-    <color name="bn_on_banana">#FF33200A</color>     <!-- text on amber (9.3:1 on banana, 6.7:1 on banana_deep) -->
-    <color name="bn_text">#FF171F2B</color>          <!-- body text (16.6:1 on card, 15.1:1 on bg) -->
-    <color name="bn_text_2">#FF526175</color>        <!-- secondary text (6.3:1 on card, 5.7:1 on bg) -->
-    <color name="bn_leaf">#FF0F7A40</color>          <!-- success text, bn_ok shares it (5.4:1 on card, 4.5:1 on ok_tint) -->
-    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — the badge glyph (ic_lemon's lemon) reads on it (LEMON: rebrand) -->
-    <color name="bn_on_leaf">#FFFFFFFF</color>       <!-- text on leaf green (5.4:1) -->
-    <color name="bn_danger">#FFB23517</color>        <!-- error text, danger button label (6.2:1 on card, 5.0:1 on danger_tint, 5.0:1 on warn_tint) -->
-    <color name="bn_danger_tint">#FFFAE3DB</color>   <!-- danger button container (text on it 5.0:1) -->
-    <color name="bn_warn_tint">#FFF6E8B9</color>     <!-- warning container, warning chips (warning text on it 5.2:1) -->
-    <color name="bn_ok">#FF0F7A40</color>            <!-- success text: shares the leaf green (5.4:1 on card, 4.5:1 on ok_tint) -->
-    <color name="bn_warn">#FF8A5200</color>          <!-- warning text (6.4:1 on card, 5.2:1 on warn_tint) -->
-    <color name="bn_ok_tint">#FFDFEFE3</color>       <!-- success container (text on it 4.5:1); declared for the first success surface that needs it — the Readiness
+    <!-- The launcher's palette (Ui.java, themes.xml): "Lemon" — deep olive-charcoal surfaces told apart by fill and hairline edge, one lemon yellow for every primary
+         action, focus ring and selected state, leaf green as the supporting hue and a citric warm accent for warnings, kept for brand moments (the header badge's
+         glyph, the empty state). values-night has the dark reference set. Contrast ratios (WCAG 2.1, checked by peanuts/scripts/check-palette.py in CI; text needs
+         4.5:1, UI shapes and icons 3:1) name the pair each color is drawn in -->
+    <color name="bn_bg">#FFFBFBF3</color>            <!-- the screen (text on bg 16.5:1, secondary text on bg 6.1:1) -->
+    <color name="bn_card">#FFFFFFFF</color>          <!-- cards, dialogs, sheets (text on card 17.2:1, secondary text 6.4:1, accent 6.7:1) -->
+    <color name="bn_card_stroke">#FFCFD1B8</color>   <!-- hairlines, dividers, progress track -->
+    <color name="bn_surface3">#FFE9EAD6</color>      <!-- deep tonal surface: pressed tiles, slots, table stripes (informational) -->
+    <color name="bn_tint">#FFF3F3E6</color>          <!-- tonal chips, icon tiles (text on tint 15.4:1, secondary text 5.7:1) -->
+    <color name="bn_accent">#FF6B5C00</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (6.4:1 on bg, 6.7:1 on card, 5.7:1 on accent_tint, 4.3:1 vs stroke) -->
+    <color name="bn_on_accent">#FFFFFFFF</color>     <!-- label on accent fill (6.7:1) -->
+    <color name="bn_accent_tint">#FFFFEF7A</color>     <!-- tonal accent container: selected segments, chips (accent on it 5.7:1) -->
+    <color name="bn_secondary">#FF3F6A00</color>     <!-- leaf green support: hero gradient end, secondary chips (6.2:1 on bg, 6.4:1 on card) -->
+    <color name="bn_accent_warm">#FFB35C00</color>   <!-- citric warm accent: update-available chips, warm highlights (4.7:1 on card) -->
+    <color name="bn_banana">#FFC7A500</color>        <!-- brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill (3.3:1 on card) -->
+    <color name="bn_banana_deep">#FFB39200</color>   <!-- pressed brand accent -->
+    <color name="bn_on_banana">#FF201A00</color>     <!-- text on the brand accent (7.3:1 on banana, 5.8:1 on banana_deep) -->
+    <color name="bn_text">#FF1B1C14</color>          <!-- body text (17.3:1 on card, 16.0:1 on bg) -->
+    <color name="bn_text_2">#FF5E614F</color>        <!-- secondary text (6.4:1 on card, 6.0:1 on bg) -->
+    <color name="bn_leaf">#FF1B7F43</color>          <!-- success text, bn_ok shares it (5.0:1 on card, 4.6:1 on ok_tint) -->
+    <color name="bn_badge">#FF3F6A00</color>         <!-- the header badge's circle: deep leaf in BOTH modes — the badge glyph (ic_lemon's #FFE74A lemon) reads on it (5.1:1, LEMON: rebrand) -->
+    <color name="bn_on_leaf">#FFFFFFFF</color>       <!-- text on leaf green (5.0:1) -->
+    <color name="bn_danger">#FFB3261E</color>        <!-- error text, danger button label (6.5:1 on card, 5.2:1 on danger_tint, 5.4:1 on warn_tint) -->
+    <color name="bn_danger_tint">#FFFAE0DD</color>   <!-- danger button container (text on it 5.2:1) -->
+    <color name="bn_warn_tint">#FFF7E9C8</color>     <!-- warning container, warning chips (warning text on it 4.8:1) -->
+    <color name="bn_ok">#FF1B7F43</color>            <!-- success text: shares the leaf green (5.0:1 on card, 4.6:1 on ok_tint) -->
+    <color name="bn_warn">#FF8F5A00</color>          <!-- warning text (5.8:1 on card, 4.8:1 on warn_tint) -->
+    <color name="bn_ok_tint">#FFEDF7EF</color>       <!-- success container (text on it 4.6:1); declared for the first success surface that needs it — the Readiness
                                                           check's pass rows stay on the card, so the fail and warn rows stand out -->
-    <color name="bn_control_ripple">#33171F2B</color><!-- theme widget highlight/ripple (20% ink, Ui.ripple) -->
+    <color name="bn_control_ripple">#331B1C14</color><!-- theme widget highlight/ripple (20% ink, Ui.ripple) -->
 
-    <!-- Overlay-stable colors: the in-game/companion surfaces render over the game in BOTH modes, so they carry the dark slate set here, with no values-night override -->
+    <!-- Overlay-stable colors: the in-game/companion surfaces render over the game in BOTH modes, so they carry the dark olive set here, with no values-night override -->
     <color name="bn_overlay_scrim">#66000000</color>  <!-- overlay-stable: renders over the game in both modes — 40% black over the running game -->
-    <color name="bn_overlay_card">#F0141A24</color>   <!-- overlay-stable: renders over the game in both modes — the overlay's slate card (text on it 14.8:1, secondary text 7.3:1) -->
-    <color name="bn_overlay_stroke">#FF2B3543</color> <!-- overlay-stable: renders over the game in both modes — hairline edges and empty slots on the card (informational) -->
-    <color name="bn_overlay_text">#FFE8EDF4</color>   <!-- overlay-stable: renders over the game in both modes (14.8:1 on the card, 17.9:1 on black) -->
-    <color name="bn_overlay_text_2">#FF9DA9B8</color> <!-- overlay-stable: renders over the game in both modes — secondary text (7.3:1 on the card) -->
-    <color name="bn_overlay_accent">#FF58A6F5</color> <!-- overlay-stable: renders over the game in both modes — the same Signal blue: selection edges, values, focus (6.8:1 on the card) -->
-    <color name="bn_overlay_ok">#FF67C795</color>     <!-- overlay-stable: renders over the game in both modes — success (8.5:1 on the card) -->
-    <color name="bn_overlay_warn">#FFF2C341</color>  <!-- overlay-stable: renders over the game in both modes — the throttle trio's middle (Hud.levels(), HistogramSpan, Overlay.DOT): the same amber as bn_warn, kept here because the overlay carries no values-night override (10.5:1 on the overlay card, 12.7:1 on black) -->
-    <color name="bn_overlay_danger">#FFFF8A76</color> <!-- overlay-stable: renders over the game in both modes — danger (7.6:1 on the card) -->
+    <color name="bn_overlay_card">#F014150E</color>   <!-- overlay-stable: renders over the game in both modes — the overlay's olive card (text on it 16.0:1, secondary text 8.0:1) -->
+    <color name="bn_overlay_stroke">#FF2F3323</color> <!-- overlay-stable: renders over the game in both modes — hairline edges and empty slots on the card (informational) -->
+    <color name="bn_overlay_text">#FFEFF0E6</color>   <!-- overlay-stable: renders over the game in both modes (16.0:1 on the card, 18.7:1 on black) -->
+    <color name="bn_overlay_text_2">#FFA9AD98</color> <!-- overlay-stable: renders over the game in both modes — secondary text (8.0:1 on the card) -->
+    <color name="bn_overlay_accent">#FFFFE74A</color> <!-- overlay-stable: renders over the game in both modes — the same lemon yellow: selection edges, values, focus (14.7:1 on the card) -->
+    <color name="bn_overlay_ok">#FF6FE39B</color>     <!-- overlay-stable: renders over the game in both modes — success (11.5:1 on the card) -->
+    <color name="bn_overlay_warn">#FFFFC169</color>   <!-- overlay-stable: renders over the game in both modes — the throttle trio's middle (Hud.levels(), HistogramSpan, Overlay.DOT): the same warm lemon as bn_warn, kept here because the overlay carries no values-night override (11.4:1 on the overlay card, 13.5:1 on black) -->
+    <color name="bn_overlay_danger">#FFFF6B6B</color> <!-- overlay-stable: renders over the game in both modes — danger (6.6:1 on the card) -->
 
     <!-- The library's building-cover progress strip track (Library.strip): the light mode's bn_bg at 70% alpha over cover art — the resource form of the
          in-code composite it replaces, so no helper holds the hex; the night value (the dark bn_bg at 70% alpha) is in values-night -->
-    <color name="bn_track">#B3F2F4F8</color>
+    <color name="bn_track">#B3FBFBF3</color>
 </resources>
