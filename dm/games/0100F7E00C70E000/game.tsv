@@ -38,6 +38,13 @@ sys_resource	0x1000000
 # once a seed is recorded (vk_prewarm.bin)
 pso_sync_all	on
 
+# tex_stream_track: a compressed (BCn) texture in a pool the CPU can write is tracked from its storage whatever its COMPRESSIBLE flag and whether its storage holds
+# anything at the upload (vka_tex.c storage_mode, vka_texstream.h; DM_VK_BCN_ZEROLOG names the compressed zero images it misses). This game runs on a Switch 1 SDK
+# (16.2.3, spec NX), so the NVN2 first-sampled rule never runs (vka_nvn2() 0), and its UE4 streamer fills compressed texture slots after the texture's first use:
+# untracked, the image keeps the slot's zeros (the creator's black model) or what shares the memory (the flat green coat) and the streamer's later CPU writes never
+# reach it. Off is the default for every other profile
+tex_stream_track	on
+
 # ---- Shader split ----
 # the decoded shader code archives: the engine's global shaders and the game's material shaders
 shader_groups	ShaderArchive-Global-=global ShaderArchive-=game

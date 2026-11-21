@@ -90,6 +90,7 @@ run: $(B)/t_language $(B)/t_motion $(B)/t_heap_size $(B)/t_touch $(B)/t_gesture 
 	$(B)/t_android_mapbudget
 	$(B)/t_android_psogate
 	$(B)/t_android_psosync
+	$(B)/t_android_texstream
 	$(B)/t_android_auto
 	$(B)/t_nvn_dpool
 	$(B)/t_android_t2tpath
@@ -544,6 +545,16 @@ $(B)/t_android_psosync: t_android_psosync.c $(VKA)/vka_psosync.h | $(B)
 .PHONY: android-psosync
 android-psosync: $(B)/t_android_psosync
 	$(B)/t_android_psosync
+# PEANUTS end
+# PEANUTS begin: whether a compressed texture is tracked from its storage whatever its COMPRESSIBLE flag and whether its storage holds anything at
+# the upload (vka_texstream.h, vka_tex.c storage_mode, the profile's tex_stream_track): the key off, the doors, and the two cases the key exists for.
+# Built and run with run; android-texstream builds and runs it too
+run: $(B)/t_android_texstream
+$(B)/t_android_texstream: t_android_texstream.c $(VKA)/vka_texstream.h | $(B)
+	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_android_texstream.c
+.PHONY: android-texstream
+android-texstream: $(B)/t_android_texstream
+	$(B)/t_android_texstream
 # PEANUTS end
 # A model of the texture cache's image lifetimes under random operations (references, holds, the old image of an in-place swap, lingering, eviction, pool drops,
 # queued region writes; vka_tex.c): the sanitizer stops at the first image used or freed after it was freed. `build/t_android_imglife old` shows the fault of the

@@ -53,6 +53,7 @@ int main(void) {
     printf("shader_key_skip_len=%llu\n", (unsigned long long)DM_GAME_SHADER_KEY_SKIP_LEN);
     printf("render_cond=%d\n", (int)DM_GAME_RENDER_COND);
     printf("tex_dirty_upload=%d\n", (int)DM_GAME_TEX_DIRTY_UPLOAD);
+    printf("tex_stream_track=%d\n", (int)DM_GAME_TEX_STREAM_TRACK);
     printf("tex_dyn_slots=%d\n", (int)DM_GAME_TEX_DYN_SLOTS);
     printf("tex_soft=%d\n", (int)DM_GAME_TEX_SOFT);
     printf("gpu_ts_segment=%d\n", (int)DM_GAME_GPU_TS_SEGMENT);

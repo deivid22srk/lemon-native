@@ -63,6 +63,7 @@
 #define DM_GAME_SHADER_KEY_SKIP_LEN (g_profile.shader_key_skip_len)
 #define DM_GAME_RENDER_COND (g_profile.render_cond)
 #define DM_GAME_TEX_DIRTY_UPLOAD (g_profile.tex_dirty_upload)
+#define DM_GAME_TEX_STREAM_TRACK (g_profile.tex_stream_track)   // a compressed texture in a pool the CPU can write is tracked whatever its COMPRESSIBLE flag (vka_texstream.h)
 #define DM_GAME_TEX_DYN_SLOTS (g_profile.tex_dyn_slots)
 #define DM_GAME_TEX_SOFT (g_profile.tex_soft)
 #define DM_GAME_GPU_TS_SEGMENT (g_profile.gpu_ts_segment)

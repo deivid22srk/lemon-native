@@ -163,6 +163,8 @@ def header(g):
     if p4 not in ('on', 'off'): sys.exit(f'{g.id}: pso_mtl4 must be on or off: {p4}')
     psa = g.get('pso_sync_all', 'off')   # every pipeline a draw misses is made on the frame path, none of its draws skipped (vka_psosync.h VKPS_ALL; the Android asynchronous pipelines): on / off.
         # For a profile with no prewarm seed yet whose first run keeps what draws into larger targets made while their pipelines compiled (Hogwarts Legacy: the character creator and a cutscene kept garbage for the session); once the profile records a seed, off again
+    tst = g.get('tex_stream_track', 'off')   # a compressed texture in a pool the CPU can write is tracked from its storage whatever its COMPRESSIBLE flag and whether its storage holds anything at the upload (vka_tex.c storage_mode, vka_texstream.h): on / off
+        # For a Switch 1 game whose streamer fills compressed texture slots after the texture's first use (Hogwarts Legacy: the NVN2 first-sampled rule never runs there, so the slots' zeros or leftovers upload once and stay); off is the default for every other profile
     pg = g.words('pso_gpu', '')   # GPU architectures the app gets the pipeline archive made offline for (the NSP script's --gpu, build_ipa.sh): when pso_mtl4 is on the app gets these instead of the default g18p, the A19 / A19 Pro of the iPhone 17 family (e.g. 'applegpu_g19p' for a device of the family after it); unset → the default. Whitespace-separated tokens, with or without the applegpu_ prefix
     if pg and (len(pg) > 4 or any(w == 'none' or not re.fullmatch(r'(applegpu_)?[A-Za-z0-9]+', w) for w in pg)):
         sys.exit(f"{g.id}: pso_gpu takes 1-4 whitespace-separated GPU architectures such as 'g18p applegpu_g19p' (each an optional applegpu_ prefix then an alphanumeric token; there is no none: omit the key for g18p with pso_mtl4 on, or no archive with pso_mtl4 off): {pg}")
@@ -444,6 +446,7 @@ def header(g):
          f'#define DM_GAME_SHADER_KEY_SKIP_OFF {sko:#x}', f'#define DM_GAME_SHADER_KEY_SKIP_LEN {skl:#x}',
          f'#define DM_GAME_RENDER_COND {int(rcd == "on")}',
          f'#define DM_GAME_TEX_DIRTY_UPLOAD {int(tdu == "on")}',
+         f'#define DM_GAME_TEX_STREAM_TRACK {int(tst == "on")}',
          f'#define DM_GAME_TEX_DYN_SLOTS {int(tds == "on")}',
          f'#define DM_GAME_TEX_SOFT {int(tsf == "on")}',
          f'#define DM_GAME_OCCLUSION_SPLIT_PASS {int(oqs == "on")}',

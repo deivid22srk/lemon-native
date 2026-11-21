@@ -181,6 +181,10 @@ SWITCH_BINDING = [
     # PEANUTS: every pipeline a draw misses is made on the frame path (vka_psosync.h VKPS_ALL), none of its draws skipped, while the profile has no prewarm seed.
     ('pso_sync_all', 'on', {'what': 'a draw whose pipeline the cache lacks is never skipped', 'now': 'game', 'goal': 'host', 'purpose': 'rendering',
      'why': 'a first run without a seed kept what draws into larger targets made while their pipelines compiled (Hogwarts Legacy: the character creator and a cutscene); a recorded seed takes the key off again, and a general fix for the kept-result class would take it off everywhere'}),
+    # PEANUTS: a compressed texture in a pool the CPU can write is tracked whatever its COMPRESSIBLE flag and whether its storage holds anything at the upload
+    # (vka_texstream.h), while the streamed-compressed class is measured on the game it is known on.
+    ('tex_stream_track', 'on', {'what': 'a compressed texture in a CPU-writable pool is tracked from its storage whatever its COMPRESSIBLE flag', 'now': 'game', 'goal': 'host', 'purpose': 'rendering',
+     'why': 'a Switch 1 game (Hogwarts Legacy) whose streamer fills compressed texture slots after the texture\'s first use sampled the slots\' zeros or leftovers for the whole session, the NVN2 first-sampled rule never running there; the flag the classes exclude changes nothing about what the storage\'s bytes mean on this backend, and a general inclusion would take the change to every game at once'}),
     ('game_env', 'DOTNET_GCRegionRange=', {'what': ".NET's garbage-collector region range", 'now': 'game', 'goal': 'game', 'purpose': 'address space', 'why': "measured for the game's regions"}),
     ('stdalloc_cap', '', {'what': "StandardAllocator's address space", 'now': 'game', 'goal': 'game', 'purpose': 'address space',
      'why': "what the regions after it need, measured by the NSP script's region check; the host's cap is the default"}),

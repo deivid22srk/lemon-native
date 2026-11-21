@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
     printf("shader_key_skip_len=%llu\n", (unsigned long long)p->shader_key_skip_len);
     printf("render_cond=%d\n", (int)p->render_cond);
     printf("tex_dirty_upload=%d\n", (int)p->tex_dirty_upload);
+    printf("tex_stream_track=%d\n", (int)p->tex_stream_track);
     printf("tex_dyn_slots=%d\n", (int)p->tex_dyn_slots);
     printf("tex_soft=%d\n", (int)p->tex_soft);
     printf("gpu_ts_segment=%d\n", (int)p->gpu_ts_segment);

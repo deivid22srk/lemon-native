@@ -98,6 +98,19 @@ Status: **bring-up / not tested upstream**. SDK 16.2.3, Unreal Engine 4, NVN, Ww
   stays open as a second cause the fixed build can now separate (on the
   7.2 GB device, `MemAvailable` 1.1 GB at boot: a streamed texture that fills
   and is then evicted blackens late, not from the first frame).
+- 2026-11-21 (the rodada 7 build, run `44848421069`): the same picture — the creator's model all black now, the
+  cutscene's silhouettes — and the round-7 class is silent in the log (`0100F7E00C70E000-20261121-062840.log`: neither of
+  its two lines, with `[vk]` output present 841 lines). The reason: the game runs on a **Switch 1** SDK (16.2.3; the
+  loader's `sdk: built for the Switch 2 (spec: Ounce)` line is absent, so `vka_nvn2()` is 0 and the NVN2 first-sampled
+  rule never runs for this game — the round-7 fix is dead code here). The pipelines line still shows sync-all working
+  (425 not skipped by the profile's rule) and its "draws skipped waiting 791" is compute dispatches, as the third
+  capture found. The profile key `tex_stream_track on` now makes a compressed texture in a pool the CPU can write
+  tracked whatever its COMPRESSIBLE flag and whether its storage holds anything at the upload (`vka_texstream.h`, the
+  pure rule `t_android_texstream` checks on Linux; the runtime profile's schema grew the field). On the next capture the
+  `tracked by the profile's tex_stream_track (NVN1)` lines must appear while the creator loads and the model's textures
+  must fill; `DM_VK_BCN_ZEROLOG=<n>` (default 8) names the compressed zero images the key misses with every door's
+  state, so the capture either shows the tracked lines or names the door (an uncompressed culprit takes the
+  `tex_flush_upload`/`tex_dirty_upload` keys instead, as Tears of the Kingdom does).
 
 ## Black characters/objects (textured UI fine) — type 1 texture handles with the sampler word in c2
 

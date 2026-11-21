@@ -24,6 +24,7 @@
 #include "vka_lowram.h"
 #include "vka_spvpatch.h"
 #include "game_profile.h"
+#include "vka_texstream.h"   // PEANUTS: the profile's tex_stream_track (storage_mode's compressed class on a Switch 1 game), pure logic tested on Linux
 #include "vka_texown.h"
 #include "vka_tbuf.h"   // PEANUTS: which GPU writes keep a texel buffer from being read through the CPU's copy
 #include "vka_wbfollow.h"
@@ -755,6 +756,20 @@ static int storage_mode(const tex_t *t, const uint8_t *c, const vka_fmt *f, int 
                                 (unsigned long long)t->serial, d->width, d->height, d->depth, d->levels, d->format, comp ? " compressed" : "", d->target, d->flags, pf,
                                 (unsigned long long)g_nvn2_first[0], (unsigned long long)g_nvn2_first[1]);
     }
+    // PEANUTS begin: the profile's tex_stream_track (Hogwarts Legacy, a Switch 1 game): the same streamed compressed texture the NVN2 rule takes, with the rule's gate off
+    // (vka_nvn2() 0, so the class above never runs here) and with the COMPRESSIBLE flag the compressed branch and ST_FILL exclude — on this backend the flag changes
+    // nothing about what the storage's bytes mean (vka_texstream.h has the rule and its reasons). Tracked, the streamer's later CPU writes are re-uploaded whatever
+    // the game's flushing; a copy into the storage is the gw mechanism's, and the GPU cannot render into a compressed format
+    else if (vka_tex_stream_track(&(vka_texstream_draw){.key = DM_GAME_TEX_STREAM_TRACK, .comp = comp,
+             .flags_image_sparse = (d->flags & (NVN_TEXTURE_FLAGS_IMAGE | NVN_TEXTURE_FLAGS_SPARSE)) != 0, .pool = t->pool != 0,
+             .pf_no_cpu = (pf & (NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS | NVN_MEMORY_POOL_FLAGS_VIRTUAL)) != 0,
+             .gpu_over = gpu_image_over(t->mem), .sampled = sampled, .any_mapped = mem_any_mapped(c, t)})) {
+        want = ST_TRACK;
+        static _Atomic int k8; if (atomic_fetch_add(&k8, 1) < 8) VLOG("texture serial %llu %ux%ux%u levels %u format %#x%s target %d flags %#x pool flags %#x: tracked by the profile's tex_stream_track (NVN1): %s, the streamer's later CPU writes are re-uploaded (%llu so far)",
+                               (unsigned long long)t->serial, d->width, d->height, d->depth, d->levels, d->format, comp ? " compressed" : "", d->target, d->flags, pf,
+                               mem_any_mapped(c, t) ? "the slot's storage holds data" : "tracked from its slot's zeros", (unsigned long long)atomic_load(&k8));
+    }
+    // PEANUTS end
     else if (!(d->flags & NVN_TEXTURE_FLAGS_COMPRESSIBLE) && t->pool && ((pf & (NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS | NVN_MEMORY_POOL_FLAGS_CPU_UNCACHED)) || nvn_flushed(t->mem, t->L.size))
              && mem_any_mapped(c, t)) want = ST_FILL;
     // No later CPU writes to follow: a pool the CPU cannot access, a virtual pool (its pages are not the storage's), storage outside every tracked pool, or tracking off
@@ -765,6 +780,18 @@ static int storage_mode(const tex_t *t, const uint8_t *c, const vka_fmt *f, int 
       if (zl > 0 && want == ST_ZERO && !(pf & NVN_MEMORY_POOL_FLAGS_VIRTUAL) && atomic_load(&nz) < zl && mem_any_mapped(c, t) && atomic_fetch_add(&nz, 1) < zl)
           VLOG("zero image over data: serial %llu %ux%ux%u levels %u format %#x target %d flags %#x pool flags %#x layout %d sampled %d cpuw %d gpu over %d",
                (unsigned long long)t->serial, d->width, d->height, d->depth, d->levels, d->format, d->target, d->flags, pf, t->has_layout, sampled, cpuw, gpu_image_over(t->mem)); }
+    // PEANUTS begin: diagnostic (Hogwarts Legacy rodada 8) — a compressed texture left a zero image: name every door that kept it out of a tracked class (the first 8;
+    // DM_VK_BCN_ZEROLOG=<n> for more): its flags (COMPRESSIBLE keeps it out of the compressed branch and of ST_FILL), a pool at all, one the CPU can write, an image
+    // the GPU drew into over the storage, the first use (a sample or not), and whether the storage held anything at the upload, flushed or not. A capture of this
+    // line names the door instead of a guess; a run of the key's build shows the tracked lines instead
+    { static _Atomic int nz2; int cz = VKA_ENV("DM_VK_BCN_ZEROLOG", 8);
+      if (cz > 0 && want == ST_ZERO && comp && atomic_load(&nz2) < cz && atomic_fetch_add(&nz2, 1) < cz)
+          VLOG("compressed zero image: serial %llu %ux%ux%u levels %u format %#x target %d flags %#x%s pool %d pool flags %#x%s sampled %d cpuw %d has_layout %d gpu over %d storage %s flushed %d (DM_VK_BCN_ZEROLOG=%d for more)",
+               (unsigned long long)t->serial, d->width, d->height, d->depth, d->levels, d->format, d->target, d->flags,
+               (d->flags & NVN_TEXTURE_FLAGS_COMPRESSIBLE) ? " COMPRESSIBLE" : "", t->pool != 0, pf,
+               (pf & (NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS | NVN_MEMORY_POOL_FLAGS_VIRTUAL)) ? " (no CPU access)" : "", sampled, cpuw, t->has_layout, gpu_image_over(t->mem),
+               mem_any_mapped(c, t) ? "data" : "empty", nvn_flushed(t->mem, t->L.size), cz); }
+    // PEANUTS end
     return want;
 }
 static uint64_t mem_hash(const uint8_t *p, uint64_t n) { uint64_t h = 1469598103934665603ull, v; uint64_t i = 0; for (; i + 8 <= n; i += 8) { memcpy(&v, p + i, 8); h = (h ^ v) * 1099511628211ull; } for (; i < n; i++) h = (h ^ p[i]) * 1099511628211ull; return h; }

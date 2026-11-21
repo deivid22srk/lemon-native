@@ -310,7 +310,19 @@ The replay on Metal (`dm/gfx/nvn/nvn_mtl.m`) and the Vulkan and OpenGL layers. E
 - **Cause:** the game streams its compressed (BCn) material textures: it registers a texture with empty storage, samples it (the material's first draw) and the streamer's CPU writes land the mips later. `vka_tex.c` `storage_mode` classified the texture by its first use: compressed formats only took the tracked class with data already in the storage (`mem_any_mapped`), and the NVN2 first-sampled rule (`nvn2_sampled_content`, the [Mario Kart World](../../dm/games/0400C3F00006E000/README.md) ground fix in the code comment above it) excluded compressed formats. Empty and compressed fell to GPU content (`ST_ZERO`): the storage's zeros uploaded once, and every later CPU streaming write was lost — the sample stays zeros (black) or whatever shares the memory (saturated garbage through the bloom). A capture of the audited build shows it from the silence: no `written by the CPU before its first use` line at all, where the game streams thousands of compressed textures.
 - **Fix:** general, on the NVN2 captures only (`vka_nvn2()`, `DM_VK_STORAGE_FIRST_USE=0` is the A/B): compressed formats join the first-sampled rule. The GPU cannot render into them (no attachment class the rule could steal), a copy into their storage still ends the tracking (`gpu_owned`, the GPU's content wins), and a pool the dirty tracker cannot write-protect still falls to `ST_FILL` below. The class is logged (`texture serial … first sampled with its storage empty (NVN2): tracked from zeros, the streamer's later CPU writes are re-uploaded (N with data, N from zeros so far)`, the first 8) so a capture names what it tracked.
 - **Open:** the fix is reasoned from the capture and the code, not yet seen right on a device: the next Hogwarts capture must show the class's lines while the character creator loads and the model's textures filled (`DM_VK_STORAGE_FIRST_USE=0` returning the broken picture is the cross-check). Uncompressed streamed textures other games may stream are already covered by the rule they join.
-- **Found on:** [Hogwarts Legacy](../../dm/games/0100F7E00C70E000/README.md) (UE4, SDK 16.2.3, Motorola Edge 30 Fusion, Adreno 660, Turnip T30 and Amaral 27.0.0-devel).
+- **Found on:** [Hogwarts Legacy](../../dm/games/0100F7E00C70E000/README.md) (UE4, SDK 16.- **Switch 1 (2026-11-21, Hogwarts Legacy):** the rule never ran there — the game's sdk module says spec NX
+  (SDK 16.2.3, no `spec: Ounce` line), `vka_nvn2()` 0, and its capture shows the class's lines nowhere with `[vk]`
+  output present, the picture unchanged but black where it was green. A Switch 1 game's streamed compressed texture
+  takes the profile key `tex_stream_track` instead (Hogwarts Legacy's profile carries it; every other profile is off):
+  a compressed texture in a pool the CPU can write is tracked whatever its COMPRESSIBLE flag and whether its storage
+  holds anything at the upload (`vka_texstream.h`, the pure rule `t_android_texstream` checks on Linux; the runtime
+  profile's schema grew the field, and `DM_VK_BCN_ZEROLOG=<n>`, default 8, names the compressed zero images the key
+  misses with every door's state). The COMPRESSIBLE flag the classes exclude changes nothing about what the storage's
+  bytes mean here: this backend never applies a compression of its own, so the storage's bytes are what the GPU
+  samples — the exclusion was kartnative's hardware reasoning, where the Tegra driver's own compression makes the
+  bytes non-authoritative. An uncompressed culprit on a Switch 1 game takes the `tex_flush_upload`/`tex_dirty_upload`
+  keys instead (Tears of the Kingdom).
+2.3, Motorola Edge 30 Fusion, Adreno 660, Turnip T30 and Amaral 27.0.0-devel).
 
 ### A GPU-written linear texture the CPU writes afterwards (Android)
 

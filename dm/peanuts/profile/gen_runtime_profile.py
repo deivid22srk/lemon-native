@@ -38,6 +38,7 @@ SCALAR = {
     'TEX_FLUSH_UPLOAD': ('tex_flush_upload', 'int'), 'SHADER_KEY_SKIP_OFF': ('shader_key_skip_off', 'int'),
     'SHADER_KEY_SKIP_LEN': ('shader_key_skip_len', 'int'), 'RENDER_COND': ('render_cond', 'int'), 'TEX_DIRTY_UPLOAD': ('tex_dirty_upload', 'int'),
     'TEX_DYN_SLOTS': ('tex_dyn_slots', 'int'), 'TEX_SOFT': ('tex_soft', 'int'), 'GPU_TS_SEGMENT': ('gpu_ts_segment', 'int'),
+    'TEX_STREAM_TRACK': ('tex_stream_track', 'int'),
     'DRAW_BARRIERS_GAME': ('draw_barriers_game', 'int'), 'VCONV_RANGE': ('vconv_range', 'int'), 'AV1_DAV1D': ('av1_dav1d', 'int'),
     'ROMFS_SUBST': ('romfs_subst', 'str'), 'NWINDOW_FN': ('nwindow_fn', 'int'), 'NSUBGROUP_ONE_LANE': ('nsubgroup_one_lane', 'int'),
     'NMESH_VEGETATION_CUT': ('nmesh_vegetation_cut', 'int'), 'NMESH_PREPASS_CUT': ('nmesh_prepass_cut', 'int'), 'NFPS_STEPS': ('nfps_steps', 'int'),
@@ -68,7 +69,7 @@ LAYOUT = [
     ('mem_map_limit', 'u32'), ('present_display', 'u32'), ('core_preempt', 'u32'), ('alloc_big_align', 'u32'), ('fps_target', 'u32'), ('fps_hold', 'u32'), ('fps_limit', 'u32'),
     ('ue_texture_pool', 'u32'), ('ue_fps_cvar', 'char[32]'), ('present_snap', 'u32'), ('pso_mtl4', 'u32'), ('enc_thread', 'u32'), ('pso_sync_all', 'u32'),
     ('pad_layout', 'u32'), ('opmode', 'u32'), ('perf_boost', 'u32'), ('tex_flush_upload', 'u32'), ('shader_key_skip_off', 'u64'), ('shader_key_skip_len', 'u64'),
-    ('render_cond', 'u32'), ('tex_dirty_upload', 'u32'), ('tex_dyn_slots', 'u32'), ('tex_soft', 'u32'), ('gpu_ts_segment', 'u32'), ('draw_barriers_game', 'u32'),
+    ('render_cond', 'u32'), ('tex_dirty_upload', 'u32'), ('tex_stream_track', 'u32'), ('tex_dyn_slots', 'u32'), ('tex_soft', 'u32'), ('gpu_ts_segment', 'u32'), ('draw_barriers_game', 'u32'),
     ('vconv_range', 'u32'), ('av1_dav1d', 'u32'), ('has_shared_font_ttf', 'u32'), ('shared_font_ttf', 'u32'), ('has_nvn_api', 'u32'), ('nvn_api_major', 'u32'), ('nvn_api_minor', 'u32'),
     ('nmod', 'u32'), ('modules', f"char[{8}][32]"), ('ndisplay_versions', 'u32'), ('display_versions', 'row[16]:char[48]+char[16]'),
     ('nwindow_fn', 'u32'), ('window_fn', 'row[8]:char[48]+u64+u64+u32+u32'), ('nsubgroup_one_lane', 'u32'), ('subgroup_one_lane', 'u64[16]'),
@@ -382,7 +383,7 @@ def build_profile_bytes(g, modules_override=None):
     p.u32(as_int(val('UE_TEXTURE_POOL'))); p.raw(unq(val('UE_FPS_CVAR')), 32)
     for n in ('PRESENT_SNAP', 'PSO_MTL4', 'ENC_THREAD', 'PSO_SYNC_ALL', 'PAD_LAYOUT', 'OPMODE', 'PERF_BOOST', 'TEX_FLUSH_UPLOAD'): p.u32(as_int(val(n)))
     p.u64(as_int(val('SHADER_KEY_SKIP_OFF'))); p.u64(as_int(val('SHADER_KEY_SKIP_LEN')))
-    for n in ('RENDER_COND', 'TEX_DIRTY_UPLOAD', 'TEX_DYN_SLOTS', 'TEX_SOFT', 'GPU_TS_SEGMENT', 'DRAW_BARRIERS_GAME', 'VCONV_RANGE', 'AV1_DAV1D'): p.u32(as_int(val(n)))
+    for n in ('RENDER_COND', 'TEX_DIRTY_UPLOAD', 'TEX_STREAM_TRACK', 'TEX_DYN_SLOTS', 'TEX_SOFT', 'GPU_TS_SEGMENT', 'DRAW_BARRIERS_GAME', 'VCONV_RANGE', 'AV1_DAV1D'): p.u32(as_int(val(n)))
 
     p.u32(int('SHARED_FONT_TTF' in d)); p.u32(as_int(d.get('SHARED_FONT_TTF', '0')))
     has_api = 'NVN_API_MAJOR' in d
