@@ -16,12 +16,12 @@ import dev.peanuts.ui.PUi;
  * used last, at the top of Home, so the brief's efficiency rule (app open to playing in at most two taps)
  * is met: the hero's Play is one tap at the very top of the page, above the cover grid.
  *
- * The gradient surface (the lemon's primary container into a leaf tone of the same depth) is the design
- * contract's only gradient beside the primary CTA; the text on both ends sits in the annotated container
- * range check-palette.py proves (accent_tint and the card-side mix, both at the container's depth). The
- * card carries the game's tile icon, its name in the title tier, a caption line and two actions: Play (the
- * page's one filled accent, Kind.PRIMARY) and Manage (quiet). Library wires the D-pad focus, the haptics
- * and the keyboard paths onto the returned view (track / focusRing / shoulders), the way it wires a cover.
+ * The gradient surface (the lemon's primary container into the checked leaf end bn_hero_end) is the design
+ * contract's only gradient. Everything drawn on it is proven by check-palette.py's hero pairs (bn_text on
+ * both ends, both modes) and both actions carry their own surfaces (Kind.PRIMARY and Kind.TONAL), so no
+ * label sits directly on the gradient. The card is one focus stop: it owns its focused look (the gradient
+ * stays under an accent ring at the card's radius; {@link #focusBackground}), and Library wires the
+ * haptics, the keyboard paths and the play/manage actions onto it, the way it wires a cover.
  */
 public final class HeroCard {
     private HeroCard() {}
@@ -31,11 +31,7 @@ public final class HeroCard {
                             Runnable onPlay, Runnable onManage) {
         LinearLayout c = new LinearLayout(a);
         c.setOrientation(LinearLayout.VERTICAL);
-        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{PUi.col(a, R.color.bn_accent_tint), PUi.col(a, R.color.bn_hero_end)});
-        g.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));   // a card: the 20 dp tier
-        c.setBackground(g);
+        c.setBackground(focusBackground(a));
         int p = PUi.dp(a, 16);
         c.setPadding(p, p, p, p);
 
@@ -82,10 +78,33 @@ public final class HeroCard {
         LinearLayout.LayoutParams mgLp = PUi.wrap();
         mgLp.topMargin = PUi.dp(a, 12);
         mgLp.leftMargin = PUi.dp(a, 8);
-        actions.addView(PUi.button(a, a.getString(R.string.lemon_hero_manage), PUi.Kind.QUIET,
+        // TONAL, not QUIET: the quiet label is bn_accent on nothing, and bn_accent on the gradient's leaf end
+        // misses 4.5:1 in the light mode (3.63:1) — the tonal container carries its own proven surface
+        actions.addView(PUi.button(a, a.getString(R.string.lemon_hero_manage), PUi.Kind.TONAL,
                 v -> { Haptics.play(v, Haptics.Word.CLICK); onManage.run(); }), mgLp);
         c.addView(actions);
         return c;
+    }
+
+    /**
+     * The card's background, focus included: the default state is the gradient; the focused state is the
+     * same gradient under the focus ring, at the card's radius (20 dp) — the hero never loses its surface
+     * when the D-pad lands on it (round 2's Grave: the generic ring drew a transparent body over it).
+     */
+    private static android.graphics.drawable.Drawable focusBackground(Activity a) {
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{PUi.col(a, R.color.bn_accent_tint), PUi.col(a, R.color.bn_hero_end)});
+        g.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));   // a card: the 20 dp tier
+        android.graphics.drawable.GradientDrawable ring = new android.graphics.drawable.GradientDrawable();
+        ring.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));
+        ring.setStroke(PUi.dp(a, 3), PUi.col(a, R.color.bn_accent));
+        android.graphics.drawable.LayerDrawable focused = new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[]{g, ring});
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, focused);
+        s.addState(new int[0], g);
+        return s;
     }
 
 }

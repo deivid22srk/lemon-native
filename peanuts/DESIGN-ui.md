@@ -71,7 +71,7 @@ runs on every push — a palette change that breaks a pair breaks the build.
 | `bn_accent` | `#6B5C00` | primary accent (6.4:1 on bg, 6.7:1 on card, 5.7:1 on accent_tint, 4.3:1 vs stroke) |
 | `bn_on_accent` | `#FFFFFF` | label on accent fill (6.7:1) |
 | `bn_accent_tint` | `#FFFFEF7A` | tonal accent container (accent on it 5.7:1) |
-| `bn_hero_end` | `#BBC3A6` | the hero gradient's leaf end (bn_text on it 10.2:1; `bn_text_2` misses AA there and is forbidden) |
+| `bn_hero_end` | `#BBC3A6` | the hero gradient's leaf end (bn_text on it 9.4:1; `bn_text_2` misses AA there and is forbidden) |
 | `bn_secondary` | `#3F6A00` | leaf support (6.2:1 on bg, 6.4:1 on card) |
 | `bn_accent_warm` | `#B35C00` | citric warm accent (4.7:1 on card) |
 | `bn_banana` | `#C7A500` | brand accent, brand moments only — never a button fill, never text on a light card |

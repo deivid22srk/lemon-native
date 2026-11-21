@@ -15,10 +15,10 @@
     <color name="bn_accent">#FF6B5C00</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (6.4:1 on bg, 6.7:1 on card, 5.7:1 on accent_tint, 4.3:1 vs stroke) -->
     <color name="bn_on_accent">#FFFFFFFF</color>     <!-- label on accent fill (6.7:1) -->
     <color name="bn_accent_tint">#FFFFEF7A</color>     <!-- tonal accent container: selected segments, chips (accent on it 5.7:1) -->
-    <color name="bn_hero_end">#FFBBC3A6</color>      <!-- the hero gradient's far end: the leaf support's hue at the container depth (body text on it 10.2:1) -->
-    <color name="bn_secondary">#FF3F6A00</color>     <!-- leaf green support: hero gradient end, secondary chips (6.2:1 on bg, 6.4:1 on card) -->
+    <color name="bn_hero_end">#FFBBC3A6</color>      <!-- the hero gradient's far end: the leaf support's hue at the container depth (body text on it 9.4:1) -->
+    <color name="bn_secondary">#FF3F6A00</color>     <!-- leaf green support: secondary chips, the hero gradient's leaf end's hue source (6.2:1 on bg, 6.4:1 on card) -->
     <color name="bn_accent_warm">#FFB35C00</color>   <!-- citric warm accent: update-available chips, warm highlights (4.7:1 on card) -->
-    <color name="bn_banana">#FFC7A500</color>        <!-- brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill (3.3:1 on card) -->
+    <color name="bn_banana">#FFC7A500</color>        <!-- brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill (2.4:1 informational: icon/art color, never text on a light card) -->
     <color name="bn_banana_deep">#FFB39200</color>   <!-- pressed brand accent -->
     <color name="bn_on_banana">#FF201A00</color>     <!-- text on the brand accent (7.3:1 on banana, 5.8:1 on banana_deep) -->
     <color name="bn_text">#FF1B1C14</color>          <!-- body text (17.3:1 on card, 16.0:1 on bg) -->
