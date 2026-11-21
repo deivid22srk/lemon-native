@@ -2633,7 +2633,6 @@ static int *g_sdirty; static int g_nsd, g_sdcap;
 static uint8_t *g_sdflag;
 static VkDescriptorSetLayout g_dsl; static VkDescriptorPool g_dpool; static VkDescriptorSet g_set;
 static uint32_t g_ntex_slots, g_nsamp_slots, g_nimg_slots;
-typedef struct { samp_par p; VkSampler s; } samp_ent; static samp_ent *g_samp; static int g_nsamp;
 // LEMON: sampler experiment flags (docs/hogwarts/experiments.md; the A5 texture-quality experiments). All default 0 = the game's
 // own state; read live (ctl.txt/env), so a hogwarts-scoped capture sets them in env-<title ID>.txt. Part of the cache key: a
 // live change re-keys the cache, and samplers registered after the change pick it up (the game's already-registered states keep
@@ -2645,6 +2644,7 @@ static void samp_dbg_of(samp_dbg *d) {
     d->aniso = vka_env_str("DM_VK_SAMP_ANISO", s, sizeof s) ? (int)strtol(s, NULL, 0) : 0;
     d->mip_floor = vka_env_str("DM_VK_SAMP_MIP_FLOOR", s, sizeof s) ? strtof(s, NULL) : 0.0f;
 }
+typedef struct { samp_par p; samp_dbg dbg; VkSampler s; } samp_ent; static samp_ent *g_samp; static int g_nsamp;
 static VkSampler *g_sres; static int g_nsres;   // the sampler of each registered ID, found once per registration (sampler_of searches every distinct sampler)
 static VkImageView g_null_view;
 
