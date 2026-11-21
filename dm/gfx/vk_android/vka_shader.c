@@ -144,7 +144,9 @@ static int lib_load(void) {
             char v[17], a[13]; vka_shlib_str(g_lib.h->vk_chain, v); memcpy(a, g_lib.h->abi, 12); a[12] = 0;
             if (g_lib.by_abi == 2) VLOG("shader library %s: this host's version %s is %s (the app's shader update makes it); playing version %s, of the older ABI %s that this host's %s "
                                         "still plays (vka_abi_compat.h: differences %#x)", path, DMSH_VK_CHAIN, why, v, a, DMSH_VK_ABI, g_lib.differs);
-            else VLOG("shader library %s: this host's version %s is %s (the app's shader update makes it); playing version %s, the same ABI %s", path, DMSH_VK_CHAIN, why, v, DMSH_VK_ABI);
+            else VRED("shader library %s: this host's version %s is %s (the app's shader update makes it); playing version %s, the same ABI %s: "
+                      "the versions' shader code differs, and what the game draws is the old version's picture until that update has made this one and the game starts again",
+                      path, DMSH_VK_CHAIN, why, v, DMSH_VK_ABI);
             snprintf(path, sizeof path, "%s", best); have = 1;
         } else if (!*best && *old && vka_shlib_open(&g_lib, old, NULL, NULL, DM_GAME_ID, NULL, err, sizeof err)) {
             char v[17]; vka_shlib_str(g_lib.h->vk_chain, v);

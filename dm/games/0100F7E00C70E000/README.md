@@ -111,6 +111,23 @@ Status: **bring-up / not tested upstream**. SDK 16.2.3, Unreal Engine 4, NVN, Ww
   must fill; `DM_VK_BCN_ZEROLOG=<n>` (default 8) names the compressed zero images the key misses with every door's
   state, so the capture either shows the tracked lines or names the door (an uncompressed culprit takes the
   `tex_flush_upload`/`tex_dirty_upload` keys instead, as Tears of the Kingdom does).
+- 2026-11-21, the rodada 8 capture (`0100F7E00C70E000-20261121-074846.log`, build `f2afda6`, the same
+  picture on the device): the round-8 tracking is silent too — no `tracked by the profile's
+  tex_stream_track (NVN1)` line (0 of them) — and `DM_VK_BCN_ZEROLOG`'s 8 compressed zero images all have
+  `sampled 0 cpuw 0` (32x32/64x64/8x8, formats 0x49/0x80/0x8e, pool 1): none of them is a sampled material
+  texture, so the streamed-compressed-texture hypothesis has no confirming evidence in this capture. The
+  decisive lines are the library's own: `v-7a5123a36213/dmsh_vk.lib: this host's version 7a5123a36213 is
+  missing (the app's shader update makes it); playing version dfebef5d68a9, the same ABI cb5a89b39291` —
+  **every capture so far played the pre-type-1-fix library** (its 66,578 shaders carry the unresolved
+  material bindings the section below names), so the type-1 decode fix has never reached the GPU. The pack
+  has no delta manifest row for its older versions, so `Ondevice.autoUpdate` never ran
+  (`deltaShaders < 0`) and the game list showed only the quiet `Ready · update` chip while the game's own
+  page offers the update (`GameSettings.shaderUpdateCard`): updating the shaders on the phone (a long job
+  for 66,578 shaders) and starting the game again is how the fix lands. Rodada 9 makes the case loud
+  instead of silent: the replay's playing-an-older-same-ABI-library line is `[RED]` now (it was `[vk]`
+  info; the legacy pre-versioned case already was), `log_rules.tsv`'s `shader-update` rule is `red` with
+  player text naming the update, and the game list adds the `Shaders are one update behind` warn chip for
+  exactly this state (playable, no known delta).
 
 ## Black characters/objects (textured UI fine) — type 1 texture handles with the sampler word in c2
 

@@ -797,8 +797,9 @@ public final class MainActivity extends Activity {
                 if (info.getParent() == null) return;
                 // An APK update's new shaders: made in the background with no question when the pack's older library is one the delta manifest knows (Ondevice.autoUpdate)
                 if (!variant && problem != null && problem.shadersOnly && problem.prepare) Ondevice.autoUpdate(this, new File(g.gameDir), new File(g.packDir), g.titleId);   // PEANUTS: !variant (above)
+                int delta = problem != null && problem.playable ? Pack.deltaShaders(new File(g.packDir), g.titleId) : -2;   // -2: nothing to update (no playable library)
                 if (problem == null) Ui.status(st, "Ready", R.color.bn_ok);
-                else if (problem.playable && Pack.deltaShaders(new File(g.packDir), g.titleId) < 0) Ui.status(st, "Ready · update", R.color.bn_accent);   // an optional shader update: the game's page offers it (GameSettings.shaderUpdateCard)
+                else if (problem.playable && delta < 0) Ui.status(st, "Ready · update", R.color.bn_accent);   // an optional shader update: the game's page offers it (GameSettings.shaderUpdateCard); no auto-update (Ondevice.autoUpdate needs a known delta)
                 else if (problem.playable) { Ui.status(st, "Ready · updating shaders", R.color.bn_ok); updating.put(st, g); updateTick(); }   // the count follows (updateTick)
                 else if (problem.legacy) Ui.status(st, "Ready · shaders need one update", R.color.bn_accent);
                 else Ui.status(st, problem.label, problem.prepare || problem.anyway ? R.color.bn_accent : R.color.bn_danger);
@@ -825,6 +826,13 @@ public final class MainActivity extends Activity {
                 }
                 if (problem != null && problem.legacy) {   // Play stays Play; a chip says why the shaders want one more update
                     TextView n = Ui.warnChip(this, "Shaders need one update", "Shaders need one update", ShaderLibs.LEGACY_WARNING);
+                    LinearLayout.LayoutParams wl = Ui.wrap();
+                    wl.topMargin = dp(6);
+                    info.addView(n, wl);
+                }
+                if (problem != null && problem.playable && delta < 0) {   // no auto-update (the delta manifest has none of this pack's versions): the game plays the older library's code until the optional update runs — the replay logs it red, so the card says why too
+                    TextView n = Ui.warnChip(this, "Shaders are one update behind", "Shaders are one update behind",
+                        "This app version translates this game's shaders differently (its shader version moved), and the game plays the older library's code until you update: open this page, tap Update shaders (it can take a long time for a big game; keep the phone charged), then start the game again. Play stays on, but what you see can be the old shaders' picture.");
                     LinearLayout.LayoutParams wl = Ui.wrap();
                     wl.topMargin = dp(6);
                     info.addView(n, wl);
