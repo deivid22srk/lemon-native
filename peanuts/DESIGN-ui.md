@@ -41,8 +41,8 @@ runs on every push — a palette change that breaks a pair breaks the build.
 | `bn_accent` | `#FFE74A` | primary accent: fills, focus ring, links, quiet buttons (15.6:1 on bg, 14.6:1 on card, 10.2:1 on accent_tint, 8.8:1 vs stroke) |
 | `bn_on_accent` | `#1A1700` | label on accent fill (14.4:1) |
 | `bn_accent_tint` | `#3A3300` | tonal accent container: selected segments, chips (accent on it 10.2:1) |
-| `bn_hero_end` | `#485D24` | the hero gradient's leaf end (bn_text on it 6.5:1; `bn_text_2` misses AA there and is forbidden) |
-| `bn_secondary` | `#A8E04A` | leaf green support: hero gradient end, secondary chips (12.5:1 on bg, 11.7:1 on card) |
+| `bn_hero_end` | `#485D24` | the hero gradient's leaf end (bn_text on it 6.6:1; `bn_text_2` misses AA there and is forbidden) |
+| `bn_secondary` | `#A8E04A` | leaf green support: secondary chips, the hero gradient's leaf end's hue source (12.5:1 on bg, 11.7:1 on card) |
 | `bn_accent_warm` | `#FF9F43` | citric warm accent: update-available chips, warm highlights (8.9:1 on card) |
 | `bn_banana` | `#FFE74A` | brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill |
 | `bn_banana_deep` | `#E8D11E` | pressed brand accent |
@@ -116,6 +116,11 @@ lemon palette (`bn_overlay_accent` = the lemon yellow, 14.7:1 on the overlay car
   Companion as pills — done in the success text, running in the accent container, stopped in the danger
   container; an unknown step degrades to the card's status line, nothing is invented. The pills rebuild
   only when the step moves, not on every progress tick.
+- **The gradient carries no direct label**: everything drawn on the hero's ramp is proven by the checker's
+  hero pairs (bn_text on both ends) and both actions carry their own surfaces (PRIMARY/TONAL); the hero's
+  focused state keeps the gradient under the ring (`HeroCard.focusBackground`). The design system's visual
+  evidence in this SDK-less environment is the spec render `docs/images/lemon-design-sheet.png` (generated
+  from the palette resources and the shipped fonts; explicitly not app screenshots).
 - The library leads with the **hero** (`dev.peanuts.ui.components.HeroCard`, "Continue playing"): the
   last-used Ready game at the top of Home, Play one tap away (the brief's two-tap rule). The card itself is
   one focus stop (clickable, focusable, A plays like a cover tap) and its caption lines draw in `bn_text`:

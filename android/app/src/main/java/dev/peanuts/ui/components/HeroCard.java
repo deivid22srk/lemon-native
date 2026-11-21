@@ -99,8 +99,12 @@ public final class HeroCard {
         android.graphics.drawable.GradientDrawable ring = new android.graphics.drawable.GradientDrawable();
         ring.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));
         ring.setStroke(PUi.dp(a, 3), PUi.col(a, R.color.bn_accent));
+        android.graphics.drawable.GradientDrawable body = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{PUi.col(a, R.color.bn_accent_tint), PUi.col(a, R.color.bn_hero_end)});   // a second instance: the two states never share a drawable
+        body.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));
         android.graphics.drawable.LayerDrawable focused = new android.graphics.drawable.LayerDrawable(
-                new android.graphics.drawable.Drawable[]{g, ring});
+                new android.graphics.drawable.Drawable[]{body, ring});
         android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[0], g);
