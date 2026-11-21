@@ -38,6 +38,11 @@ public final class LibrarySettings {
     public static final int REQ_MOD_FOLDER = 69, REQ_MOD_ZIP = 70;
     private static final Handler UI = new Handler(Looper.getMainLooper());
     private static String fontsState;   // "Reading the firmware…" and what came of it, while the rows show
+    /** Whether a firmware read is in flight (the wizard's Firmware row shows its own reading state for it — dev.peanuts.ui.SetupActivity, LEMON) */
+    static boolean fontsRunning;
+    /** The first-run wizard's hook (LEMON, dev.peanuts.ui.SetupActivity): run whenever a value the pickers change may have changed, so the screen that called
+     *  them redraws with the real state even though refreshRows' own rows belong to Settings (and may not exist yet). Set while SetupActivity is alive; null otherwise. */
+    static Runnable rowsChangedHook;
     private static PUi.Setting gameRow, updateRow, dlcRow, keysRow, fontsRow, buildRow, companionsRow, hapticsRow, motionRow, swapRow, bottomRow, gamesRow;
     private static Activity rowsOf;
 
@@ -132,6 +137,7 @@ public final class LibrarySettings {
     }
 
     private static void refreshRows() {
+        if (rowsChangedHook != null) rowsChangedHook.run();   // the wizard redraws itself (it is not Settings' rows, and its callers are all on the UI thread)
         Activity a = rowsOf;
         if (a == null || gameRow == null) return;
         String g = PeanutsPrefs.gameDir(a), u = PeanutsPrefs.updateDir(a), d = PeanutsPrefs.dlcDir(a);
@@ -395,6 +401,7 @@ public final class LibrarySettings {
             return;
         }
         fontsState = "Reading the firmware…";
+        fontsRunning = true;
         refreshRows();
         File out = PeanutsPrefs.fontsDir(a);
         out.mkdirs();
@@ -403,14 +410,14 @@ public final class LibrarySettings {
             // loaded" unless prod.keys had been picked in the same session), and a plain line when there are none
             if (!ImporterPort.ensureKeys(a)) {
                 if (deleteAfter != null) deleteAfter.delete();
-                UI.post(() -> { fontsState = "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."; fontsLanded(a); });
+                UI.post(() -> { fontsState = "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."; fontsRunning = false; fontsLanded(a); });
                 return;
             }
             int r = imp.firmwareFonts(source, out.getPath());
             String err = imp.lastError();
             if (deleteAfter != null) deleteAfter.delete();
             UI.post(() -> { fontsState = r == 0 ? null : "Firmware not added: " + err
-                    + "\n" + KEYS_FIRMWARE_GUIDANCE; fontsLanded(a); });
+                    + "\n" + KEYS_FIRMWARE_GUIDANCE; fontsRunning = false; fontsLanded(a); });
         }, "peanuts-fonts").start();
     }
 
@@ -447,6 +454,7 @@ public final class LibrarySettings {
             return;
         }
         fontsState = "Copying the firmware zip…";
+        fontsRunning = true;
         refreshRows();
         new Thread(() -> {
             File tmp = new File(a.getCacheDir(), "firmware_import.zip");
@@ -456,7 +464,7 @@ public final class LibrarySettings {
                 while ((n = in.read(buf)) > 0) { o.write(buf, 0, n); total += n; if (total > 8L << 30) throw new IOException("that file is too large for a firmware zip"); }
             } catch (IOException e) {
                 tmp.delete();
-                UI.post(() -> { fontsState = "Firmware not added: could not copy the zip (" + e.getMessage() + ")"; refreshRows(); });
+                UI.post(() -> { fontsState = "Firmware not added: could not copy the zip (" + e.getMessage() + ")"; fontsRunning = false; refreshRows(); });
                 return;
             }
             String name = displayName(a, u);

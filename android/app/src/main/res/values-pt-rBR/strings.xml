@@ -100,13 +100,16 @@
     <string name="lemon_setup_keys_row">Chaves</string>
     <string name="lemon_setup_firmware_row">Firmware</string>
     <string name="lemon_setup_ready_title">Tudo pronto</string>
-    <string name="lemon_setup_ready_body">É assim que a configuração ficou. O que faltar pode ser concluído depois em Configurações › Biblioteca.</string>
+    <string name="lemon_setup_ready_body">É assim que a configuração ficou. O que faltar continua com um cartão na tela inicial, ou espera em Configurações › Biblioteca.</string>
     <string name="lemon_setup_check_access">Acesso a arquivos</string>
     <string name="lemon_setup_check_folder">Pasta de jogos</string>
     <string name="lemon_setup_check_keys">Chaves</string>
     <string name="lemon_setup_check_firmware">Firmware</string>
-    <string name="lemon_setup_check_done">Pronto</string>
+    <string name="lemon_setup_check_done">Concluído</string>
     <string name="lemon_setup_check_later">Depois</string>
     <string name="lemon_setup_value_added">Adicionado</string>
+    <string name="lemon_setup_keys_added">prod.keys adicionado (%1$d bytes)</string>
+    <string name="lemon_setup_firmware_reading">Lendo o firmware…</string>
+    <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Ainda não</string>
 </resources>

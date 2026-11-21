@@ -34,7 +34,7 @@ The `.nup` layout and compression are upstream's (`dm/host/nup_image.h`, `script
 
 ## Library UI — `dev.peanuts.ui`
 
-- `SetupActivity`: first run (or Settings › Setup): pick `prod.keys` (SAF, copied to `files/keys/`), pick firmware folder (optional; extracts fonts via `Native.firmwareFonts`), pick game folder (required; All files access flow as upstream's `Folders`), optional update folder and DLC folder. Stored in `dev.peanuts` prefs (`PeanutsPrefs`).
+- `SetupActivity` (shipped 2026-11-21, Lemon, `dev.peanuts.ui.SetupActivity`): the first run's dedicated setup, once until it is done (`PeanutsPrefs.setupDone`) — five short steps (welcome, All files access, game folder, keys and firmware, done) with step pills, Back / Continue / Skip, a checklist and the Appearance choice; the pickers are `LibrarySettings`' own, and the library's first-run card (`Library.setupCard`) stays as the in-page fallback while a game folder is missing.
 - `LibraryActivity` (the LAUNCHER entry, replacing `CatalogActivity`'s): scans the roots, groups by base title id, shows cards: art (icon from the file via `Native.icon`, or the catalog's GameTDB art later), name, status chip: **Ready** (pack present and fits, per upstream `PackFind`/`Game`), **Build** (needs import and/or Prepare), **No profile** (title not in the APK's `BuildConfig.NX_PROFILES`). Tap: Ready → Play (start `GameActivity` as upstream's `Game`/`FrontendLaunch` does, by title id); else → `GameSheet`.
 - `GameSheet` (bottom sheet / dialog): rows Base (file, version), Update (newest found; "add…" to pick another), DLC (list; add…), Companion (catalog state: not available / available x.y / installed x.y), and **Build**. Build hands off to `BuildPipeline`.
 - Reuse upstream classes read-only through `dev.peanuts.Games` (reflection) where needed; never edit upstream UI.
@@ -46,4 +46,4 @@ The `.nup` layout and compression are upstream's (`dm/host/nup_image.h`, `script
 
 ## Integration (session owner)
 
-Manifest: `LibraryActivity` gets the LAUNCHER filter (the `CatalogActivity` line changes to it); `SetupActivity`, the build service. build.gradle: nothing new. Hooks: GameSettings (1 line). Build, Thor test with Pokopia (.nup already) and with an NSP (owner provides one in the game folder).
+Manifest: `LibraryActivity` gets the LAUNCHER filter (the `CatalogActivity` line changes to it); `SetupActivity`, the build service. build.gradle: nothing new. Hooks: GameSettings (1 line). Build, Thor test with Pokopia (.nup already) and with an NSP (owner provides one in the game folder). (Plan note, 2026-11-21: the library shipped inside upstream's Home instead — there is no `LibraryActivity`; `SetupActivity` ships as the Lemon first-run setup, see the Library UI line above.)

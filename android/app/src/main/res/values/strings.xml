@@ -76,7 +76,7 @@
     <string name="lemon_setup_step_access">File access</string>
     <string name="lemon_setup_step_folder">Game folder</string>
     <string name="lemon_setup_step_keys">Keys &amp; firmware</string>
-    <string name="lemon_setup_step_ready">Done</string>
+    <string name="lemon_setup_step_ready">Ready</string>
     <string name="lemon_setup_step_a11y">Step %1$d of %2$d: %3$s, %4$s</string>
     <string name="lemon_setup_state_done">done</string>
     <string name="lemon_setup_state_current">current</string>
@@ -99,12 +99,12 @@
     <string name="lemon_setup_folder_row">Game folder</string>
     <string name="lemon_setup_folder_pick">Pick your game folder</string>
     <string name="lemon_setup_folder_not_set">Not set yet</string>
-    <string name="lemon_setup_keys_title">Keys and firmware</string>
+    <string name="lemon_setup_keys_title">Keys &amp; firmware</string>
     <string name="lemon_setup_keys_body">Needed before your first build, not for looking around. Keys come from your own console; firmware gives the games their fonts. Firmware and keys should be the same version.</string>
     <string name="lemon_setup_keys_row">Keys</string>
     <string name="lemon_setup_firmware_row">Firmware</string>
     <string name="lemon_setup_ready_title">You\'re set</string>
-    <string name="lemon_setup_ready_body">Here is where the setup landed. Whatever is missing can be finished later in Settings › Library.</string>
+    <string name="lemon_setup_ready_body">Here is where the setup landed. Whatever is missing keeps its card on Home, or waits in Settings › Library.</string>
     <string name="lemon_setup_check_access">File access</string>
     <string name="lemon_setup_check_folder">Game folder</string>
     <string name="lemon_setup_check_keys">Keys</string>
@@ -112,5 +112,8 @@
     <string name="lemon_setup_check_done">Done</string>
     <string name="lemon_setup_check_later">Later</string>
     <string name="lemon_setup_value_added">Added</string>
+    <string name="lemon_setup_keys_added">prod.keys added (%1$d bytes)</string>
+    <string name="lemon_setup_firmware_reading">Reading the firmware…</string>
+    <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Not yet</string>
 </resources>

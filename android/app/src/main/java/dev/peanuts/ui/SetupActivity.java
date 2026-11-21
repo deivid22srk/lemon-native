@@ -59,14 +59,20 @@ public final class SetupActivity extends Activity {
 
     private LinearLayout content;   // the page's column (PUi.page): header, pills, the step's body
     private LinearLayout stepBody;   // the step's card, rebuilt at every step change (the enter animation's target)
+    private LinearLayout pillsRow;   // the step pills' row (built again with the page: the auto-scroll finds the current chip in it)
+    private HorizontalScrollView pillsScroll;   // the pills' scroller, scrolled to the current step when the page is built
     private Button btnBack, btnContinue;   // the bar under the page (built once; labels and visibility follow the step)
+    private BananaBackgroundView bananas;   // the drifting lemons behind the page, run between onResume and onPause like Home's
     private int step;
     private boolean builtOnce;   // the first onResume comes right after onCreate's build: nothing to refresh
+    private boolean resultHandled;   // onActivityResult already rebuilt the page: onResume need not build it again (one build per picker return)
 
-    /** MainActivity.onCreate (LEMON hook): the dedicated setup, once, until it is done. An intent that opens a game or a .nup takes over instead. */
+    /** MainActivity.onCreate (LEMON hook): the dedicated setup, once, until it is done. An intent that opens a game or a .nup takes over instead — the same
+     *  payloads fromIntent consumes (MainActivity: a game or a folder to add, a frontend's game, an on-device dump); the rest (no_pause, a relaunched task) is a plain start. */
     public static void launch(Activity a, Intent intent) {
         if (PeanutsPrefs.setupDone(a)) return;
-        if (intent != null && intent.getData() != null) return;
+        if (intent != null && (intent.getData() != null || intent.hasExtra("game") || intent.hasExtra("add_game")
+                || intent.hasExtra("frontend_game") || intent.hasExtra("ondevice_dump"))) return;
         a.startActivityForResult(new Intent(a, SetupActivity.class), REQ_SETUP);
     }
 
@@ -76,7 +82,8 @@ public final class SetupActivity extends Activity {
         if (step < STEP_WELCOME || step >= STEP_COUNT) step = STEP_WELCOME;
 
         FrameLayout frame = new FrameLayout(this);
-        frame.addView(new BananaBackgroundView(this), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        bananas = new BananaBackgroundView(this);
+        frame.addView(bananas, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         frame.addView(root, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -107,8 +114,14 @@ public final class SetupActivity extends Activity {
         });
         root.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         setContentView(frame);
+        LibrarySettings.rowsChangedHook = this::build;   // a firmware read lands (or the pickers' values change) while this screen is up: drawn again
         build();
         Motion.enterPage(content, 0);   // the page enters once (Motion's tokens; reduced motion honoured inside)
+    }
+
+    @Override protected void onDestroy() {
+        LibrarySettings.rowsChangedHook = null;
+        super.onDestroy();
     }
 
     /** A fold, a rotation, a window resize: the same step again (the activity handles its size changes itself, as the launcher's manifest does) */
@@ -122,16 +135,24 @@ public final class SetupActivity extends Activity {
         out.putInt("step", step);
     }
 
-    /** The row values and the access state may have changed outside (a picker, Android's file access page): the step is drawn again */
+    /** The row values and the access state may have changed outside (a picker, Android's file access page, a firmware read landing): the step is drawn again */
     @Override protected void onResume() {
         super.onResume();
-        if (builtOnce) build();
+        if (builtOnce && !resultHandled) build();
+        resultHandled = false;
         builtOnce = true;
+        bananas.setRunning(true);
+    }
+
+    /** The lemons stop while the screen is covered, as Home's do (BananaBackgroundView animates only between setRunning true and false) */
+    @Override protected void onPause() {
+        bananas.setRunning(false);
+        super.onPause();
     }
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if (LibrarySettings.result(this, request, result, data)) build();   // the library's pickers (keys, folders, firmware) — the same door Settings uses
+        if (LibrarySettings.result(this, request, result, data)) { resultHandled = true; build(); }   // the library's pickers (keys, folders, firmware) — the same door Settings uses
     }
 
     /** Back: a step back; on the first step the setup is left unfinished (it is offered again on the next launch) */
@@ -147,8 +168,7 @@ public final class SetupActivity extends Activity {
         TextView skip = PUi.button(this, getString(R.string.lemon_setup_skip), PUi.Kind.QUIET, v -> complete());
         if (step == STEP_READY) skip.setVisibility(View.GONE);
         content.addView(PUi.header(this, PUi.badge(this, 44), getString(R.string.app_name), getString(R.string.lemon_setup_subtitle), skip));
-        buildPills();
-        stepBody = PUi.card(this);
+        buildPills();        stepBody = PUi.card(this);
         PUi.add(content, stepBody, Tokens.SPACE_4);
         switch (step) {
             case STEP_ACCESS: accessStep(); break;
@@ -180,6 +200,12 @@ public final class SetupActivity extends Activity {
         hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
         hs.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         hs.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // the pills say themselves (contentDescription): the scroller is decoration
+        pillsRow = row;
+        pillsScroll = hs;
+        hs.post(() -> {   // a handheld's width holds three or four pills: the current one is scrolled into view (a tap on Continue never hides where you are)
+            View chip = pillsRow.getChildAt(Math.min(step, pillsRow.getChildCount() - 1));
+            if (chip != null) pillsScroll.smoothScrollTo(Math.max(0, (int) chip.getX() - PUi.dp(this, Tokens.SPACE_2)), 0);
+        });
         PUi.add(content, hs, Tokens.SPACE_2, PUi.fill());
     }
 
@@ -233,9 +259,12 @@ public final class SetupActivity extends Activity {
         PUi.add(stepBody, h, 0, PUi.wrap());
         PUi.add(stepBody, PUi.body(this, getString(R.string.lemon_setup_keys_body)), Tokens.SPACE_2);
         PUi.add(stepBody, new PUi.Setting(this, "🔑", getString(R.string.lemon_setup_keys_row), Haptics.on(Haptics.Word.TICK, v -> LibrarySettings.pickKeys(this)))
-                .value(LibrarySettings.keysValue(this)).chevron(this).view, Tokens.SPACE_3);
+                .value(PeanutsPrefs.hasKeys(this)
+                        ? getString(R.string.lemon_setup_keys_added, PeanutsPrefs.keysFile(this).length())
+                        : getString(R.string.lemon_setup_value_not_yet)).chevron(this).view, Tokens.SPACE_3);
         PUi.add(stepBody, new PUi.Setting(this, "🔤", getString(R.string.lemon_setup_firmware_row), Haptics.on(Haptics.Word.TICK, v -> LibrarySettings.pickFirmwareSource(this)))
-                .value(LibrarySettings.fontsValue(this, getString(R.string.lemon_setup_value_not_yet))).chevron(this).view, 0);
+                .value(getString(PeanutsPrefs.hasFonts(this) ? R.string.lemon_setup_value_added
+                        : LibrarySettings.fontsRunning ? R.string.lemon_setup_firmware_reading : R.string.lemon_setup_value_not_yet)).chevron(this).view, 0);
     }
 
     /** Done: the checklist of where the setup landed, and the Appearance choice (the design contract's dark default) */
@@ -246,7 +275,7 @@ public final class SetupActivity extends Activity {
         PUi.add(stepBody, PUi.body(this, getString(R.string.lemon_setup_ready_body)), Tokens.SPACE_2);
         boolean access = Environment.isExternalStorageManager();
         String dir = PeanutsPrefs.gameDir(this);
-        check(stepBody, getString(R.string.lemon_setup_check_access), access ? getString(R.string.lemon_setup_access_allowed) : getString(R.string.lemon_setup_access_note), access);
+        check(stepBody, getString(R.string.lemon_setup_check_access), getString(access ? R.string.lemon_setup_access_allowed : R.string.lemon_setup_access_not_allowed), access);
         check(stepBody, getString(R.string.lemon_setup_check_folder), dir != null ? dir : getString(R.string.lemon_setup_folder_not_set), dir != null);
         boolean keys = PeanutsPrefs.hasKeys(this);
         check(stepBody, getString(R.string.lemon_setup_check_keys), getString(keys ? R.string.lemon_setup_value_added : R.string.lemon_setup_value_not_yet), keys);
@@ -269,7 +298,7 @@ public final class SetupActivity extends Activity {
         LinearLayout row = PUi.row(this);
         StatusChip.Tone tone = done ? StatusChip.Tone.OK : StatusChip.Tone.NEUTRAL;
         TextView chip = StatusChip.chip(this, getString(done ? R.string.lemon_setup_check_done : R.string.lemon_setup_check_later), tone);
-        chip.setContentDescription(name + ", " + chip.getText());
+        chip.setContentDescription(getString(R.string.lemon_setup_check_a11y, name, chip.getText()));
         row.addView(chip, StatusChip.lp(this));
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
