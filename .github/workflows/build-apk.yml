@@ -82,3 +82,39 @@ jobs:
           name: hogwarts-legacy-apk
           path: android/app/out/*.apk
           if-no-files-found: error
+          # Hard cap: GitHub does not accept sub-day retention, so 1 day is
+          # the floor. The expire-apk job below removes the APK after 1 hour;
+          # even if that job gets cancelled, the artifact never outlives a day.
+          retention-days: 1
+
+  expire-apk:
+    name: Expire the APK after 1 hour
+    needs: apk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Hold the run for 1 hour, then expire the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo 'The APK stays downloadable for 1 hour; this job then deletes it.'
+          sleep 3600
+          cutoff="$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Expiring hogwarts-legacy-apk artifacts created at or before $cutoff"
+          ids="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"hogwarts-legacy-apk\" and .expired == false and .created_at <= \"$cutoff\") | .id" || true)"
+          if [ -z "$ids" ]; then
+            echo 'No hogwarts-legacy-apk artifacts to expire.'
+            exit 0
+          fi
+          for id in $ids; do
+            if gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$id"; then
+              echo "Expired artifact $id"
+            else
+              echo "Warning: could not expire artifact $id (it will still die within 24h)" >&2
+            fi
+          done
