@@ -44,8 +44,10 @@ Written from the sources (file:line at the branch tip); the symptom hypotheses l
   (`vka_gbar.c:24-33`, off with `DM_VK_BAR_NARROW=0`); barriers kept inside passes when
   `DM_VK_BAR_KEEP` (default 1, `vka_draw.c:776-786`) with hazard-deferred pass ends.
 - Submission chunking: `DM_VK_CHUNK=600` draws splits a frame's recording into parts; mid-pass
-  splits reopen with LOAD (`DM_VK_CHUNK_PASS`, `vka_exec.c:652-670`); 16 M-pixel **depth**
-  targets never split — colour-only huge passes can.
+  splits reopen with LOAD (`DM_VK_CHUNK_PASS`, `vka_exec.c:652-670`); a pass whose render area is
+  ≥16 M pixels is **never** split mid-pass, depth or not (`vka_exec.c:661-662` — the guard is on
+  the render area itself; the comment cites the 6400x6400 ink map that would cost ~400 MB to
+  store and load on a tiler).
 - Memory: guest RAM becomes placed Vulkan memory lazily (`vka_mem.c:1046-1235`); the
   file-backed pool line ("moved 363.6 MiB in 399 pools") is the MAP_SHARED swap mechanism
   (`vka_mem.c:1683-1766`), not image aliasing. Texel-buffer views over placed memory are
@@ -64,8 +66,10 @@ Written from the sources (file:line at the branch tip); the symptom hypotheses l
   feature fallback. sRGB twins via `srgb_twin` (:86-91); raw-UNORM twins for texel buffers/present
   (:93-99).
 - **Learned view formats**: an image used through two formats gets an alt-format list, persisted
-  to `$DM_TEMP/vk_view_formats.txt` (`vka_fmtlist.h:11-46`, `vl_learn/vl_formats` :379-392,
-  attached at creation :569). Hogwarts' learned `44 ↔ 37` pair (BGRA8/RGBA8 over one memory) is
+  to `$DM_TEMP/vk_view_formats.txt` (the list lives per image, `vkfl` helpers in
+  `vka_fmtlist.h:11-46`; the learn/query functions `vl_learn`/`vl_formats` are in
+  `vka_tex.c:379-392`, attached at image creation `vka_tex.c:569`). Hogwarts' learned `44 ↔ 37`
+  pair (BGRA8/RGBA8 over one memory) is
   the A4 suspect; `DM_VK_VIEW_LEARN=0` is the A/B.
 - Samplers: `sampler_of` (`vka_tex.c:2871-2916`) — NVN LOD bias (clamped to the device max),
   anisotropy enabled when NVN asks and clamped to the device max, min/max LOD, border colour,

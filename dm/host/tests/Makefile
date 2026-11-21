@@ -91,6 +91,7 @@ run: $(B)/t_language $(B)/t_motion $(B)/t_heap_size $(B)/t_touch $(B)/t_gesture 
 	$(B)/t_android_psogate
 	$(B)/t_android_psosync
 	$(B)/t_android_texstream
+	$(B)/t_android_sampdbg
 	$(B)/t_android_auto
 	$(B)/t_nvn_dpool
 	$(B)/t_android_t2tpath
@@ -555,6 +556,11 @@ $(B)/t_android_texstream: t_android_texstream.c $(VKA)/vka_texstream.h | $(B)
 .PHONY: android-texstream
 android-texstream: $(B)/t_android_texstream
 	$(B)/t_android_texstream
+$(B)/t_android_sampdbg: t_android_sampdbg.c $(VKA)/vka_sampdbg.h | $(B)
+	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_android_sampdbg.c
+.PHONY: android-sampdbg
+android-sampdbg: $(B)/t_android_sampdbg
+	$(B)/t_android_sampdbg
 # PEANUTS end
 # A model of the texture cache's image lifetimes under random operations (references, holds, the old image of an in-place swap, lingering, eviction, pool drops,
 # queued region writes; vka_tex.c): the sanitizer stops at the first image used or freed after it was freed. `build/t_android_imglife old` shows the fault of the

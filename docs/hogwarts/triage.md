@@ -9,9 +9,9 @@ Source material: the user's ZIP (`releases/download/Log/Logapp.zip`): one app lo
 
 | Fact | Value | Evidence |
 |---|---|---|
-| SoC / GPU | Snapdragon with Adreno (TM) 660 | readiness line, log line 6 |
-| Driver | packaged **Turnip**, `WN-Turnip-1.19-b_Axxx`, reported as `turnip Mesa driver (Mesa 26.3.0-devel (git-30da39187d))`, driver ID 18 (MESA_TURNIP), version 0x6802063 | log lines 6, 10; loaded via libadrenotools (`vka_driver.c:87-121`) |
-| Vulkan API | 1.3.363 | readiness line |
+| SoC / GPU | Snapdragon with Adreno (TM) 660 | readiness line, log line 47 |
+| Driver | packaged **Turnip**, `WN-Turnip-1.19-b_Axxx`, reported as `turnip Mesa driver (Mesa 26.3.0-devel (git-30da39187d))`, driver ID 18 (MESA_TURNIP), version 0x6802063 | log lines 28, 47, 55; loaded via libadrenotools (`vka_driver.c:87-121`) |
+| Vulkan API | 1.3.363 | readiness line (log line 47) |
 | RAM | 7.2 GiB (Android SDK 34), `MemAvailable` 1.1 GiB at boot | readiness, line 314 |
 | Panel / pacing | 60.15 Hz panel, game paces at **interval 2 (30 fps)**, GPU busy p50/p90 ≈ 17–35 ms in gameplay, worse in heavy scenes | pace lines (e.g. 604, 536) |
 | Subgroups / SSBO | shader library header: "64-lane subgroups, storage buffers at 64" | log line 305 |
@@ -34,7 +34,7 @@ green/black silhouettes of 2026-11-20 to localized texture blotches and exposure
   appears. A4's A/B remains `DM_VK_VIEW_LEARN=0`.
 - Buffer textures bound as texel buffers over guest memory, first `texture ID 4523, 1024 elements,
   VkFormat 99` (`VK_FORMAT_R32_SINT`); once, at log t≈241.7 s, all 512 texel-buffer view slots were
-  live (`[RED] vk: more than 512 texel buffer views at once`, line 2987) — the view cache
+  live (`[RED] vk: more than 512 texel buffer views at once`, line 2988) — the view cache
   (`g_tbv[512]`, `vka_draw.c:1452`) is invalidated wholesale on every placed-segment-table
   generation change, and scratch-copy views are created fresh per submission, so bursts of live
   views are expected; consequence: reads that miss the cache take the slow path (a perf event, not
@@ -42,15 +42,15 @@ green/black silhouettes of 2026-11-20 to localized texture blotches and exposure
 
 ## Recurring warnings (no VK_ERROR, no device lost, no validation-layer output in the ZIP)
 
-1. `[RED] gfx: mtl_* not yet on Android` × 14 — Metal-only statistics tools absent; cosmetic.
+1. `[RED] gfx: mtl_* not yet on Android` × 13 — Metal-only statistics tools absent; cosmetic.
 2. `[RED] vk: ADPF session of N threads not made` × 2 — Android power-hint session unavailable; perf-only.
 3. `draws skipped waiting` in the pipelines lines: **compute dispatches skipped while their
    pipelines build** (`DM_VK_CS_ASYNC` default 1, `vka_pso.c:1545-1549`): 5 by frame 300, 25 by
    1500, **664 by frame 2400, 673 by 2700, 1,009 by 3000**; the profile's sync-all rule covers
    graphics draws only. 66,578 shaders means the first minutes compile a huge set; the exposure /
    eye-adaptation chain is compute — see A3.
-4. Pipeline cache misses dominate early: "cache-only tries 0 hit / 741 missed" by frame 3000;
-   one long compile (compute shader `76315f0e514ba35a`, 1.2 s, background).
+4. Pipeline cache misses dominate early: "cache-only tries 12 hit / 741 missed" by frame 3000
+   (line 2062); one long compile (compute shader `76315f0e514ba35a`, 1.2 s, background).
 5. Pace dips to 3.5–5.0 fps in the heavy scene windows (frames 2343, 2980: replay recording
    156–267 ms/frame) — shader-compile warmup cost, expected on a first run with an empty pipeline
    cache.
@@ -58,12 +58,22 @@ green/black silhouettes of 2026-11-20 to localized texture blotches and exposure
 ## Log ↔ video calibration
 
 - Log starts 17:29:21 (file name), video recording finalized 17:33:41 after 140.7 s → recording
-  began ≈ 17:31:20 ≈ **log t≈119 s**; the log's last entry (t≈244 s, frame 5541) lands at video
-  t≈125 s. Log covers video 0:00–2:05; **the 2:16 band report falls after the log stopped**.
+  began ≈ 17:31:20 ≈ **log t≈119 s**. The log's last entry is frame 5933 at **t≈259.05 s**
+  (line 3106, the log ends there; the run was stopped by the user) → the calibration closes
+  almost exactly: 259.05 − 119 ≈ 140.0 s ≈ the video's duration. **The log covers the whole
+  video (0:00–2:20); the 2:16 band report (≈ log t≈255 s) is inside it.**
+- The log's last window (t≈244–259 s, log lines 3000–3107) is unremarkable: pace 25–26 fps,
+  GPU busy p50/p90 ≈ 35/65 ms, 1,200–1,300 draws/frame, no `[RED]`, no compiles, no
+  texture uploads, pool placement idle. **A band at 2:16 left no trace in the replay's
+  statistics** — consistent with a sub-frame transient (a present/swapchain glitch would not
+  change the frame's counters) or with content the counters do not see. The per-frame
+  pixel capture (`shot`/`screenshot`, [experiments.md](experiments.md)) is the instrument that
+  can freeze it.
 - Video content: t0–11 s the London carriage cutscene (Fig, the protagonist's face close-up =
   A4's window); t12–21 s studio logos; t21–64 s the shore/dragon-attack sequence; t65–120 s the
   cave interior walk toward the exit (A3's blown white, A1's blotches on Fig); t121–141 s the
-  cliff-top arrival vista (A2's report time).
+  cliff-top arrival vista (A2's report time). The recording is VFR at a 25.5 fps average
+  (3,595 frames / 140.73 s): a one-frame transient can fall between captured frames (~39 ms).
 - The game renders its 16:9 frame centred in the 1600x720 recording with black pillarboxes
   (≈ x 160–1440): the launcher presents 1:1, no stretch. The black bars are presentation, not an
   artifact.
@@ -75,9 +85,12 @@ green/black silhouettes of 2026-11-20 to localized texture blotches and exposure
 Confirmed in frames (`.work/frames/a1_fig_*`, crops `sheets/a1_fig_heads.png`,
 `a1_top_hit_zoom.png`): irregular **whitish blotches on Fig's hair and coat** at 1:44/1:47 —
 clusters of saturated-white 8x8 px tiles (detector: up to 886 tiles in one frame at 1:58, when the
-blown exit behind him dominates). The blotches are model-attached (they sit on the hair at
-different views), stable across adjacent frames at the same scene moment, and NOT present on the
-protagonist's model in the same frames, nor on the environment. Two overlapping contributions:
+blown exit behind him dominates; every tile sits in x≈700–1100 — the region the exit and Fig's
+upper body share — and none in x<700, so the detector alone does not separate "model-attached"
+from "screen-space": that reading rests on the crops, where the blotches sit on the hair across
+different views). The blotches are stable across adjacent frames at the same scene moment, and
+NOT present on the protagonist's model in the same frames, nor on the environment. Two
+overlapping contributions:
 
 1. the hair/coat texture blotches themselves (a material-texture content/sampling class — the
    same family as A4), `likely`;
@@ -92,13 +105,17 @@ texture class (A/B `DM_VK_TEX_STATS=<lit material fs key>` on the hair texture,
 
 ### A2 — irregular horizontal black band across the landscape (2:16) — P0
 
-**Not reproduced in the recorded pixels.** Searched: the whole video at 1 fps (141 thumbs), the
-2:14.5–2:21 window at full recorded rate (161 PNG frames), with two detectors (dark-run ≥ 250 px
-at luminance < 30 / < 95 in sky rows with bright rows above and below). Zero hits. The dark
-horizontal features at 2:16 are the natural haze layers and the subtitle backdrop; the black
-side bars are pillarboxing. Verdict: a transient shorter than one recorded frame (the capture is
-VFR ~30 fps, a 16–33 ms glitch can fall between frames), or at a time outside the reported
-window, or device-local (not captured). `hypothesis`. The A/B matrix from the code audit stays
+**Not reproduced in the recorded pixels.** Searched: the whole video at 1 fps (141 thumbs, by
+row-mean luminance steps), the 2:14.5–2:21 window at full recorded rate (161 PNG frames, by
+per-row dark-run length in the game area: runs ≥ 250 px at luminance < 30, then < 95, in sky rows
+with bright rows above and below — the detectors' thresholds as run; the 1 fps pass and the
+full-rate pass were inline analyses recorded in the round's scripts, `rank_frames.py` and
+`detect_artifacts.py` use the denser-window thresholds), and the log's t≈244–259 s tail for any
+statistical trace (none: see calibration). Zero pixel hits. The dark horizontal features at 2:16
+are the natural haze layers and the subtitle backdrop; the black side bars are pillarboxing.
+Verdict: a transient shorter than one recorded frame (VFR at a 25.5 fps average, a ~39 ms glitch
+can fall between frames), or at a time outside the reported window, or device-local (not
+captured). `hypothesis`. The A/B matrix from the code audit stays
 the plan: `DM_VK_RP_AREA=0` (render-area narrowing on ≥16 M-pixel passes leaves contents outside
 the area undefined — the 2-miss fallback only guards repeated misses), `DM_VK_BAR_KEEP=0`,
 `DM_VK_BAR_NARROW=0`, `DM_VK_PRESENT_PREWAIT=1`/`DM_VK_PRESENT_GATE_WAIT`, plus
