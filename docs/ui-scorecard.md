@@ -7,7 +7,8 @@ per round (build-apk.yml = the APK, peanuts.yml = the fork's checks + the palett
 | Round | Commit | Nota | Critério < 9.0 | Build | Relatório |
 |---|---|---|---|---|---|
 | 0 (baseline) | `3647c8c` rebrand | — (no UI round: the renamed upstream, CI baseline) | — | build-apk: fixed after 44924410924's compile error (Signer brace) and 44924993648's res/font license error, then green (job 44926143837's "GPL APK", 5m55s; the run stays open 1 h by the expire job by design); peanuts green (44924993605) | — |
-| 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | **6.9** (média ponderada recomputada pelo Crítico) | nenhum (< 5: não houve) | apk job green: 44928256881 (run 44927648571 failed on the round's compile: Haptics visibility, PUi.face's public, the hero's shadowed local, HeroCard's tile params); peanuts green: 44928256899 | below |
+| 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | **6.9** (média ponderada recomputada pelo Crítico) | nenhum (< 5: não houve) |
+| 2 | `31507a7` + `0e86711` (compile fix, brief 7.1) | **7.4** (Δ +0.5) | nenhum (mínimo 6.5) | 1ª subida quebrou o compile (mono fallback pedindo a fonte apagada, run 44930204099); HEAD verde: apk job 44930627236, peanuts 44930627252 | abaixo, após o relatório da rodada 1 | apk job green: 44928256881 (run 44927648571 failed on the round's compile: Haptics visibility, PUi.face's public, the hero's shadowed local, HeroCard's tile params); peanuts green: 44928256899 | below |
 
 ## Round 1 — ui(round-01): the Lemon design system
 
