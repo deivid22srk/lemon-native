@@ -85,9 +85,17 @@ class TwoLocale(unittest.TestCase):
             for name in sorted(names):
                 self.assertIn(f'R.string.{name}', java, f'{name} is declared but never used')
 
-    def test_importer_missing_is_a_state(self):
+    def test_firmware_states_through_one_door(self):
+        # every firmware-read end state goes through fontsStop (kind and detail together), so no path can move one without the other
         ls = (UI / 'LibrarySettings.java').read_text(encoding='utf-8')
-        self.assertGreaterEqual(ls.count('fontsKind = FONTS_FAILED'), 3, 'every firmware-read failure path names itself')
+        self.assertIn('private static void fontsStop(int kind, String state) { fontsKind = kind; fontsState = state; }', ls, 'one door, defined once')
+        self.assertNotIn('fontsState = "Firmware not added', ls, 'failure details ride on fontsStop, not on naked writes')
+        self.assertIn('fontsStop(FONTS_FAILED, "Firmware not added: add your prod.keys first', ls, 'the keys-missing failure names itself')
+        self.assertIn('fontsStop(r == 0 ? FONTS_IDLE : FONTS_FAILED', ls, 'the importer verdict names itself, success and failure')
+        self.assertIn('fontsStop(FONTS_FAILED, "Firmware not added: could not copy the zip', ls, 'the zip-copy failure names itself')
+        self.assertIn('fontsStop(FONTS_NO_IMPORTER', ls, 'a build without the importer is its own state, not a generic failure')
+        self.assertIn('fontsStop(FONTS_WAITING', ls, 'waiting for the access is its own state')
+        self.assertIn('fontsStop(FONTS_IDLE', ls, 'a landed read clears the state')
 
     def test_library_dialogs_paired(self):
         # the wizard opens LibrarySettings' dialogs: their texts are resources in both locales too (LibrarySettings itself is touched by the wizard's hook)

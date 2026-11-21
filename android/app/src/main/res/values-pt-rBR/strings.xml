@@ -112,6 +112,7 @@
     <string name="lemon_setup_firmware_reading">Lendo o firmware…</string>
     <string name="lemon_setup_firmware_failed">O firmware não foi adicionado. Confira seu prod.keys e escolha o firmware de novo.</string>
     <string name="lemon_setup_firmware_waiting">Aguardando o acesso a arquivos: permita na etapa Acesso a arquivos e o firmware é lido.</string>
+    <string name="lemon_setup_firmware_no_importer">Este build não tem leitor de firmware no aparelho: o firmware é lido quando for necessário.</string>
     <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Ainda não</string>
     <!-- LEMON: os diálogos do LibrarySettings alcançados pelo wizard, agora em recursos (regra dos dois idiomas; os literais antigos do arquivo ficam como estão) -->

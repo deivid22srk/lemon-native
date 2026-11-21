@@ -116,6 +116,7 @@
     <string name="lemon_setup_firmware_reading">Reading the firmware…</string>
     <string name="lemon_setup_firmware_failed">The firmware was not added. Check your prod.keys, and choose the firmware again.</string>
     <string name="lemon_setup_firmware_waiting">Waiting for All files access: allow it in the File access step, and the firmware is read.</string>
+    <string name="lemon_setup_firmware_no_importer">This build has no on-phone firmware reader: the firmware is read when it is needed.</string>
     <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Not yet</string>
     <!-- LEMON: LibrarySettings' wizard-reachable dialogs, said in resources too (the two-locale rule; the older literals of that file stay as they are) -->

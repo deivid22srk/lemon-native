@@ -41,8 +41,11 @@ public final class LibrarySettings {
     /** The firmware read's coarse state for the wizard's Firmware row (LEMON, dev.peanuts.ui.SetupActivity): the read's progress, failure and wait, said in the
      *  wizard's own words — the rows' English literals stay theirs. FONTS_RUNNING while a read or a zip copy is in flight, FONTS_FAILED when one ended badly
      *  (its detail is in fontsState, for the log), FONTS_WAITING when a firmware was picked before All files access and reads when it is given, FONTS_IDLE otherwise. */
-    static final int FONTS_IDLE = 0, FONTS_RUNNING = 1, FONTS_FAILED = 2, FONTS_WAITING = 3;
+    static final int FONTS_IDLE = 0, FONTS_RUNNING = 1, FONTS_FAILED = 2, FONTS_WAITING = 3, FONTS_NO_IMPORTER = 4;
     static int fontsKind = FONTS_IDLE;
+
+    /** A firmware read ended (or never started): its coarse state and the rows' detail words, one door, so the wizard's states and the rows cannot drift apart (LEMON). */
+    private static void fontsStop(int kind, String state) { fontsKind = kind; fontsState = state; }
     /** The first-run wizard's hook (LEMON, dev.peanuts.ui.SetupActivity): run whenever a value the pickers change may have changed, so the screen that called
      *  them redraws with the real state even though refreshRows' own rows belong to Settings (and may not exist yet). Set while SetupActivity is alive; null otherwise. */
     static Runnable rowsChangedHook;
@@ -190,7 +193,7 @@ public final class LibrarySettings {
 
     /** The launcher is in front again (MainActivity.onResume): coming back from Android's All files access page reads a firmware that waited for it */
     public static void resume(Activity a) {
-        if (fontsState != null && fontsState.startsWith("Waiting for file access") && Environment.isExternalStorageManager()) { fontsState = null; fontsKind = FONTS_IDLE; }
+        if (fontsState != null && fontsState.startsWith("Waiting for file access") && Environment.isExternalStorageManager()) fontsStop(FONTS_IDLE, null);
         firmwareAfterAccess(a);
         refreshRows();
     }
@@ -322,7 +325,7 @@ public final class LibrarySettings {
                 // The importer opens the folder by its path, which needs All files access. Without it the read failed here, the dialog below asked for the
                 // access, and nothing read the firmware again once it was given: the row stayed at "not added" (GitHub issue #42). The read now waits for it
                 if (Environment.isExternalStorageManager()) extractFonts(a, p, null);
-                else { firmwareTried = null; fontsKind = FONTS_WAITING; fontsState = "Waiting for file access: allow All files access for the app, and the firmware is read."; }
+                else { firmwareTried = null; fontsStop(FONTS_WAITING, "Waiting for file access: allow All files access for the app, and the firmware is read."); }
                 break;
             case REQ_GAME: PeanutsPrefs.gameDir(a, p); break;
             case REQ_BUILD_DIR: {
@@ -398,14 +401,12 @@ public final class LibrarySettings {
     private static void extractFonts(Activity a, String source, File deleteAfter) {
         ImporterPort imp = ImporterPort.get();
         if (!imp.available()) {
-            fontsState = "The importer is not in this build: the firmware is read when it is.";
-            fontsKind = FONTS_FAILED;   // the wizard says its own failed line instead of waiting forever (LEMON)
+            fontsStop(FONTS_NO_IMPORTER, "The importer is not in this build: the firmware is read when it is.");
             refreshRows();
             if (deleteAfter != null) deleteAfter.delete();
             return;
         }
-        fontsState = "Reading the firmware…";
-        fontsKind = FONTS_RUNNING;
+        fontsStop(FONTS_RUNNING, "Reading the firmware…");
         refreshRows();
         File out = PeanutsPrefs.fontsDir(a);
         out.mkdirs();
@@ -414,14 +415,14 @@ public final class LibrarySettings {
             // loaded" unless prod.keys had been picked in the same session), and a plain line when there are none
             if (!ImporterPort.ensureKeys(a)) {
                 if (deleteAfter != null) deleteAfter.delete();
-                UI.post(() -> { fontsState = "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."; fontsKind = FONTS_FAILED; fontsLanded(a); });
+                UI.post(() -> { fontsStop(FONTS_FAILED, "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."); fontsLanded(a); });
                 return;
             }
             int r = imp.firmwareFonts(source, out.getPath());
             String err = imp.lastError();
             if (deleteAfter != null) deleteAfter.delete();
-            UI.post(() -> { fontsState = r == 0 ? null : "Firmware not added: " + err
-                    + "\n" + a.getString(R.string.library_keys_firmware_guidance); fontsKind = r == 0 ? FONTS_IDLE : FONTS_FAILED; fontsLanded(a); });
+            UI.post(() -> { fontsStop(r == 0 ? FONTS_IDLE : FONTS_FAILED, r == 0 ? null : "Firmware not added: " + err
+                    + "\n" + a.getString(R.string.library_keys_firmware_guidance)); fontsLanded(a); });
         }, "peanuts-fonts").start();
     }
 
@@ -457,8 +458,7 @@ public final class LibrarySettings {
             extractFonts(a, local, null);
             return;
         }
-        fontsState = "Copying the firmware zip…";
-        fontsKind = FONTS_RUNNING;
+        fontsStop(FONTS_RUNNING, "Copying the firmware zip…");
         refreshRows();
         new Thread(() -> {
             File tmp = new File(a.getCacheDir(), "firmware_import.zip");
@@ -468,7 +468,7 @@ public final class LibrarySettings {
                 while ((n = in.read(buf)) > 0) { o.write(buf, 0, n); total += n; if (total > 8L << 30) throw new IOException("that file is too large for a firmware zip"); }
             } catch (IOException e) {
                 tmp.delete();
-                UI.post(() -> { fontsState = "Firmware not added: could not copy the zip (" + e.getMessage() + ")"; fontsKind = FONTS_FAILED; refreshRows(); });
+                UI.post(() -> { fontsStop(FONTS_FAILED, "Firmware not added: could not copy the zip (" + e.getMessage() + ")"); refreshRows(); });
                 return;
             }
             String name = displayName(a, u);

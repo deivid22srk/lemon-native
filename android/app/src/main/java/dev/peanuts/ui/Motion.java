@@ -169,7 +169,10 @@ final class Motion {
      * pre-draw pass after the layout. A child taller than the window is not one layer (a card of thirty rows): its own children enter instead, so every
      * layer is smaller than the window; at most twelve pieces, and what is under the fold just shows. Never called for a page built again after a choice.
      */
-    static void enterPage(ViewGroup column, int first) {
+    static void enterPage(ViewGroup column, int first) { enterPage(column, first, false); }
+
+    /** The same, with a direction (the setup's steps, LEMON): forward rises from below, back settles from above — going back is not a second arrival. */
+    static void enterPage(ViewGroup column, int first, boolean back) {
         if (!enabled || first >= column.getChildCount()) return;
         column.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override public boolean onPreDraw() {
@@ -178,7 +181,7 @@ final class Motion {
                 if (!column.isAttachedToWindow()) return true;
                 int window = column.getRootView().getHeight();
                 int[] n = {0};
-                for (int i = first; i < column.getChildCount(); i++) piece(column.getChildAt(i), window, on() ? 8 * column.getResources().getDisplayMetrics().density : 0f, n);
+                for (int i = first; i < column.getChildCount(); i++) piece(column.getChildAt(i), window, on() ? (back ? -8 : 8) * column.getResources().getDisplayMetrics().density : 0f, n);
                 return true;
             }
         });
@@ -194,7 +197,7 @@ final class Motion {
         v.setAlpha(0f);
         v.setTranslationY(rise);
         v.addOnAttachStateChangeListener(CANCEL_ON_DETACH);
-        v.animate().alpha(rest).translationY(0f).setStartDelay(rise > 0f ? (long) Math.min(n[0], MAX_ROWS) * STAGGER : 0).setDuration(ENTER).setInterpolator(OUT).withLayer();
+        v.animate().alpha(rest).translationY(0f).setStartDelay(rise != 0f ? (long) Math.min(n[0], MAX_ROWS) * STAGGER : 0).setDuration(ENTER).setInterpolator(OUT).withLayer();
         n[0]++;
     }
 

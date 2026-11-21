@@ -59,8 +59,6 @@ public final class SetupActivity extends Activity {
 
     private LinearLayout content;   // the page's column (PUi.page): header, pills, the step's body
     private LinearLayout stepBody;   // the step's card, rebuilt at every step change (the enter animation's target)
-    private LinearLayout pillsRow;   // the step pills' row (built again with the page: the auto-scroll finds the current chip in it)
-    private HorizontalScrollView pillsScroll;   // the pills' scroller, scrolled to the current step when the page is built
     private Button btnBack, btnContinue;   // the bar under the page (built once; labels and visibility follow the step)
     private BananaBackgroundView bananas;   // the drifting lemons behind the page, run between onResume and onPause like Home's
     private int step;
@@ -157,8 +155,10 @@ public final class SetupActivity extends Activity {
         bananas.setRunning(true);
     }
 
-    /** The lemons stop while the screen is covered, as Home's do (BananaBackgroundView animates only between setRunning true and false) */
+    /** The lemons stop while the screen is covered, as Home's do (BananaBackgroundView animates only between setRunning true and false); the hook goes too —
+     *  onPause precedes Home's onResume in a finish, so nothing redraws a wizard that is going away (onStart registers again when it comes back). */
     @Override protected void onPause() {
+        LibrarySettings.rowsChangedHook = null;
         bananas.setRunning(false);
         super.onPause();
     }
@@ -214,11 +214,9 @@ public final class SetupActivity extends Activity {
         hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
         hs.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         hs.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // the pills say themselves (contentDescription): the scroller is decoration
-        pillsRow = row;
-        pillsScroll = hs;
-        View current = pillsRow.getChildAt(Math.min(step, pillsRow.getChildCount() - 1));
-        current.post(() -> {   // a handheld's width holds three or four pills: the current one is scrolled into view; the chip's own post runs after its layout, so a recreated activity lands scrolled too
-            pillsScroll.smoothScrollTo(Math.max(0, (int) current.getX() - PUi.dp(this, Tokens.SPACE_2)), 0);
+        View current = row.getChildAt(Math.min(step, row.getChildCount() - 1));
+        current.post(() -> {   // a handheld's width holds three or four pills: the current one is scrolled into view; the chip's own post runs after its layout (a recreated activity lands scrolled too), and the views are captured — a rebuild between posting and running scrolls nothing
+            hs.smoothScrollTo(Math.max(0, (int) current.getX() - PUi.dp(this, Tokens.SPACE_2)), 0);
         });
         PUi.add(content, hs, Tokens.SPACE_2, PUi.fill());
     }
@@ -288,6 +286,7 @@ public final class SetupActivity extends Activity {
         return getString(kind == LibrarySettings.FONTS_RUNNING ? R.string.lemon_setup_firmware_reading
                 : kind == LibrarySettings.FONTS_FAILED ? R.string.lemon_setup_firmware_failed
                 : kind == LibrarySettings.FONTS_WAITING ? R.string.lemon_setup_firmware_waiting
+                : kind == LibrarySettings.FONTS_NO_IMPORTER ? R.string.lemon_setup_firmware_no_importer
                 : R.string.lemon_setup_value_not_yet);
     }
 
@@ -305,16 +304,19 @@ public final class SetupActivity extends Activity {
         check(stepBody, getString(R.string.lemon_setup_check_keys), getString(keys ? R.string.lemon_setup_value_added : R.string.lemon_setup_value_not_yet), keys);
         boolean fonts = PeanutsPrefs.hasFonts(this);
         check(stepBody, getString(R.string.lemon_setup_check_firmware), firmwareValue(), fonts);
-        PUi.add(stepBody, PUi.small(this, getString(R.string.lemon_appearance_note)), Tokens.SPACE_3);
-        PUi.add(stepBody, PUi.section(this, getString(R.string.lemon_appearance)), Tokens.SPACE_3);
+        // Appearance is its own card, labelled as the settings pages label theirs (the checklist card stays short enough to read in one look)
+        PUi.add(content, PUi.section(this, getString(R.string.lemon_appearance)), Tokens.SPACE_6);
+        LinearLayout look = PUi.card(this);
+        PUi.add(content, look, Tokens.SPACE_3);
+        PUi.add(look, PUi.small(this, getString(R.string.lemon_appearance_note)), 0);
         String cur = PeanutsPrefs.nightMode(this);
         int sel = "light".equals(cur) ? 1 : "system".equals(cur) ? 2 : 0;
         String[] labels = {getString(R.string.lemon_appearance_dark), getString(R.string.lemon_appearance_light), getString(R.string.lemon_appearance_system)};
-        PUi.add(stepBody, new PUi.Segmented(this, labels, sel, i -> {
+        PUi.add(look, new PUi.Segmented(this, labels, sel, i -> {
             String value = i == 1 ? "light" : i == 2 ? "system" : "dark";
             PeanutsPrefs.nightMode(this, value);
             dev.peanuts.settings.AppearanceSection.apply(this, value);   // UiModeManager's per-app night mode; the theme change remakes this activity
-        }), Tokens.SPACE_2, PUi.fill());
+        }), Tokens.SPACE_3, PUi.fill());
     }
 
     /** One checklist row: a StatusChip (Done in the success tone, Later neutral — never color alone: the word is there), the item's name and its value line */
@@ -337,12 +339,13 @@ public final class SetupActivity extends Activity {
         PUi.add(parent, row, Tokens.SPACE_3, PUi.fill());
     }
 
-    /** A step back or forward: the page is built again and the step's card enters (Motion's enter, discreet; the pills move with it) */
+    /** A step back or forward: the page is built again and the step's card enters in the step's direction — forward rises from below, back settles from above (Motion's enter, discreet; the header and the pills stay put) */
     private void setStep(int to) {
         if (to < STEP_WELCOME || to >= STEP_COUNT || to == step) return;
+        boolean back = to < step;
         step = to;
         build();
-        Motion.enterPage(stepBody, 0);   // the step's card enters; the header and the pills stay put (a discreet step change)
+        Motion.enterPage(stepBody, 0, back);
     }
 
     /** Get started / Skip setup: the setup is done (PeanutsPrefs.setupDone), Home takes over and keeps its first-run card while a game folder is missing */
