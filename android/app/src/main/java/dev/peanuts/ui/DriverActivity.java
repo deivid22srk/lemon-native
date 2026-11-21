@@ -546,7 +546,7 @@ public final class DriverActivity extends Activity {
         URL u = new URL(url);
         if (!"https".equals(u.getProtocol())) throw new IOException("not an https address");
         HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
-        c.setRequestProperty("User-Agent", "PeanutsNative-driver-page");
+        c.setRequestProperty("User-Agent", "LemonNative-driver-page");
         c.setRequestProperty("Accept", accept);
         c.setConnectTimeout(15000);
         c.setReadTimeout(30000);

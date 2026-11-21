@@ -1606,7 +1606,7 @@ public final class Library {
         c.setGravity(Gravity.CENTER_HORIZONTAL);
         c.setPadding(PUi.dp(a, 20), PUi.dp(a, 28), PUi.dp(a, 20), PUi.dp(a, 20));
         ImageView im = new ImageView(a);
-        im.setImageResource(R.drawable.ic_banana_happy);
+        im.setImageResource(R.drawable.ic_lemon);   // LEMON: rebrand
         im.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         c.addView(im, new LinearLayout.LayoutParams(PUi.dp(a, 80), PUi.dp(a, 80)));
         TextView h = PUi.heading(a, "Set up your games");

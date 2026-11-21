@@ -162,7 +162,7 @@ final class Ui {
             addView(text, fill());
             copy = button(c, "Copy details", Kind.QUIET, v -> {
                 android.content.ClipboardManager cm = c.getSystemService(android.content.ClipboardManager.class);
-                if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Peanuts Native details", text.getText()));   // PEANUTS: rebrand
+                if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Lemon Native details", text.getText()));   // PEANUTS: rebrand
                 android.widget.Toast.makeText(c, "Details copied", android.widget.Toast.LENGTH_SHORT).show();
             });
             copy.setPadding(dp(c, Tokens.SPACE_1), 0, dp(c, Tokens.SPACE_1), 0);
@@ -414,7 +414,7 @@ final class Ui {
         v.setGravity(Gravity.CENTER_HORIZONTAL);
         v.setPadding(dp(c, Tokens.SPACE_6), dp(c, Tokens.SPACE_8), dp(c, Tokens.SPACE_6), dp(c, Tokens.SPACE_6));
         ImageView im = new ImageView(c);
-        im.setImageResource(R.drawable.ic_banana_happy);
+        im.setImageResource(R.drawable.ic_lemon);   // LEMON: rebrand
         im.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // decoration: the heading says what is empty
         v.addView(im, new LinearLayout.LayoutParams(dp(c, Tokens.EMPTY_BANANA_DP), dp(c, Tokens.EMPTY_BANANA_DP)));
         TextView h = heading(c, title);
@@ -594,7 +594,7 @@ final class Ui {
     /** The banana with a face in the header's badge circle (Home's header): bn_badge, the launcher icon's deep green in BOTH modes — bn_leaf lightens for dark, and on the lightened green the yellow banana would sink (1.4:1; on this deep green 5.6:1) */
     static ImageView badge(Context c, int sizeDp) {
         ImageView v = new ImageView(c);
-        v.setImageDrawable(new android.graphics.drawable.InsetDrawable(c.getDrawable(R.drawable.ic_banana_happy), -0.16f));   // the banana fills more of the circle
+        v.setImageDrawable(new android.graphics.drawable.InsetDrawable(c.getDrawable(R.drawable.ic_lemon), -0.16f));   // LEMON: rebrand — the lemon fills more of the circle
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.OVAL);
         g.setColor(col(c, R.color.bn_badge));

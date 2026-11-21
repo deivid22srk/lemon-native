@@ -109,7 +109,7 @@ public final class Catalog {
 
     private static String getPage(String url, String[] nextUrlOut) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setRequestProperty("User-Agent", "PeanutsNative");
+        c.setRequestProperty("User-Agent", "LemonNative");
         c.setRequestProperty("Accept", "application/vnd.github+json");
         c.setConnectTimeout(15000); c.setReadTimeout(30000);
         try (InputStream in = c.getInputStream()) {
@@ -155,7 +155,7 @@ public final class Catalog {
 
     public static String get(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setRequestProperty("User-Agent", "PeanutsNative");
+        c.setRequestProperty("User-Agent", "LemonNative");
         c.setRequestProperty("Accept", "application/vnd.github+json");
         c.setConnectTimeout(15000); c.setReadTimeout(30000);
         try (InputStream in = c.getInputStream()) {

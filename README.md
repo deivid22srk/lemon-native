@@ -1,11 +1,11 @@
-<h1 align="center">Peanuts Native</h1>
+<h1 align="center">Lemon Native</h1>
 
 <p align="center">
   Nintendo Switch games running natively on Android dual-screen handhelds, with a live companion on the second screen.
 </p>
 
 <p align="center">
-  <img alt="status" src="https://img.shields.io/badge/release-0.1.5-brightgreen"> <!-- PEANUTS -->
+  <img alt="status" src="https://img.shields.io/badge/release-1.0.0-brightgreen"> <!-- PEANUTS -->
   <img alt="license" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue">
   <img alt="platform" src="https://img.shields.io/badge/platform-Android%2013%2B-green">
 </p>
@@ -15,11 +15,11 @@
 </div>
 
 > [!NOTE]
-> Peanuts Native is in development. The current release is on the [releases page](https://github.com/igawa6/peanuts-native/releases). It is not affiliated with Nintendo.
+> Lemon Native is in development. The current release is on the [releases page](https://github.com/deivid22srk/lemon-native/releases). It is not affiliated with Nintendo.
 
 ## What it is
 
-Peanuts Native turns a dump of a Switch 1 game you own into an Android app on your phone. It is not an emulator. The
+Lemon Native turns a dump of a Switch 1 game you own into an Android app on your phone. It is not an emulator. The
 game's own ARM64 code is rewritten to run directly on the phone's CPU, its graphics are replayed on Vulkan, and its
 shaders are translated on the device. Everything happens on the phone: you pick the game file, tap Build, and play.
 
@@ -32,7 +32,7 @@ too.
 
 <!-- PEANUTS: supported game versions and Eden Duo companion availability -->
 
-Peanuts Native 0.1.5 includes 39 games. The Companion column shows whether a game appears in the Eden Duo Companions catalog. Updates are shown as version numbers or numeric update IDs.
+Lemon Native 1.0.0 includes 39 games. The Companion column shows whether a game appears in the Eden Duo Companions catalog. Updates are shown as version numbers or numeric update IDs.
 
 | Game | Title ID | Game update | Companion |
 |---|---|---|---|
@@ -76,11 +76,11 @@ Peanuts Native 0.1.5 includes 39 games. The Companion column shows whether a gam
 | EA Sports FC 27 | `0100C49025D3E000` | 1.8d.6523 | No |
 | Tomodachi Life: Living the Dream | `010051F0207B2000` | 1.0.4 | No |
 
-On the 0.1.5 verification build, an AYN Thor with Turnip v26.2.0 R5 reached the rooftop fight in Demon Slayer 2 and the opening cave in Tears of the Kingdom. Kirby and the Forgotten Land skipped no draws in the opening walk with either a fresh or a saved shader cache.
+On the 0.1.5 verification build of the Peanuts lineage (upstream), an AYN Thor with Turnip v26.2.0 R5 reached the rooftop fight in Demon Slayer 2 and the opening cave in Tears of the Kingdom. Kirby and the Forgotten Land skipped no draws in the opening walk with either a fresh or a saved shader cache.
 
 ## What you need
 
-- A dual-screen Android handheld. Peanuts Native is developed and tested on the AYN Thor. On a single-screen phone the
+- A dual-screen Android handheld. Lemon Native is developed and tested on the AYN Thor. On a single-screen phone the
   game still runs, without the companion.
 - Android 13 or later, a Snapdragon GPU with Vulkan 1.3, and 12 GB of RAM or more. A Turnip Vulkan driver is
   recommended; the app can download one.
@@ -90,13 +90,13 @@ On the 0.1.5 verification build, an AYN Thor with Turnip v26.2.0 R5 reached the 
 
 ## Your keys and games
 
-Peanuts Native only runs games you dumped from your own console, with keys from that console. It contains no Nintendo
+Lemon Native only runs games you dumped from your own console, with keys from that console. It contains no Nintendo
 code, firmware or keys, never downloads any, and does not link to places that offer them. Nobody from this project
 will ever ask you for money, keys or game files.
 
 ## Getting started
 
-1. Install the APK and allow All files access when asked.
+1. Install the APK and allow All files access when asked. Lemon Native installs as `dev.nxnative.android.lemon`, beside (not over) Peanuts Native or Banana Native; its saves live under `Android/data/dev.nxnative.android.lemon/files/saves`, so an update from one of those apps does not carry saves over — copy them first from the game's **Saves** tab.
 2. On the first screen, add your **Keys** (`prod.keys`), pick your **Game folder**, and add your **Firmware**. Both
    keys and firmware are needed before the first build. A build folder is optional (Settings, Library, **Build
    folder**): pick one, on the phone or the microSD card, to keep every build there, organized by title ID.
@@ -158,7 +158,7 @@ See [CONTRIBUTING.md](peanuts/docs/CONTRIBUTING.md) for adding a game, fixing a 
 
 ## Credits and license
 
-Peanuts Native is a fork of [Banana Native](https://git.eden-emu.dev/moceure/BananaNative) by moceure, which does the
+Lemon Native is a fork of [Peanuts Native](https://github.com/igawa6/peanuts-native), which is itself a fork of [Banana Native](https://git.eden-emu.dev/moceure/BananaNative) by moceure, which does the
 real work of running Switch games natively on Android and is built on [nxnative](https://github.com/seedds/nxnative)
 by seedds (MIT). Some fixes are adapted from [nx2android](https://github.com/shirai91/nx2android) (MIT).
 

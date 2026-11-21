@@ -87,7 +87,7 @@ final class CompanionPage {
         textRoot.setGravity(Gravity.CENTER_HORIZONTAL);
         textRoot.setPadding(32, 48, 32, 32);
         textRoot.setBackgroundColor(getContext().getColor(R.color.bn_overlay_card));   // the overlay's slate, stable over the game in both modes (no values-night override)
-        textRoot.addView(text("Peanuts Native", 30, getContext().getColor(R.color.bn_overlay_accent), Typeface.DEFAULT_BOLD));   // the wordmark in the Signal blue: the amber stays on the launcher's badge and empty state
+        textRoot.addView(text("Lemon Native", 30, getContext().getColor(R.color.bn_overlay_accent), Typeface.DEFAULT_BOLD));   // LEMON: rebrand — the wordmark in the Lemon yellow: the leaf green stays on the launcher's badge and empty state
         textRoot.addView(text(gameName, 22, getContext().getColor(R.color.bn_overlay_text), Typeface.DEFAULT));
         values = text("", 18, getContext().getColor(R.color.bn_overlay_text_2), Typeface.MONOSPACE);
         values.setGravity(Gravity.START);

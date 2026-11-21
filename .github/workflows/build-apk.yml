@@ -74,12 +74,12 @@ jobs:
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew --no-daemon -PnxPackStage="$RUNNER_TEMP/packstage/stage" \
-            -PnxGames=0100F7E00C70E000 -PnxApp=peanuts apk
+            -PnxGames=0100F7E00C70E000 -PnxApp=lemon apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: hogwarts-legacy-apk
+          name: LemonNative
           path: android/app/out/*.apk
           if-no-files-found: error
           # Hard cap: GitHub does not accept sub-day retention, so 1 day is
@@ -104,11 +104,11 @@ jobs:
           echo 'The APK stays downloadable for 1 hour; this job then deletes it.'
           sleep 3600
           cutoff="$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)"
-          echo "Expiring hogwarts-legacy-apk artifacts created at or before $cutoff"
+          echo "Expiring LemonNative artifacts created at or before $cutoff"
           ids="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-            --jq ".artifacts[] | select(.name == \"hogwarts-legacy-apk\" and .expired == false and .created_at <= \"$cutoff\") | .id" || true)"
+            --jq ".artifacts[] | select(.name == \"LemonNative\" and .expired == false and .created_at <= \"$cutoff\") | .id" || true)"
           if [ -z "$ids" ]; then
-            echo 'No hogwarts-legacy-apk artifacts to expire.'
+            echo 'No LemonNative artifacts to expire.'
             exit 0
           fi
           for id in $ids; do

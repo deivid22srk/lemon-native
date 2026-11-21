@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Peanuts Native in one command: game files -> a .nup -> a pack for the Android app -> (with --push) the phone.
+# Lemon Native in one command: game files -> a .nup -> a pack for the Android app -> (with --push) the phone.
 #   .nsp / .xci files      nximport_cli (dm/peanuts/import, built here with cmake when it is missing or older than its sources) makes the .nup
 #   a .nup or a dump       the import is skipped; the pack is made from it as it is
 #   the pack               scripts/pack_android.py (its own options go after --)
@@ -325,7 +325,7 @@ def pc_decode(app, name=None):
             return {}
         if not exe:
             die(f'{label} keeps its shaders in Oodle-compressed files, and this computer has no decoder for them: {why}. '
-                'Use Build in the Peanuts app on the device: it decodes them with the game\'s own code.')
+                'Use Build in the Lemon app on the device: it decodes them with the game\'s own code.')
         env['DM_OODLE_OOZ'] = str(exe)
         say(f'{label}: its Oodle streams are decoded here by {exe} (the open-source ooz decoder, not the game\'s own; dm/third_party/ooz); '
             'the pack is made only if every shader key is the profile\'s')
@@ -347,7 +347,7 @@ def check_device_steps(app, name=None, have=()):
         if not profile_has(app, marker): continue
         if folder_given(var, pat): continue
         if var == 'DM_UE_SHADERS' and 'DM_UE_DECODE' in have: continue
-        die(f'{name or app} ({app}) needs a step this computer cannot run: {step} ({why}). Use Build in the Peanuts app on the device: '
+        die(f'{name or app} ({app}) needs a step this computer cannot run: {step} ({why}). Use Build in the Lemon app on the device: '
             f'it runs that step there. (To make the pack here anyway, set {var} to a folder that holds the {pat} files.)')
 
 
@@ -472,7 +472,7 @@ def main():
     if '--' in argv:
         i = argv.index('--')
         extra, argv = argv[i + 1:], argv[:i]
-    ap = argparse.ArgumentParser(description='Peanuts Native in one command: .nsp/.xci -> .nup -> pack -> (--push) the phone. Words after -- go to pack_android.py.')
+    ap = argparse.ArgumentParser(description='Lemon Native in one command: .nsp/.xci -> .nup -> pack -> (--push) the phone. Words after -- go to pack_android.py.')
     ap.add_argument('inputs', nargs='+', help='a .nup; a dump folder (base/exefs); a folder of .nsp/.xci files; or .nsp/.xci files')
     ap.add_argument('--keys', help='prod.keys for the importer (default: NX_KEYS, else ~/.switch/prod.keys)')
     ap.add_argument('--update', help='the update version to use (default the highest); for a dump, passed to pack_android.py as --version')

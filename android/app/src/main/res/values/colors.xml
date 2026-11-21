@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The icon's background (deep green) behind the banana -->
-    <color name="ic_launcher_background">#FF1E5B3A</color>
+    <!-- The icon's background (Lemon: rebrand — the design system's dark surface) behind the lemon, reads on light and dark wallpapers -->
+    <color name="ic_launcher_background">#FF14160F</color>
 
     <!-- The launcher's palette (Ui.java, themes.xml): "Slate & Signal" — cool slate surfaces told apart by fill and hairline edge, one Signal blue for every primary
          action, focus ring and selected state, and the harvest amber kept for brand moments (the header badge's glyph, the empty state). values-night has the dark
@@ -19,7 +19,7 @@
     <color name="bn_text">#FF171F2B</color>          <!-- body text (16.6:1 on card, 15.1:1 on bg) -->
     <color name="bn_text_2">#FF526175</color>        <!-- secondary text (6.3:1 on card, 5.7:1 on bg) -->
     <color name="bn_leaf">#FF0F7A40</color>          <!-- success text, bn_ok shares it (5.4:1 on card, 4.5:1 on ok_tint) -->
-    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — the badge glyph (ic_banana_happy's #FFD43B banana) reads on it (5.64:1) -->
+    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle: the launcher icon's deep green (ic_launcher_background) in BOTH modes — the badge glyph (ic_lemon's lemon) reads on it (LEMON: rebrand) -->
     <color name="bn_on_leaf">#FFFFFFFF</color>       <!-- text on leaf green (5.4:1) -->
     <color name="bn_danger">#FFB23517</color>        <!-- error text, danger button label (6.2:1 on card, 5.0:1 on danger_tint, 5.0:1 on warn_tint) -->
     <color name="bn_danger_tint">#FFFAE3DB</color>   <!-- danger button container (text on it 5.0:1) -->

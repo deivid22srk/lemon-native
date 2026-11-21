@@ -295,7 +295,7 @@ public final class Installer {
 
     private static String fetchText(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setRequestProperty("User-Agent", "PeanutsNative");
+        c.setRequestProperty("User-Agent", "LemonNative");
         c.setInstanceFollowRedirects(true);
         c.setConnectTimeout(15000); c.setReadTimeout(30000);
         try (InputStream in = c.getInputStream()) {
@@ -311,7 +311,7 @@ public final class Installer {
 
     private static void download(String url, File to, long total, Progress progress) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setRequestProperty("User-Agent", "PeanutsNative");
+        c.setRequestProperty("User-Agent", "LemonNative");
         c.setInstanceFollowRedirects(true);
         c.setConnectTimeout(15000); c.setReadTimeout(60000);
         try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(to)) {

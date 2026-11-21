@@ -14,7 +14,7 @@
     <color name="bn_text">#FFE8EDF4</color>          <!-- body text (14.8:1 on card, 16.4:1 on bg, 13.4:1 on tint) -->
     <color name="bn_text_2">#FF9DA9B8</color>        <!-- secondary text (7.3:1 on card, 8.1:1 on bg, 6.6:1 on tint) -->
     <color name="bn_leaf">#FF67C795</color>          <!-- success text, bn_ok shares it (8.5:1 on card, 6.9:1 on ok_tint) -->
-    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle stays the launcher icon's deep green in both modes (the badge glyph, ic_banana_happy's #FFD43B banana, reads on it: 5.64:1; see values/colors.xml) -->
+    <color name="bn_badge">#FF1E5B3A</color>         <!-- the header badge's circle stays the launcher icon's deep green in both modes (the badge glyph, ic_lemon's lemon, reads on it (LEMON: rebrand); see values/colors.xml) -->
     <color name="bn_on_leaf">#FF0C2317</color>       <!-- text on leaf green (8.0:1) -->
     <color name="bn_danger">#FFFF8A76</color>        <!-- error text, danger button label (7.6:1 on card, 6.4:1 on danger_tint, 5.7:1 on warn_tint) -->
     <color name="bn_danger_tint">#FF3D211C</color>   <!-- danger button container (text on it 6.4:1) -->

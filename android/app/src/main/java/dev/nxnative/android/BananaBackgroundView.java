@@ -12,7 +12,7 @@ import android.view.Choreographer;
 import android.view.View;
 
 /**
- * The main screen's background: the icon's banana (res/drawable/ic_banana.xml) tiled in a diagonal grid, faint, drifting slowly. A tap on one pops it
+ * The main screen's background: the icon's lemon (res/drawable/ic_lemon.xml, LEMON: rebrand) tiled in a diagonal grid, faint, drifting slowly. A tap on one pops it
  * ({@link #popAt}; the geometry is BananaGrid): it bursts into flecks and comes back 5 s later.
  * The drift wraps by whole grid periods, so it is seamless. It animates only between {@link #setRunning} true and false (the
  * activity's onResume / onPause, so never while a game runs over it) and only while the system's animations are on; otherwise
@@ -93,7 +93,7 @@ public final class BananaBackgroundView extends View implements Choreographer.Fr
     private Bitmap banana() {
         if (banana == null) {
             int px = Math.max(1, Math.round(BananaGrid.TILE_DP * density));
-            Drawable d = getContext().getDrawable(R.drawable.ic_banana);
+            Drawable d = getContext().getDrawable(R.drawable.ic_lemon);   // LEMON: rebrand
             banana = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
             d.setBounds(0, 0, px, px);
             d.draw(new Canvas(banana));

@@ -216,7 +216,7 @@ final class BottomPanel extends Presentation {
         LinearLayout col = column(c);
         col.setGravity(Gravity.CENTER_HORIZONTAL);
         col.addView(PUi.badge(c, wide ? 128 : 96));
-        TextView t = PUi.title(c, "Peanuts Native");
+        TextView t = PUi.title(c, "Lemon Native");   // LEMON: rebrand
         t.setGravity(Gravity.CENTER);
         PUi.add(col, t, 16, PUi.wrap());
         String id = BuildConfig.NX_PEANUTS_ID;
