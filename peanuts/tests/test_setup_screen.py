@@ -44,7 +44,9 @@ class Wiring(unittest.TestCase):
             self.assertIn(excused, page, 'an intent that opens content takes over the first run')
         self.assertIn('LibrarySettings.result(this', page, 'the pickers ride on the same door Settings uses')
         self.assertIn('rowsChangedHook', page, 'a firmware read lands: the wizard is drawn again')
-        self.assertIn('LibrarySettings.rowsChangedHook = null', page, 'the hook does not outlive the screen')
+        self.assertIn('protected void onStart()', page, 'the hook is registered while the screen is in front')
+        self.assertIn('protected void onStop()', page, 'and cleared while it is covered (nothing redraws a finishing wizard)')
+        self.assertIn('current.post(', page, 'the pills\' auto-scroll waits for the chip\'s layout (a recreated activity lands scrolled)')
         self.assertIn('LibrarySettings.resume(this)', page, 'back from Android\'s access page, a waiting firmware is read (the round-2 regression)')
 
     def test_no_legacy_value_lines(self):
@@ -74,6 +76,18 @@ class TwoLocale(unittest.TestCase):
         en = set(re.findall(r'name="(lemon_setup_\w+)"', (RES / 'values/strings.xml').read_text(encoding='utf-8')))
         pt = set(re.findall(r'name="(lemon_setup_\w+)"', (RES / 'values-pt-rBR/strings.xml').read_text(encoding='utf-8')))
         self.assertEqual(en, pt, f'en/pt-BR drift: {sorted(en ^ pt)}')
+
+    def test_no_dead_library_strings(self):
+        # every library_* resource declared is referenced somewhere in the app's Java (a dead resource lies about the i18n coverage)
+        java = '\n'.join(p.read_text(encoding='utf-8') for p in (REPO / 'android/app/src/main/java').rglob('*.java'))
+        for res in ((RES / 'values/strings.xml'), (RES / 'values-pt-rBR/strings.xml')):
+            names = set(re.findall(r'name="(library_\w+)"', res.read_text(encoding='utf-8')))
+            for name in sorted(names):
+                self.assertIn(f'R.string.{name}', java, f'{name} is declared but never used')
+
+    def test_importer_missing_is_a_state(self):
+        ls = (UI / 'LibrarySettings.java').read_text(encoding='utf-8')
+        self.assertGreaterEqual(ls.count('fontsKind = FONTS_FAILED'), 3, 'every firmware-read failure path names itself')
 
     def test_library_dialogs_paired(self):
         # the wizard opens LibrarySettings' dialogs: their texts are resources in both locales too (LibrarySettings itself is touched by the wizard's hook)

@@ -124,6 +124,8 @@
     <string name="library_folder_row">Pasta</string>
     <string name="library_zip_row">Arquivo .zip</string>
     <string name="library_cancel">Cancelar</string>
+    <string name="library_firmware_pick_folder">Escolher sua pasta de firmware</string>
+    <string name="library_firmware_pick_zip">Escolher seu .zip de firmware</string>
     <string name="library_error_title">Biblioteca</string>
     <string name="library_ok">OK</string>
 </resources>

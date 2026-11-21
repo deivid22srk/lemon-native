@@ -222,9 +222,9 @@ public final class LibrarySettings {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         PUi.add(box, PUi.body(a, a.getString(R.string.library_keys_firmware_guidance)), 0);
-        PUi.sheet(a, "Firmware and keys", box)
-                .setPositiveButton("Choose keys", (d, w) -> pickFile(a, REQ_KEYS, "Pick your prod.keys"))
-                .setNegativeButton("Cancel", null).show();
+        PUi.sheet(a, a.getString(R.string.library_keys_sheet_title), box)
+                .setPositiveButton(a.getString(R.string.library_keys_choose), (d, w) -> pickFile(a, REQ_KEYS, a.getString(R.string.library_keys_pick)))
+                .setNegativeButton(a.getString(R.string.library_cancel), null).show();
     }
 
     static void pickFile(Activity a, int request, String title) { pickFile(a, request, title, "*/*"); }
@@ -247,11 +247,11 @@ public final class LibrarySettings {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         AlertDialog[] d = new AlertDialog[1];
-        PUi.add(box, PUi.body(a, "Pick the folder your firmware is extracted into, or a firmware .zip (its NCA files flat inside, stored or deflated)."), 0);
+        PUi.add(box, PUi.body(a, a.getString(R.string.library_firmware_body)), 0);
         PUi.add(box, PUi.body(a, a.getString(R.string.library_keys_firmware_guidance)), 12);
-        PUi.add(box, new PUi.Setting(a, "📁", "Folder", v -> { d[0].dismiss(); pickFolder(a, REQ_FIRMWARE, "Pick your firmware folder"); }).chevron(a).view, 12);
-        PUi.add(box, new PUi.Setting(a, "🗜️", "Zip file", v -> { d[0].dismiss(); pickFile(a, REQ_FIRMWARE_ZIP, "Pick your firmware zip", "application/zip"); }).chevron(a).view, 0);
-        d[0] = PUi.sheet(a, "Firmware", box).setPositiveButton("Cancel", null).show();
+        PUi.add(box, new PUi.Setting(a, "📁", a.getString(R.string.library_folder_row), v -> { d[0].dismiss(); pickFolder(a, REQ_FIRMWARE, a.getString(R.string.library_firmware_pick_folder)); }).chevron(a).view, 12);
+        PUi.add(box, new PUi.Setting(a, "🗜️", a.getString(R.string.library_zip_row), v -> { d[0].dismiss(); pickFile(a, REQ_FIRMWARE_ZIP, a.getString(R.string.library_firmware_pick_zip), "application/zip"); }).chevron(a).view, 0);
+        d[0] = PUi.sheet(a, a.getString(R.string.library_firmware_sheet_title), box).setPositiveButton(a.getString(R.string.library_cancel), null).show();
     }
 
     /** As upstream's MainActivity.pickFolder: the system folder picker opened at the shared storage's root */
@@ -399,6 +399,7 @@ public final class LibrarySettings {
         ImporterPort imp = ImporterPort.get();
         if (!imp.available()) {
             fontsState = "The importer is not in this build: the firmware is read when it is.";
+            fontsKind = FONTS_FAILED;   // the wizard says its own failed line instead of waiting forever (LEMON)
             refreshRows();
             if (deleteAfter != null) deleteAfter.delete();
             return;

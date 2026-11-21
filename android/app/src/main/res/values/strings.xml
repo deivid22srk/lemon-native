@@ -128,6 +128,8 @@
     <string name="library_folder_row">Folder</string>
     <string name="library_zip_row">Zip file</string>
     <string name="library_cancel">Cancel</string>
+    <string name="library_firmware_pick_folder">Pick your firmware folder</string>
+    <string name="library_firmware_pick_zip">Pick your firmware zip</string>
     <string name="library_error_title">Library</string>
     <string name="library_ok">OK</string>
 </resources>

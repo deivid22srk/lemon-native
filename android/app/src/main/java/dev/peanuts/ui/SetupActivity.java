@@ -114,9 +114,19 @@ public final class SetupActivity extends Activity {
         });
         root.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         setContentView(frame);
-        LibrarySettings.rowsChangedHook = this::build;   // a firmware read lands (or the pickers' values change) while this screen is up: drawn again
         build();
         Motion.enterPage(content, 0);   // the page enters once (Motion's tokens; reduced motion honoured inside)
+    }
+
+    /** The screen is in front: a firmware read landing (or the pickers' values changing) draws it again. Registered while in front, cleared while covered, so nothing redraws a covered or finishing wizard. */
+    @Override protected void onStart() {
+        super.onStart();
+        LibrarySettings.rowsChangedHook = this::build;
+    }
+
+    @Override protected void onStop() {
+        LibrarySettings.rowsChangedHook = null;
+        super.onStop();
     }
 
     @Override protected void onDestroy() {
@@ -206,9 +216,9 @@ public final class SetupActivity extends Activity {
         hs.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);   // the pills say themselves (contentDescription): the scroller is decoration
         pillsRow = row;
         pillsScroll = hs;
-        hs.post(() -> {   // a handheld's width holds three or four pills: the current one is scrolled into view (a tap on Continue never hides where you are)
-            View chip = pillsRow.getChildAt(Math.min(step, pillsRow.getChildCount() - 1));
-            if (chip != null) pillsScroll.smoothScrollTo(Math.max(0, (int) chip.getX() - PUi.dp(this, Tokens.SPACE_2)), 0);
+        View current = pillsRow.getChildAt(Math.min(step, pillsRow.getChildCount() - 1));
+        current.post(() -> {   // a handheld's width holds three or four pills: the current one is scrolled into view; the chip's own post runs after its layout, so a recreated activity lands scrolled too
+            pillsScroll.smoothScrollTo(Math.max(0, (int) current.getX() - PUi.dp(this, Tokens.SPACE_2)), 0);
         });
         PUi.add(content, hs, Tokens.SPACE_2, PUi.fill());
     }
