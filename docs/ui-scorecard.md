@@ -11,6 +11,8 @@ per round (build-apk.yml = the APK, peanuts.yml = the fork's checks + the palett
 | 2 | `31507a7` + `0e86711` (compile fix, brief 7.1) | **7.4** (Δ +0.5) | nenhum (mínimo 6.5) | 1ª subida quebrou o compile (mono fallback pedindo a fonte apagada, run 44930204099); HEAD verde: apk job 44930627236, peanuts 44930627252 | abaixo, após o relatório da rodada 1 |
 | 3 | `18c5101` | **7.9** (Δ +0.5) | nenhum (mínimo 6.5) | verde no primeiro push: apk job 44932920431, peanuts 44932920438 | abaixo, após o relatório da rodada 2 |
 | 4 | `3e1ab15` | **8.0** (Δ +0.1) | nenhum (mínimo 7.5) | verde no primeiro push: apk job 44934513757, peanuts 44934513839 | abaixo, após o relatório da rodada 3 |
+| 5 | `eb937ed` | **8.0** (Δ +0.0) | nenhum (mínimo 6.0) | verde no primeiro push: apk job 44935950833, peanuts green | abaixo, após o relatório da rodada 4 |
+| 6 (verificação) | `6b51b45` + este commit | **8.1** (Δ +0.1) | nenhum (mínimo 7.5) | verde no primeiro push: apk job 44937381587, peanuts green | abaixo |
 
 ## Round 1 — ui(round-01): the Lemon design system
 
@@ -251,3 +253,49 @@ Higiene da tabela (linha 3 com as próprias células; linha 4 com os runs da rod
 
 ### Veredito
 **Continuar** — mas o programa não fecha nesta rodada: a condição 7.2 que falta (app rodando) só o ambiente do owner produz. A rodada 6 deve, no ambiente daqui: (a) gravar verbatim os relatórios das rodadas 4 e 5; (b) `FONT = RES / 'font'` e regerar; (c) completar a higiene da linha 1. A nota é um platô honesto — identidade/tipografia só ultrapassam 8-9 com pixels em vidro.
+
+## Round 6 — Relatório do Crítico (verbatim, sub-agente isolado)
+
+## Rodada 06 — Nota final: 8.1 / 10   (rodada anterior: 8.0, Δ +0.1)
+
+### Notas por critério
+| Critério | Nota | Justificativa (1 linha) |
+|---|---|---|
+| Identidade visual e coesão (15%) | 8.0 | Nada visual mudou nesta rodada — a folha é byte-idêntica (md5 verificado em checkout fresco); o teto honesto declarado na rodada 5 (sem vidro, identidade não sobe) segue vigendo. |
+| Layout e hierarquia (15%) | 7.5 | Código de layout intocado (diff de 2 arquivos, zero .java); a folha continua desenhando a hierarquia real dos tiers, mas a prova segue sendo spec render. |
+| Navegação e fluxo UX (15%) | 8.0 | Nenhuma mudança de fluxo; o contrato Ui/PUi verificado por hunk no HEAD (instância própria do gradiente, sem sp literal). |
+| Cor e contraste (10%) | 8.5 | Rodei `check-palette.py` nesta rodada: PALETTE OK, 60 verificações; bn_secondary escuro e bn_hero_end batem com as anotações dos docs. |
+| Tipografia (10%) | 9.0 | Fontes intocadas desde a r3; a folha desenha os tiers reais com as TTFs embarcadas em res/font. |
+| Eficiência e desempenho (10%) | 8.5 | Zero código de runtime tocado; o gerador não entra no APK; quarta rodada consecutiva verde no primeiro push. |
+| Handheld, dual-screen e gamepad (10%) | 8.0 | História de foco no código inalterada e fiel na folha (anel accent 3 px, r 20, gradiente sob o anel); D-pad continua sem prova em vidro. |
+| Movimento e feedback (5%) | 7.5 | Motion/Haptics intocados; banda 150–300 ms e reduced-motion preservados. |
+| Acessibilidade e i18n (5%) | 8.5 | Sem texto novo no diff; a divergência chip "Ready to play"/legenda companion segue aberta desde a r3. |
+| Qualidade de código e componentes (5%) | 7.5 | Os dois Graves da r5 fechados com prova reproduzida (arquivo + execução em checkout fresco, PNG byte-idêntico) e mensagem de commit 100% coberta pelo diff; mas a linha 5 da tabela do scorecard não existia (MODERADA — fechada neste commit). |
+
+**Média ponderada recomputada:** 1.20+1.125+1.20+0.85+0.90+0.85+0.80+0.375+0.425+0.375 = **8.10 → 8.1**.
+
+### Travas aplicadas
+- **Build vermelho na rodada: NÃO** (quarta subida consecutiva verde no primeiro push: 44932920431 → 44934513757 → 44935950833 → 44937381587).
+- **Regressão funcional: NÃO possível e NÃO encontrada** (diff de 2 arquivos, zero .java). **Critério < 5: NÃO** (mínimo 7.5).
+
+### Falhas
+**[BLOQUEANTE]** nenhuma. **[GRAVE]** nenhuma — os dois Graves da r5 fechados com prova reproduzida (relatórios r4/r5 verbatim; `FONT` portátil, provado por execução em checkout fresco com PNG byte-idêntico).
+**[MODERADA]** a linha 5 da tabela do scorecard não tinha sido registrada (fechada neste commit; a linha 6 também entra).
+**[MODERADA]** (limite do ambiente) evidência em execução impossível aqui — sem SDK/emulador.
+**[POLIMENTO]** citação off-by-one no relatório r5 (minha própria); gerador fora do escopo de lint do CI; truncamento do título na folha em 1 linha contra o maxLines 2 do app.
+
+### O que melhorou desde a última rodada (com evidência)
+Os dois Graves da r5 morreram com prova: relatórios r4/r5 verbatim no scorecard e `FONT = RES / 'font'` com portabilidade provada por execução em checkout fresco (PNG byte-idêntico); linha 1 com as próprias 6 células; mensagem de commit exata; gate re-executado (PALETTE OK 60/60); quarta subida verde no primeiro push.
+
+### Veredito
+**Continuar — última passada de higiene, depois o programa chega ao seu estado terminal neste ambiente.** Todo item code-side está fechado exceto as linhas 5-6 da tabela (fechadas neste commit). A condição da seção 7.2 que falta é **"apresentar o app rodando"** (screenshot em emulador/cloud device): **este ambiente não tem como produzi-la** — a evidência visual terminal declarada (spec render pixel-fiel, byte-idêntica ao gerador do repo) é o máximo que este ambiente prova. O fechamento pleno exige o ambiente do owner: ou o owner apresenta o app rodando e o programa fecha inteiro, ou ratifica a declaração de evidência terminal da r5 e o programa fecha com a ressalva 7.2 registrada, não fingida.
+
+## Estado terminal (declaração do Criador, round 6)
+
+O programa alcança aqui o seu estado terminal **neste ambiente**: 6 rodadas, nota final do Crítico
+**8.1/10**, CI verde no primeiro push por 4 rodadas consecutivas, zero Grave aberto, zero regressão
+funcional contra `docs/ui-audit.md`, e a única condição não cumprida da seção 7.2 — **apresentar o app
+rodando** — é a que este ambiente não pode produzir (sem Android SDK/emulador). A evidência visual terminal
+é a spec render `docs/images/lemon-design-sheet.png`, provada pixel-fiel pelo Crítico e reproduzível do
+checkout por `python3 peanuts/scripts/design_sheet.py`. Apresentar o app em um emulador/cloud device (ou
+ratificar esta declaração) fecha o programa; o histórico completo dos seis relatórios verbatim está acima.
