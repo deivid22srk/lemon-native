@@ -45,6 +45,7 @@ class Wiring(unittest.TestCase):
         self.assertIn('LibrarySettings.result(this', page, 'the pickers ride on the same door Settings uses')
         self.assertIn('rowsChangedHook', page, 'a firmware read lands: the wizard is drawn again')
         self.assertIn('LibrarySettings.rowsChangedHook = null', page, 'the hook does not outlive the screen')
+        self.assertIn('LibrarySettings.resume(this)', page, 'back from Android\'s access page, a waiting firmware is read (the round-2 regression)')
 
     def test_no_legacy_value_lines(self):
         page = (UI / 'SetupActivity.java').read_text(encoding='utf-8')
@@ -73,6 +74,17 @@ class TwoLocale(unittest.TestCase):
         en = set(re.findall(r'name="(lemon_setup_\w+)"', (RES / 'values/strings.xml').read_text(encoding='utf-8')))
         pt = set(re.findall(r'name="(lemon_setup_\w+)"', (RES / 'values-pt-rBR/strings.xml').read_text(encoding='utf-8')))
         self.assertEqual(en, pt, f'en/pt-BR drift: {sorted(en ^ pt)}')
+
+    def test_library_dialogs_paired(self):
+        # the wizard opens LibrarySettings' dialogs: their texts are resources in both locales too (LibrarySettings itself is touched by the wizard's hook)
+        ls = (UI / 'LibrarySettings.java').read_text(encoding='utf-8')
+        used = set(re.findall(r'R\.string\.(library_\w+)', ls))
+        self.assertTrue(used, 'the wizard-reachable dialogs speak resources')
+        en = (RES / 'values/strings.xml').read_text(encoding='utf-8')
+        pt = (RES / 'values-pt-rBR/strings.xml').read_text(encoding='utf-8')
+        for name in sorted(used):
+            self.assertIn(f'name="{name}"', en, f'{name} missing in values/strings.xml (en)')
+            self.assertIn(f'name="{name}"', pt, f'{name} missing in values-pt-rBR/strings.xml (pt-BR)')
 
 
 if __name__ == '__main__':

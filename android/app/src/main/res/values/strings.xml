@@ -114,6 +114,20 @@
     <string name="lemon_setup_value_added">Added</string>
     <string name="lemon_setup_keys_added">prod.keys added (%1$d bytes)</string>
     <string name="lemon_setup_firmware_reading">Reading the firmware…</string>
+    <string name="lemon_setup_firmware_failed">The firmware was not added. Check your prod.keys, and choose the firmware again.</string>
+    <string name="lemon_setup_firmware_waiting">Waiting for All files access: allow it in the File access step, and the firmware is read.</string>
     <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Not yet</string>
+    <!-- LEMON: LibrarySettings' wizard-reachable dialogs, said in resources too (the two-locale rule; the older literals of that file stay as they are) -->
+    <string name="library_keys_firmware_guidance">Firmware and keys should be the same version.</string>
+    <string name="library_keys_sheet_title">Firmware and keys</string>
+    <string name="library_keys_choose">Choose keys</string>
+    <string name="library_keys_pick">Pick your prod.keys</string>
+    <string name="library_firmware_sheet_title">Firmware</string>
+    <string name="library_firmware_body">Pick the folder your firmware is extracted into, or a firmware .zip (its NCA files flat inside, stored or deflated).</string>
+    <string name="library_folder_row">Folder</string>
+    <string name="library_zip_row">Zip file</string>
+    <string name="library_cancel">Cancel</string>
+    <string name="library_error_title">Library</string>
+    <string name="library_ok">OK</string>
 </resources>

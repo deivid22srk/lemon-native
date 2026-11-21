@@ -135,9 +135,12 @@ public final class SetupActivity extends Activity {
         out.putInt("step", step);
     }
 
-    /** The row values and the access state may have changed outside (a picker, Android's file access page, a firmware read landing): the step is drawn again */
+    /** The row values and the access state may have changed outside (a picker, Android's file access page, a firmware read landing): the step is drawn again.
+     *  resume() also reads a firmware that waited for All files access (LibrarySettings.resume — coming back from Android's access page is enough), and the
+     *  hook makes the page draw again with it. */
     @Override protected void onResume() {
         super.onResume();
+        LibrarySettings.resume(this);
         if (builtOnce && !resultHandled) build();
         resultHandled = false;
         builtOnce = true;
@@ -168,7 +171,8 @@ public final class SetupActivity extends Activity {
         TextView skip = PUi.button(this, getString(R.string.lemon_setup_skip), PUi.Kind.QUIET, v -> complete());
         if (step == STEP_READY) skip.setVisibility(View.GONE);
         content.addView(PUi.header(this, PUi.badge(this, 44), getString(R.string.app_name), getString(R.string.lemon_setup_subtitle), skip));
-        buildPills();        stepBody = PUi.card(this);
+        buildPills();
+        stepBody = PUi.card(this);
         PUi.add(content, stepBody, Tokens.SPACE_4);
         switch (step) {
             case STEP_ACCESS: accessStep(); break;
@@ -252,7 +256,7 @@ public final class SetupActivity extends Activity {
                 .value(dir != null ? dir : getString(R.string.lemon_setup_folder_not_set)).chevron(this).view, Tokens.SPACE_3);
     }
 
-    /** Keys and firmware: the two build prerequisites, with their real status (LibrarySettings' own value lines) */
+    /** Keys and firmware: the two build prerequisites, with the wizard's own resource-backed values (the Settings rows' English literals stay theirs) */
     private void keysStep() {
         TextView h = PUi.heading(this, getString(R.string.lemon_setup_keys_title));
         h.setAccessibilityHeading(true);
@@ -263,8 +267,18 @@ public final class SetupActivity extends Activity {
                         ? getString(R.string.lemon_setup_keys_added, PeanutsPrefs.keysFile(this).length())
                         : getString(R.string.lemon_setup_value_not_yet)).chevron(this).view, Tokens.SPACE_3);
         PUi.add(stepBody, new PUi.Setting(this, "🔤", getString(R.string.lemon_setup_firmware_row), Haptics.on(Haptics.Word.TICK, v -> LibrarySettings.pickFirmwareSource(this)))
-                .value(getString(PeanutsPrefs.hasFonts(this) ? R.string.lemon_setup_value_added
-                        : LibrarySettings.fontsRunning ? R.string.lemon_setup_firmware_reading : R.string.lemon_setup_value_not_yet)).chevron(this).view, 0);
+                .value(firmwareValue()).chevron(this).view, 0);
+    }
+
+    /** The Firmware row's value in the wizard's words: added, reading, failed (what to do next; the technical reason stays in the library's own state, for the
+     *  log), waiting for All files access (the File access step grants it and the read starts), or not yet. */
+    private CharSequence firmwareValue() {
+        if (PeanutsPrefs.hasFonts(this)) return getString(R.string.lemon_setup_value_added);
+        int kind = LibrarySettings.fontsKind;
+        return getString(kind == LibrarySettings.FONTS_RUNNING ? R.string.lemon_setup_firmware_reading
+                : kind == LibrarySettings.FONTS_FAILED ? R.string.lemon_setup_firmware_failed
+                : kind == LibrarySettings.FONTS_WAITING ? R.string.lemon_setup_firmware_waiting
+                : R.string.lemon_setup_value_not_yet);
     }
 
     /** Done: the checklist of where the setup landed, and the Appearance choice (the design contract's dark default) */
@@ -280,7 +294,7 @@ public final class SetupActivity extends Activity {
         boolean keys = PeanutsPrefs.hasKeys(this);
         check(stepBody, getString(R.string.lemon_setup_check_keys), getString(keys ? R.string.lemon_setup_value_added : R.string.lemon_setup_value_not_yet), keys);
         boolean fonts = PeanutsPrefs.hasFonts(this);
-        check(stepBody, getString(R.string.lemon_setup_check_firmware), getString(fonts ? R.string.lemon_setup_value_added : R.string.lemon_setup_value_not_yet), fonts);
+        check(stepBody, getString(R.string.lemon_setup_check_firmware), firmwareValue(), fonts);
         PUi.add(stepBody, PUi.small(this, getString(R.string.lemon_appearance_note)), Tokens.SPACE_3);
         PUi.add(stepBody, PUi.section(this, getString(R.string.lemon_appearance)), Tokens.SPACE_3);
         String cur = PeanutsPrefs.nightMode(this);

@@ -110,6 +110,20 @@
     <string name="lemon_setup_value_added">Adicionado</string>
     <string name="lemon_setup_keys_added">prod.keys adicionado (%1$d bytes)</string>
     <string name="lemon_setup_firmware_reading">Lendo o firmware…</string>
+    <string name="lemon_setup_firmware_failed">O firmware não foi adicionado. Confira seu prod.keys e escolha o firmware de novo.</string>
+    <string name="lemon_setup_firmware_waiting">Aguardando o acesso a arquivos: permita na etapa Acesso a arquivos e o firmware é lido.</string>
     <string name="lemon_setup_check_a11y">%1$s, %2$s</string>
     <string name="lemon_setup_value_not_yet">Ainda não</string>
+    <!-- LEMON: os diálogos do LibrarySettings alcançados pelo wizard, agora em recursos (regra dos dois idiomas; os literais antigos do arquivo ficam como estão) -->
+    <string name="library_keys_firmware_guidance">Firmware e chaves devem ser da mesma versão.</string>
+    <string name="library_keys_sheet_title">Firmware e chaves</string>
+    <string name="library_keys_choose">Escolher chaves</string>
+    <string name="library_keys_pick">Escolher seu prod.keys</string>
+    <string name="library_firmware_sheet_title">Firmware</string>
+    <string name="library_firmware_body">Escolha a pasta onde seu firmware está extraído, ou um .zip de firmware (os arquivos NCA soltos dentro, guardados ou comprimidos).</string>
+    <string name="library_folder_row">Pasta</string>
+    <string name="library_zip_row">Arquivo .zip</string>
+    <string name="library_cancel">Cancelar</string>
+    <string name="library_error_title">Biblioteca</string>
+    <string name="library_ok">OK</string>
 </resources>

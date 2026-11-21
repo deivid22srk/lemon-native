@@ -28,7 +28,6 @@ import java.util.List;
  * Home's first-run card and the sheet's Add keys….
  */
 public final class LibrarySettings {
-    static final String KEYS_FIRMWARE_GUIDANCE = "Firmware and keys should be the same version.";
     static final int REQ_KEYS = 60, REQ_GAME = 61, REQ_UPDATE_DIR = 62, REQ_DLC_DIR = 63, REQ_FIRMWARE = 64, REQ_SHEET_UPDATE = 65, REQ_SHEET_DLC = 66, REQ_FIRMWARE_ZIP = 67,
             REQ_BUILD_DIR = 68;
     /** The game sheet's Import pack…: a pack .zip made by Export pack… (dev.peanuts.ui.GameSheet.pickedPack) */
@@ -38,8 +37,11 @@ public final class LibrarySettings {
     public static final int REQ_MOD_FOLDER = 69, REQ_MOD_ZIP = 70;
     private static final Handler UI = new Handler(Looper.getMainLooper());
     private static String fontsState;   // "Reading the firmware…" and what came of it, while the rows show
-    /** Whether a firmware read is in flight (the wizard's Firmware row shows its own reading state for it — dev.peanuts.ui.SetupActivity, LEMON) */
-    static boolean fontsRunning;
+    /** The firmware read's coarse state for the wizard's Firmware row (LEMON, dev.peanuts.ui.SetupActivity): the read's progress, failure and wait, said in the
+     *  wizard's own words — the rows' English literals stay theirs. FONTS_RUNNING while a read or a zip copy is in flight, FONTS_FAILED when one ended badly
+     *  (its detail is in fontsState, for the log), FONTS_WAITING when a firmware was picked before All files access and reads when it is given, FONTS_IDLE otherwise. */
+    static final int FONTS_IDLE = 0, FONTS_RUNNING = 1, FONTS_FAILED = 2, FONTS_WAITING = 3;
+    static int fontsKind = FONTS_IDLE;
     /** The first-run wizard's hook (LEMON, dev.peanuts.ui.SetupActivity): run whenever a value the pickers change may have changed, so the screen that called
      *  them redraws with the real state even though refreshRows' own rows belong to Settings (and may not exist yet). Set while SetupActivity is alive; null otherwise. */
     static Runnable rowsChangedHook;
@@ -69,7 +71,7 @@ public final class LibrarySettings {
         card.addView(keysRow.view);
         fontsRow = new PUi.Setting(a, "🔤", "Firmware", Haptics.on(Haptics.Word.TICK, v -> pickFirmwareSource(a))).chevron(a);
         card.addView(fontsRow.view);
-        PUi.add(card, PUi.body(a, KEYS_FIRMWARE_GUIDANCE), 12);
+        PUi.add(card, PUi.body(a, a.getString(R.string.library_keys_firmware_guidance)), 12);
         card.addView(new PUi.Setting(a, "🔄", "Rescan", Haptics.on(Haptics.Word.CLICK, v -> { Library.rescan(a); Toast.makeText(a, "Looking in the folders again", Toast.LENGTH_SHORT).show(); }))
                 .value("Reads the folders again").chevron(a).view);
         card.addView(new PUi.Setting(a, "🧹", "Free up space", Haptics.on(Haptics.Word.TICK, v -> freeUpSpace(a)))
@@ -187,7 +189,7 @@ public final class LibrarySettings {
 
     /** The launcher is in front again (MainActivity.onResume): coming back from Android's All files access page reads a firmware that waited for it */
     public static void resume(Activity a) {
-        if (fontsState != null && fontsState.startsWith("Waiting for file access") && Environment.isExternalStorageManager()) fontsState = null;
+        if (fontsState != null && fontsState.startsWith("Waiting for file access") && Environment.isExternalStorageManager()) { fontsState = null; fontsKind = FONTS_IDLE; }
         firmwareAfterAccess(a);
         refreshRows();
     }
@@ -218,7 +220,7 @@ public final class LibrarySettings {
     public static void pickKeys(Activity a) {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
-        PUi.add(box, PUi.body(a, KEYS_FIRMWARE_GUIDANCE), 0);
+        PUi.add(box, PUi.body(a, a.getString(R.string.library_keys_firmware_guidance)), 0);
         PUi.sheet(a, "Firmware and keys", box)
                 .setPositiveButton("Choose keys", (d, w) -> pickFile(a, REQ_KEYS, "Pick your prod.keys"))
                 .setNegativeButton("Cancel", null).show();
@@ -245,7 +247,7 @@ public final class LibrarySettings {
         box.setOrientation(LinearLayout.VERTICAL);
         AlertDialog[] d = new AlertDialog[1];
         PUi.add(box, PUi.body(a, "Pick the folder your firmware is extracted into, or a firmware .zip (its NCA files flat inside, stored or deflated)."), 0);
-        PUi.add(box, PUi.body(a, KEYS_FIRMWARE_GUIDANCE), 12);
+        PUi.add(box, PUi.body(a, a.getString(R.string.library_keys_firmware_guidance)), 12);
         PUi.add(box, new PUi.Setting(a, "📁", "Folder", v -> { d[0].dismiss(); pickFolder(a, REQ_FIRMWARE, "Pick your firmware folder"); }).chevron(a).view, 12);
         PUi.add(box, new PUi.Setting(a, "🗜️", "Zip file", v -> { d[0].dismiss(); pickFile(a, REQ_FIRMWARE_ZIP, "Pick your firmware zip", "application/zip"); }).chevron(a).view, 0);
         d[0] = PUi.sheet(a, "Firmware", box).setPositiveButton("Cancel", null).show();
@@ -319,7 +321,7 @@ public final class LibrarySettings {
                 // The importer opens the folder by its path, which needs All files access. Without it the read failed here, the dialog below asked for the
                 // access, and nothing read the firmware again once it was given: the row stayed at "not added" (GitHub issue #42). The read now waits for it
                 if (Environment.isExternalStorageManager()) extractFonts(a, p, null);
-                else { firmwareTried = null; fontsState = "Waiting for file access: allow All files access for the app, and the firmware is read."; }
+                else { firmwareTried = null; fontsKind = FONTS_WAITING; fontsState = "Waiting for file access: allow All files access for the app, and the firmware is read."; }
                 break;
             case REQ_GAME: PeanutsPrefs.gameDir(a, p); break;
             case REQ_BUILD_DIR: {
@@ -401,7 +403,7 @@ public final class LibrarySettings {
             return;
         }
         fontsState = "Reading the firmware…";
-        fontsRunning = true;
+        fontsKind = FONTS_RUNNING;
         refreshRows();
         File out = PeanutsPrefs.fontsDir(a);
         out.mkdirs();
@@ -410,14 +412,14 @@ public final class LibrarySettings {
             // loaded" unless prod.keys had been picked in the same session), and a plain line when there are none
             if (!ImporterPort.ensureKeys(a)) {
                 if (deleteAfter != null) deleteAfter.delete();
-                UI.post(() -> { fontsState = "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."; fontsRunning = false; fontsLanded(a); });
+                UI.post(() -> { fontsState = "Firmware not added: add your prod.keys first (Keys, above). The firmware is read then; choose it again if it is not."; fontsKind = FONTS_FAILED; fontsLanded(a); });
                 return;
             }
             int r = imp.firmwareFonts(source, out.getPath());
             String err = imp.lastError();
             if (deleteAfter != null) deleteAfter.delete();
             UI.post(() -> { fontsState = r == 0 ? null : "Firmware not added: " + err
-                    + "\n" + KEYS_FIRMWARE_GUIDANCE; fontsRunning = false; fontsLanded(a); });
+                    + "\n" + a.getString(R.string.library_keys_firmware_guidance); fontsKind = r == 0 ? FONTS_IDLE : FONTS_FAILED; fontsLanded(a); });
         }, "peanuts-fonts").start();
     }
 
@@ -454,7 +456,7 @@ public final class LibrarySettings {
             return;
         }
         fontsState = "Copying the firmware zip…";
-        fontsRunning = true;
+        fontsKind = FONTS_RUNNING;
         refreshRows();
         new Thread(() -> {
             File tmp = new File(a.getCacheDir(), "firmware_import.zip");
@@ -464,7 +466,7 @@ public final class LibrarySettings {
                 while ((n = in.read(buf)) > 0) { o.write(buf, 0, n); total += n; if (total > 8L << 30) throw new IOException("that file is too large for a firmware zip"); }
             } catch (IOException e) {
                 tmp.delete();
-                UI.post(() -> { fontsState = "Firmware not added: could not copy the zip (" + e.getMessage() + ")"; fontsRunning = false; refreshRows(); });
+                UI.post(() -> { fontsState = "Firmware not added: could not copy the zip (" + e.getMessage() + ")"; fontsKind = FONTS_FAILED; refreshRows(); });
                 return;
             }
             String name = displayName(a, u);
@@ -521,5 +523,5 @@ public final class LibrarySettings {
         d[0] = PUi.sheet(a, "Free up space", box).setPositiveButton("Done", null).show();
     }
 
-    private static void error(Activity a, String msg) { if (a.isFinishing() || a.isDestroyed()) return; Haptics.play(a.getWindow().getDecorView(), Haptics.Word.REJECT); new AlertDialog.Builder(a).setTitle("Library").setMessage(msg).setPositiveButton("OK", null).show(); }
+    private static void error(Activity a, String msg) { if (a.isFinishing() || a.isDestroyed()) return; Haptics.play(a.getWindow().getDecorView(), Haptics.Word.REJECT); new AlertDialog.Builder(a).setTitle(a.getString(R.string.library_error_title)).setMessage(msg).setPositiveButton(a.getString(R.string.library_ok), null).show(); }
 }
