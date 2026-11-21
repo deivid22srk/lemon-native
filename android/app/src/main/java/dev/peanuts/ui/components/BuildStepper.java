@@ -23,7 +23,7 @@ public final class BuildStepper {
 
     private static final String[] STEPS = {"import", "prepare", "companion"};
 
-    /** The stepper row (a HorizontalScrollView of pills; hidden entirely once the job is done). */
+    /** The stepper row (a row of pills; hidden entirely once the job is done). */
     public static View view(Activity a) {
         LinearLayout row = new LinearLayout(a);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -34,6 +34,9 @@ public final class BuildStepper {
     public static void update(Activity a, View stepper, String step, boolean failed) {
         if (!(stepper instanceof LinearLayout)) return;
         LinearLayout row = (LinearLayout) stepper;
+        String state = step + "/" + failed;
+        if (state.equals(row.getTag())) return;   // the progress ticks come many times a second: the pills rebuild only when the step moved
+        row.setTag(state);
         row.removeAllViews();
         if (step == null || step.equals("done")) { row.setVisibility(View.GONE); return; }
         row.setVisibility(View.VISIBLE);

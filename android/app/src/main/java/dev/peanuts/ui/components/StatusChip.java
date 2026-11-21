@@ -49,7 +49,7 @@ public final class StatusChip {
     /** The numeric variant (a percent, a version): JetBrains Mono, so digits align with the readouts elsewhere. */
     public static TextView chipNumeric(Context c, CharSequence s, Tone tone) {
         TextView t = chip(c, s, tone);
-        t.setTypeface(LemonType.mono(c), Typeface.BOLD);
+        t.setTypeface(LemonType.mono(c));   // JetBrains Mono Medium: a real weight, no synthetic bold
         return t;
     }
 

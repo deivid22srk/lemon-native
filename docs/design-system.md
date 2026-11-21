@@ -17,7 +17,7 @@ The single source the screens read from, and where each piece lives. The design 
 
 - **Spacing**: the 4/8 dp grid (`Tokens.SPACE_1..8`); pages share one gutter and one header height.
 - **Radii**: 12 chips/inputs (`RADIUS_ROW`), 14 buttons (`RADIUS_MD`), 16 inners (`RADIUS_INNER`), 20 cards
-  (`RADIUS_LG`), 28 sheets/dialogs (`RADIUS_SHEET`).
+  (`RADIUS_LG`), 28 sheets/dialogs (drawn by `bn_dialog_bg.xml` — a resource tier, not a token).
 - **Type**: Manrope 400/500/600/700/800 (static instances in `res/font`, OFL); JetBrains Mono for numeric
   readouts, versions and hashes. Scale in sp: 12 caption, 13 small, 15 body, 18 heading, 24 title, 26
   display; the two display-tier texts are the launch screen's game name and the Readiness verdict.
@@ -28,8 +28,8 @@ The single source the screens read from, and where each piece lives. The design 
 
 | Component | File | Contract |
 |---|---|---|
-| `StatusChip` | `dev/peanuts/ui/components/StatusChip.java` | A state pill in a semantic container (OK/BUILD/WARN/ERROR/NEUTRAL); informational, never a filled accent, never clickable; `chipNumeric` for readouts. |
-| `HeroCard` | `dev.peanuts.ui.components.HeroCard` | The library's "Continue playing" card: the last-used Ready game, title-tier name, cover icon, Play (the page's one filled accent) + Manage. The design's only gradient surface. Library wires focus/haptics/keys onto it. |
+| `StatusChip` | `dev/peanuts/ui/components/StatusChip.java` | A state pill in a semantic container (OK/BUILD/WARN/ERROR/NEUTRAL); informational, never a filled accent, never clickable; `chipNumeric` for readouts (JetBrains Mono Medium, no synthetic bold). Call sites today: the hero's Ready chip and the stepper's pills; the covers' pills stay on the legacy `mark()` path until their screen round. |
+| `HeroCard` | `dev.peanuts.ui.components.HeroCard` | The library's "Continue playing" card: the last-used Ready game, title-tier name, cover icon, a Ready `StatusChip`, Play (the page's one filled accent) + Manage. The design's only gradient surface; its ends are the checked resources `bn_accent_tint` and `bn_hero_end`, and the card's text is `bn_text` (`bn_text_2` misses AA there and is forbidden). The card is one focus stop: Library makes it focusable/clickable and wires the focus ring, haptics and keys. |
 | `BuildStepper` | `dev.peanuts.ui/components.BuildStepper` | Import → Prepare → Companion pills; success/accent/danger by state; unknown steps degrade to the card's status line. |
 | Appearance section | `dev.peanuts.settings.AppearanceSection` | Settings › Appearance: Dark (default and first run), Light, Follow system — applied per-app via `UiModeManager.setApplicationNightMode`. |
 

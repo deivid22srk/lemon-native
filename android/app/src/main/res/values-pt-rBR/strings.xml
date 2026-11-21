@@ -27,6 +27,18 @@
     <string name="cheats_refused">Não importado: %1$s</string>
     <string name="cheats_zip_done">%1$d arquivos de truques e as chaves dos truques importados.</string>
     <string name="cheats_exported">Truques exportados.</string>
+    <!-- Resolution, Upscaling quality and Graphics quality (the two arrays the game settings read) -->
+    <string-array name="render_upscale">
+        <item>Nativo</item>
+        <item>Qualidade</item>
+        <item>Equilibrado</item>
+        <item>Desempenho</item>
+        <item>Desempenho ultra</item>
+    </string-array>
+    <string-array name="render_gfx">
+        <item>Qualidade</item>
+        <item>Desempenho</item>
+    </string-array>
     <string name="import_pack_title">Importar pack</string>
     <string name="import_pack_stage_staging">Lendo o zip…</string>
     <string name="import_pack_stage_checking">Validando o pack…</string>

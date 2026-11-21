@@ -9,6 +9,7 @@
     <color name="bn_accent">#FFFFE74A</color>        <!-- primary accent: fills, focus ring, links, quiet buttons (15.6:1 on bg, 14.6:1 on card, 10.2:1 on accent_tint, 8.8:1 vs stroke) -->
     <color name="bn_on_accent">#FF1A1700</color>     <!-- label on accent fill (14.4:1) -->
     <color name="bn_accent_tint">#FF3A3300</color>   <!-- tonal accent container: selected segments, chips (accent on it 10.2:1) -->
+    <color name="bn_hero_end">#FF485D24</color>      <!-- the hero gradient's far end: the leaf support's hue at the container depth (body text on it 6.5:1) -->
     <color name="bn_secondary">#FFA8E04A</color>     <!-- leaf green support: hero gradient end, secondary chips (12.5:1 on bg, 11.7:1 on card) -->
     <color name="bn_accent_warm">#FFFF9F43</color>   <!-- citric warm accent: update-available chips, warm highlights (8.9:1 on card) -->
     <color name="bn_banana">#FFFFE74A</color>        <!-- brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill -->

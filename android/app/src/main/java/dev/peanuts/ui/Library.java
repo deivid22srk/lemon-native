@@ -860,6 +860,10 @@ public final class Library {
             View hero = dev.peanuts.ui.components.HeroCard.view(a, h.name(), icons.get(h.id()),
                     a.getString(companionInstalled(h) ? R.string.lemon_hero_caption_companion : R.string.lemon_hero_caption_ready),
                     null, () -> play(h), heroManage);
+            hero.setFocusable(true);   // LEMON: the card itself is one focus stop; a tap or A plays, like a cover
+            hero.setClickable(true);
+            hero.setOnClickListener(v -> { Haptics.play(v, Haptics.Word.HEAVY); play(h); });
+            hero.setContentDescription(h.name() + ", " + a.getString(R.string.lemon_hero_caption_ready));
             focusRing(hero, Color.TRANSPARENT);
             track(hero, "hero:" + h.id(), null);
             hero.setOnKeyListener(shoulders);

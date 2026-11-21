@@ -32,7 +32,7 @@ public final class LemonType {
                     r.getFont(R.font.manrope_semibold),
                     r.getFont(R.font.manrope_bold),
                     r.getFont(R.font.manrope_extrabold)};
-            monoFace = r.getFont(R.font.jbmono_regular);
+            monoFace = r.getFont(R.font.jbmono_medium);   // LEMON: the medium instance, so numeric readouts need no synthetic bold
         } catch (RuntimeException e) {
             faces = null;   // monoFace stays null too: mono() then falls back to the system monospace
         }

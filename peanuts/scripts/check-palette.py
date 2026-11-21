@@ -60,6 +60,11 @@ CORE_PAIRS = [
     ('bn_secondary', 'bn_card', SHAPE, 'leaf support as a shape on cards'),
     ('bn_accent_warm', 'bn_card', SHAPE, 'citric accent on cards'),
     ('bn_badge_glyph', 'bn_badge', SHAPE, 'the icon lemon on the header badge circle'),
+    ('bn_text', 'bn_accent_tint', TEXT, 'hero headline on the gradient\'s lemon end'),
+    ('bn_text', 'bn_hero_end', TEXT, 'hero headline on the gradient\'s leaf end'),
+    # the hero's caption lines are bn_text, not bn_text_2: bn_text_2 misses 4.5:1 on the gradient's ends
+    # in both modes (3.5:1 / 3.2:1), so the contract (DESIGN-ui.md section 4) forbids it there and the hero
+    # draws bn_text only: a prohibition the checker cannot express, only the annotated rule can
 ]
 
 # the overlay set is stable (it renders over the running game in both modes) and lives in values/ only

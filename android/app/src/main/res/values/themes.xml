@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The launcher's look (MainActivity): Slate & Signal (see DESIGN-ui.md), no action bar (the screen draws its own header), edge to edge. values-night has the dark parent -->
+    <!-- The launcher's look (MainActivity): Lemon (see DESIGN-ui.md), no action bar (the screen draws its own header), edge to edge. values-night has the dark parent -->
     <style name="Theme.Banana" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">@color/bn_accent</item>
         <item name="android:colorPrimaryDark">@color/bn_bg</item>

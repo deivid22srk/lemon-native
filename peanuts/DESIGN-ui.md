@@ -41,6 +41,7 @@ runs on every push — a palette change that breaks a pair breaks the build.
 | `bn_accent` | `#FFE74A` | primary accent: fills, focus ring, links, quiet buttons (15.6:1 on bg, 14.6:1 on card, 10.2:1 on accent_tint, 8.8:1 vs stroke) |
 | `bn_on_accent` | `#1A1700` | label on accent fill (14.4:1) |
 | `bn_accent_tint` | `#3A3300` | tonal accent container: selected segments, chips (accent on it 10.2:1) |
+| `bn_hero_end` | `#485D24` | the hero gradient's leaf end (bn_text on it 6.5:1; `bn_text_2` misses AA there and is forbidden) |
 | `bn_secondary` | `#A8E04A` | leaf green support: hero gradient end, secondary chips (12.5:1 on bg, 11.7:1 on card) |
 | `bn_accent_warm` | `#FF9F43` | citric warm accent: update-available chips, warm highlights (8.9:1 on card) |
 | `bn_banana` | `#FFE74A` | brand accent, brand moments only (the header badge's glyph, the empty state): never a button fill |
@@ -70,6 +71,7 @@ runs on every push — a palette change that breaks a pair breaks the build.
 | `bn_accent` | `#6B5C00` | primary accent (6.4:1 on bg, 6.7:1 on card, 5.7:1 on accent_tint, 4.3:1 vs stroke) |
 | `bn_on_accent` | `#FFFFFF` | label on accent fill (6.7:1) |
 | `bn_accent_tint` | `#FFFFEF7A` | tonal accent container (accent on it 5.7:1) |
+| `bn_hero_end` | `#BBC3A6` | the hero gradient's leaf end (bn_text on it 10.2:1; `bn_text_2` misses AA there and is forbidden) |
 | `bn_secondary` | `#3F6A00` | leaf support (6.2:1 on bg, 6.4:1 on card) |
 | `bn_accent_warm` | `#B35C00` | citric warm accent (4.7:1 on card) |
 | `bn_banana` | `#C7A500` | brand accent, brand moments only — never a button fill, never text on a light card |
@@ -95,11 +97,11 @@ lemon palette (`bn_overlay_accent` = the lemon yellow, 14.7:1 on the overlay car
 
 - **Type** (`dev.peanuts.ui.theme.LemonType`, loaded once per process by `NxApp`): Manrope (OFL, in
   `res/font`) carries every weight the builders ask for — 400 body, 500 medium, 600 semibold, 700 heading,
-  800 title/display; `Ui.face`/`PUi.face` route every text through it. JetBrains Mono (OFL, `res/font`)
-  carries numeric readouts, versions and hashes only (the build card's percent). The scale, the spacing grid
-  (4/8 dp), the 48 dp touch floor and the component measures stay in `Tokens`; the radius tiers are
-  chips/inputs 12 (`RADIUS_ROW`), cards 20 (`RADIUS_LG`), sheets and dialogs 28 (`RADIUS_SHEET`,
-  `bn_dialog_bg`).
+  800 title/display; `Ui.face`/`PUi.face` route every text through it. JetBrains Mono Medium (OFL,
+  `res/font`, a real weight — no synthetic bold) carries numeric readouts, versions and hashes only (the
+  build card's percent, a chip's number). The scale, the spacing grid (4/8 dp), the 48 dp touch floor and
+  the component measures stay in `Tokens`; the radius tiers are chips/inputs 12 (`RADIUS_ROW`), cards 20
+  (`RADIUS_LG`), and sheets/dialogs 28 drawn by `bn_dialog_bg.xml` (a resource tier, not a token).
 - **Gradients** exist on exactly two surfaces: the library's hero card (lemon container → leaf tone, same
   container depth) and nowhere else — CTAs keep flat accent fills.
 - **Motion** runs through `Motion`'s tokens, 150–300 ms, ease-out (`PathInterpolator`), with the
@@ -112,10 +114,15 @@ lemon palette (`bn_overlay_accent` = the lemon yellow, 14.7:1 on the overlay car
   (confirmation + next step). `PUi.emptyState` and the build-card taxonomy are the pattern.
 - The build card carries the **stepper** (`dev.peanuts.ui.components.BuildStepper`): Import, Prepare,
   Companion as pills — done in the success text, running in the accent container, stopped in the danger
-  container; an unknown step degrades to the card's status line, nothing is invented.
+  container; an unknown step degrades to the card's status line, nothing is invented. The pills rebuild
+  only when the step moves, not on every progress tick.
 - The library leads with the **hero** (`dev.peanuts.ui.components.HeroCard`, "Continue playing"): the
-  last-used Ready game at the top of Home, Play one tap away (the brief's two-tap rule). Status pills come
-  from `dev.peanuts.ui.components.StatusChip` (OK/BUILD/WARN/ERROR/NEUTRAL), never a filled accent.
+  last-used Ready game at the top of Home, Play one tap away (the brief's two-tap rule). The card itself is
+  one focus stop (clickable, focusable, A plays like a cover tap) and its caption lines draw in `bn_text`:
+  `bn_text_2` misses 4.5:1 on the gradient's ends and is forbidden there (check-palette.py proves the four
+  hero pairs it can see: bn_text on both ends, both modes). The hero's Ready chip and the stepper's pills
+  come from `dev.peanuts.ui.components.StatusChip` (OK/BUILD/WARN/ERROR/NEUTRAL), never a filled accent;
+  the covers' own pills stay on the pre-Lemon `mark()` path until their screen round, as does `PUi.status`.
 - The pack-`.zip` import keeps its live feedback (stage words, cancel, haptics on result, errors that name
   the fix).
 - Haptics use `Haptics.Word` only; long-press keeps the system's own haptic (no double buzz).

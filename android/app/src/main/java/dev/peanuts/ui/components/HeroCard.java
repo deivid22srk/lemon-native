@@ -33,7 +33,7 @@ public final class HeroCard {
         c.setOrientation(LinearLayout.VERTICAL);
         android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{PUi.col(a, R.color.bn_accent_tint), leafDeep(a)});
+                new int[]{PUi.col(a, R.color.bn_accent_tint), PUi.col(a, R.color.bn_hero_end)});
         g.setCornerRadius(PUi.dp(a, Tokens.RADIUS_LG));   // a card: the 20 dp tier
         c.setBackground(g);
         int p = PUi.dp(a, 16);
@@ -52,14 +52,26 @@ public final class HeroCard {
         n.setMaxLines(2);
         n.setEllipsize(android.text.TextUtils.TruncateAt.END);
         info.addView(n);
-        if (caption != null && caption.length() > 0) info.addView(PUi.small(a, caption));
+        // the caption lines are body text (bn_text): bn_text_2 misses 4.5:1 on the gradient's ends in both
+        // modes, and check-palette.py now proves the four hero pairs
+        if (caption != null && caption.length() > 0) {
+            TextView cap = PUi.small(a, caption);
+            cap.setTextColor(PUi.col(a, R.color.bn_text));
+            info.addView(cap);
+        }
         if (played != null && played.length() > 0) {
             TextView w = PUi.small(a, played);
-            w.setTextColor(PUi.col(a, R.color.bn_text_2));
+            w.setTextColor(PUi.col(a, R.color.bn_text));
             info.addView(w);
         }
         top.addView(info, PUi.weight());
         c.addView(top);
+
+        LinearLayout chipRow = PUi.row(a);
+        chipRow.addView(StatusChip.chip(a, a.getString(R.string.lemon_hero_caption_ready), StatusChip.Tone.OK), StatusChip.lp(a));
+        LinearLayout.LayoutParams chipLp = PUi.wrap();
+        chipLp.topMargin = PUi.dp(a, 10);
+        c.addView(chipRow, chipLp);
 
         LinearLayout actions = PUi.row(a);
         LinearLayout.LayoutParams playLp = new LinearLayout.LayoutParams(
@@ -76,13 +88,4 @@ public final class HeroCard {
         return c;
     }
 
-    /** The gradient's far end: the leaf support's hue held at the primary container's depth (the subtle lemon -> leaf ramp). */
-    private static int leafDeep(Activity a) {
-        float f = 0.35f;
-        int s = PUi.col(a, R.color.bn_secondary), card = PUi.col(a, R.color.bn_card);
-        return android.graphics.Color.argb(255,
-                Math.round(android.graphics.Color.red(s) * f + android.graphics.Color.red(card) * (1 - f)),
-                Math.round(android.graphics.Color.green(s) * f + android.graphics.Color.green(card) * (1 - f)),
-                Math.round(android.graphics.Color.blue(s) * f + android.graphics.Color.blue(card) * (1 - f)));
-    }
 }
