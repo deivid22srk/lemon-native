@@ -9,7 +9,8 @@ per round (build-apk.yml = the APK, peanuts.yml = the fork's checks + the palett
 | 0 (baseline) | `3647c8c` rebrand | — (no UI round: the renamed upstream, CI baseline) | — | build-apk: fixed after 44924410924's compile error (Signer brace) and 44924993648's res/font license error, then green (job 44926143837's "GPL APK", 5m55s; the run stays open 1 h by the expire job by design); peanuts green (44924993605) | — |
 | 1 | `2d2eba7` + `24fdea1` (compile fix, brief 7.1) | **6.9** (média ponderada recomputada pelo Crítico) | nenhum (< 5: não houve) |
 | 2 | `31507a7` + `0e86711` (compile fix, brief 7.1) | **7.4** (Δ +0.5) | nenhum (mínimo 6.5) | 1ª subida quebrou o compile (mono fallback pedindo a fonte apagada, run 44930204099); HEAD verde: apk job 44930627236, peanuts 44930627252 | abaixo, após o relatório da rodada 1 |
-| 3 | `18c5101` | **7.9** (Δ +0.5) | nenhum (mínimo 6.5) | verde no primeiro push: apk job 44932920431, peanuts 44932920438 | abaixo, após o relatório da rodada 2 | apk job green: 44928256881 (run 44927648571 failed on the round's compile: Haptics visibility, PUi.face's public, the hero's shadowed local, HeroCard's tile params); peanuts green: 44928256899 | below |
+| 3 | `18c5101` | **7.9** (Δ +0.5) | nenhum (mínimo 6.5) | verde no primeiro push: apk job 44932920431, peanuts 44932920438 | abaixo, após o relatório da rodada 2 |
+| 4 | `3e1ab15` | **8.0** (Δ +0.1) | nenhum (mínimo 7.5) | verde no primeiro push: apk job 44934513757, peanuts 44934513839 | abaixo, após o relatório da rodada 3 |
 
 ## Round 1 — ui(round-01): the Lemon design system
 
@@ -28,6 +29,8 @@ The Creator's declared scope for the round (the Critic judges the artifacts, not
   29 pre-existing resource strings; new UI text is resources-only.
 - Docs: `peanuts/DESIGN-ui.md` rewritten as the Lemon contract; this scorecard; `docs/design-system.md`;
   the baseline map is `docs/ui-audit.md`.
+
+Terminal visual evidence (declared, round 5): this environment has no Android SDK/emulator, so a running-app screenshot cannot be produced here. The design system's visual proof is the spec render docs/images/lemon-design-sheet.png — generated from the repository's own resources (palette XMLs, shipped font files) by the in-repo generator peanuts/scripts/design_sheet.py — verified pixel-faithful by the Critic in rounds 3-4; it is explicitly not app screenshots. Presenting the app running (any emulator or cloud device) remains the one open condition of brief section 7.2, and it needs the owner's environment.
 
 Known gaps the Creator declares for the Critic (also in `docs/ui-audit.md` §5): the older Java-literal
 strings are not yet extracted to resources; no emulator screenshots in this environment (no local Android
