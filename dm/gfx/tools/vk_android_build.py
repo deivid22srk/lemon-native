@@ -414,7 +414,8 @@ POOL_SUFFIX = '_cb0_40000000'   # a handle traced to no slot indexes the pools b
 def sampler_half(name):
     """The sampler of a texture name, as dmsh_build.py reflect gives the MSL <name>Smplr member: (kind, reg, off)"""
     ut = NS['decode_ubo_tex'](name)
-    if ut: return (abi.KIND_SAMP_ID, ut[1][1], 0) if ut[1][0] == 'id' else (abi.KIND_SAMP_UBO, ut[1][0], ut[1][1])
+    # PEANUTS(upstream-candidate): 'sep' (ported from nxnative PR #890, Hogwarts Legacy) is a plain separate-sampler slot (c2), not a uniform-buffer (reg, off) pair
+    if ut: return (abi.KIND_SAMP_ID, ut[1][1], 0) if ut[1][0] == 'id' else (abi.KIND_SAMP, ut[1][1], 0) if ut[1][0] == 'sep' else (abi.KIND_SAMP_UBO, ut[1][0], ut[1][1])
     d = NS['decode_tex'](name)
     if not d: return abi.KIND_UNKNOWN, None, 0
     t, s, ty = d
@@ -451,7 +452,9 @@ def classify(stage, r, res, m):
         if desc not in (spv.VK_SAMPLER, spv.VK_SAMPLED_IMAGE): e['kind'] = abi.KIND_UNKNOWN   # a pool of combined or storage images: not in the ABI
     elif texlike and NS['decode_ubo_tex'](nm):
         ut, us = NS['decode_ubo_tex'](nm)
-        if desc == spv.VK_SAMPLER: e.update(kind=abi.KIND_SAMP_ID, reg=us[1]) if us[0] == 'id' else e.update(kind=abi.KIND_SAMP_UBO, reg=us[0], off=us[1])
+        # PEANUTS(upstream-candidate): 'sep' (ported from nxnative PR #890, Hogwarts Legacy: a type-1 handle with one word in a game uniform buffer and the sampler word in c2's
+        # separate sampler table) binds as a plain separate sampler, not a uniform-buffer-resident one
+        if desc == spv.VK_SAMPLER: e.update(kind=abi.KIND_SAMP_ID, reg=us[1]) if us[0] == 'id' else e.update(kind=abi.KIND_SAMP, reg=us[1]) if us[0] == 'sep' else e.update(kind=abi.KIND_SAMP_UBO, reg=us[0], off=us[1])
         elif desc == spv.VK_UNIFORM_TEXEL: e['kind'] = abi.KIND_UNKNOWN   # a bindless buffer texture: not implemented in the replay (as on Metal)
         else: e.update(kind=abi.KIND_TEX_UBO, reg=ut[0], off=ut[1])
     elif desc in (spv.VK_STORAGE_IMAGE, spv.VK_STORAGE_TEXEL) and (iu := ubo_img(nm)):

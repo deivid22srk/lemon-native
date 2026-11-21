@@ -98,3 +98,43 @@ Status: **bring-up / not tested upstream**. SDK 16.2.3, Unreal Engine 4, NVN, Ww
   stays open as a second cause the fixed build can now separate (on the
   7.2 GB device, `MemAvailable` 1.1 GB at boot: a streamed texture that fills
   and is then evicted blackens late, not from the first frame).
+
+## Black characters/objects (textured UI fine) — type 1 texture handles with the sampler word in c2
+
+<!-- PEANUTS(upstream-candidate) -->
+
+Reported symptom (device log + screenshots, 2026-11-21): character models and other material-bound geometry render as solid
+black silhouettes in gameplay, while the character-creation/menu screens, HUD, lighting and background all render correctly.
+This is a **separate, independently plausible cause** from the streamed-compressed-texture one just above (both can produce
+black character geometry; they have not been disambiguated against each other on a device, since this environment has no
+Android/Vulkan device to run either capture on). This entry matches a cause already found and fixed upstream for this same
+game on the Mac/Metal path: nxnative PR #890 (commit `699d815`) found that Hogwarts Legacy keeps its material textures'
+64-bit NVN handles in its own uniform buffers (8 bytes apart) but binds some samplers with `BindSeparateSampler`, producing
+a type-1 bindless handle whose two words are a uniform buffer word and a c2 separate-sampler-table word (whichever field
+each is in) — a form `decode_ubo_tex` (`dmsh_build.py`) did not recognize, since it expected both words in game uniform
+buffers. Undecoded, 46,782 of the game's 65,047 shaders had an unresolved material-texture binding, and gameplay drew black
+(that PR's own wording: "gameplay drew black, with faint outlines, while text and menus were right").
+
+`decode_ubo_tex` is shared/borrowed between the Mac (`dmsh_build.py`) and the Android/Vulkan (`vk_android_build.py`, via
+`BORROWED`) chains, so the same gap applies to this fork's Vulkan path. The fix is ported here from that upstream commit:
+a new branch in `decode_ubo_tex` recognizes the case where one word is a valid uniform-buffer slot (3..16) and the other is
+a valid c2 separate-sampler-table offset, returning `('sep', slot)` for the sampler half instead of failing the decode; the
+three call sites that consume its return value (`dmsh_build.py` `reflect`, `vk_android_build.py` `sampler_half` and
+`classify`) bind that case as a plain separate sampler (`KIND_SAMP`), the same kind `decode_tex`'s own separate-sampler path
+already uses.
+
+**Status: ported and unit-tested against the two exact handle names named in the upstream PR
+(`dm/tools/tests/test_decode_ubo_tex_sep_sampler.py`); not yet verified on an actual Android device or against the game's
+real shader binaries** — this environment has no Android/Vulkan device, no copy of the game, and no license to one, so the
+translated shader library and in-game rendering could not be built or played to confirm the fix end to end, or to check
+whether it is a real contributor here versus already fully explained by the streamed-texture cause above. Editing
+`dmsh_build.py` and `vk_android_build.py` is a chain change (`dmsh_chain.py --header` / `vk_android_build.py --header` were
+re-run and committed with this change); a build after updating must retranslate every game's shader library, this one
+included.
+
+Upstream candidate: yes (the decoder is shared with the Mac path, where this exact fix is already merged for this game).
+
+**Open:** a device capture of this build should confirm whether `shaders with a binding whose slot was not decoded` drops
+to 0 for this game (it must, if the handle form above is present in this build's shaders) and whether any black-rendering
+symptom remains once both this fix and the streamed-texture fix above are in the same build — that would mean a third cause.
+

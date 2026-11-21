@@ -1057,6 +1057,20 @@ Finding, keying and translating shaders (`dm/gfx/tools/shader_split.py`, `dmsh_b
 - **Fix:** `BindlessElimination.cs` orders a pair of c[2] words by the table they lie in: a word of the separate sampler table (`dmsh_abi.h` `DMSH_C2_SAMP`, 128 slots) is the sampler, the other the texture, in the plain OR and among a phi's candidates; a bare sampler word is no texture candidate (chain change).
 - **Found on:** Star Fox (`0400E88025B1A000`) (62 pixel shaders, 5 of them loaded at the prologue cinematic).
 
+### Texture handles in a game uniform buffer with the sampler word in c2
+
+- **Symptom:** gameplay drew black, with faint outlines, while text and menus were right; the shader build's summary counted it under *shaders with a binding whose slot was not decoded* (46,782 of 65,047 shaders in the game this was found on).
+- **Cause:** the game keeps its material textures' 64-bit NVN handles in its own uniform buffers (8 bytes apart) and binds a few samplers with `BindSeparateSampler`, so a type-1 bindless handle's two words are one game-uniform-buffer word and one c2 separate-sampler-table word, in either order (`decode_ubo_tex` expected both words in game uniform buffers): `fp_t_cb196612_10568002` (c[4] word 2 for the texture, c2 word 0x15A for the sampler, separate sampler slot 0). The translator canonicalizes the two masked sources only when a mask is an immediate; with both masks from a constant buffer it keeps the OR's order, so some of these names carry the c2 word in the texture field instead (`fp_t_cb589826_1002015A`).
+- **Fix:** `decode_ubo_tex` (`dmsh_build.py`, a chain change, shared with the Vulkan/Android build via `BORROWED`) recognizes the case where exactly one word is a valid uniform-buffer slot (3..16) and the other a valid c2 separate-sampler-table offset, whichever field each is in, and returns `('sep', separate sampler slot)` for the sampler half; the consuming sites (`dmsh_build.py` `reflect`, `vk_android_build.py` `sampler_half` and `classify`) bind that case as a plain separate sampler.
+- **Found on:** Hogwarts Legacy (`0100F7E00C70E000`) update 1.0.5. Ported to the Vulkan/Android chain from the Mac fix (device-verified there); **not yet device-verified on Android/Vulkan** — see the game's own note for status.
+
+### An array of one separate sampler
+
+- **Symptom:** the host stops at start with `unexpected argument buffer layout encodedLength=584 maxAid=41` (Metal) after enabling the fix above.
+- **Cause:** a shader may pair an array of texture handles with one fixed separate sampler for every element (a volumetric lightmap shader sampling its bricks through `array<texture2d_array<float>, 32> cp_t3d_cb196612_10568000` with one `…Smplr`); giving that sampler the plain separate-sampler kind makes the host's reflection reader expect exactly one sampler, not an array's worth of uses.
+- **Fix:** the reflection keeps the array length for such a sampler, and the replay fills every element of the array with the one sampler of that slot.
+- **Found on:** Hogwarts Legacy (`0100F7E00C70E000`) update 1.0.5, the volumetric lightmap shader `96e024d2b42c1cb1`. Mac/Metal only; **not ported to the Vulkan/Android replay in this fork** (open, if a Vulkan/Android shader of this game needs it).
+
 ### Ampere BMSK and the read of a covered pixel
 
 - **Symptom:** `Ampere instruction 21b at … is not implemented` (`…0405721b`) or `Ampere instruction 925 at 0x0 is not implemented` (`040e0200000e4000 …7925`) in the build.
