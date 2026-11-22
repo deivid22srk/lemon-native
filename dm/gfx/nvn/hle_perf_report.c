@@ -36,7 +36,7 @@ typedef struct { rpt_win w[RPT_WIN_MAX]; unsigned wn, stride;
 static rpt_state g_live;
 static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_cv = PTHREAD_COND_INITIALIZER;
-static int g_req, g_final, g_thread_on;
+static int g_req, g_final, g_thread_on;   // all under g_mu (g_req: 0 = none pending, 1 = window write, 2 = hitch write, 3 = final write)
 static pthread_t g_thr;
 static double g_last_write;   // rate limit of the hitch-triggered writes (under g_mu)
 
@@ -123,28 +123,26 @@ static void rpt_write(const rpt_state *s, const char *why) {
 static void *rpt_main(void *arg) {
     (void)arg;
     rpt_state *snap = malloc(sizeof *snap);
-    if (!snap) return NULL;
+    if (!snap) { fprintf(stderr, "[RED] perf report writer: the %zu-byte snapshot could not be allocated; the report stops updating\n", sizeof(rpt_state)); return NULL; }
     for (;;) {
         pthread_mutex_lock(&g_mu);
         while (!g_req && !g_final) pthread_cond_wait(&g_cv, &g_mu);
-        int final = g_final; g_req = 0;
+        int req = g_req, final = g_final; g_req = 0;
         memcpy(snap, &g_live, sizeof *snap);   // ~620 KB, microseconds, under the mutex; I/O happens unlocked
         pthread_mutex_unlock(&g_mu);
-        rpt_write(snap, final ? "graceful exit" : "window");
+        rpt_write(snap, final ? "graceful exit" : req == 2 ? "hitch" : "window");
         if (final) break;
     }
     free(snap);
     return NULL;
 }
 
-static void rpt_start(void) {   // called with g_mu held, on the first update (the presenting thread)
-    if (g_thread_on) return;
-    if (pthread_create(&g_thr, NULL, rpt_main, NULL) == 0) g_thread_on = 1;
-}
-
-static void rpt_kick(void) {    // called with g_mu held after an update: the writer serializes when it can
-    if (!g_thread_on) rpt_start();
-    g_req = 1;
+static void rpt_kick(int req) {    // called with g_mu held after an update: the writer serializes when it can
+    if (!g_thread_on) {
+        if (pthread_create(&g_thr, NULL, rpt_main, NULL) != 0) { fprintf(stderr, "[RED] perf report writer: pthread_create failed, the report stays in memory only\n"); return; }
+        g_thread_on = 1;
+    }
+    if (req > g_req) g_req = req;   // the final write outranks a window write, which outranks a hitch's
     pthread_cond_signal(&g_cv);
 }
 
@@ -171,7 +169,7 @@ void dm_perf_report_window(unsigned long long frame, const double *ft, unsigned 
         g_live.wn = k;
     }
     g_live.w[g_live.wn++] = w;
-    rpt_kick();
+    rpt_kick(1);
     pthread_mutex_unlock(&g_mu);
 }
 
@@ -191,7 +189,7 @@ void dm_perf_report_hitch(unsigned long long frame, double whole_ms, const char 
     snprintf(g_live.h[slot].attr, sizeof g_live.h[slot].attr, "%s", attr);
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     double now = ts.tv_sec + ts.tv_nsec / 1e9;
-    if (now - g_last_write > 8.0) { g_last_write = now; rpt_kick(); }   // rate-limited: a burst of hitches writes at most once per 8 s
+    if (now - g_last_write > 8.0) { g_last_write = now; rpt_kick(2); }   // rate-limited: a burst of hitches writes at most once per 8 s
     pthread_mutex_unlock(&g_mu);
 }
 
@@ -199,10 +197,12 @@ void dm_perf_report_flush(const char *why) {
     (void)why;
     if (!dm_perf_report_on()) return;
     pthread_mutex_lock(&g_mu);
-    if (!g_thread_on) { rpt_start(); pthread_mutex_unlock(&g_mu); return; }   // nothing was reported: no file to write
+    if (!g_thread_on) { pthread_mutex_unlock(&g_mu); return; }   // nothing was reported: no file to write
     g_final = 1;
     pthread_cond_signal(&g_cv);
     pthread_mutex_unlock(&g_mu);
     pthread_join(g_thr, NULL);   // the writer's last write carries "graceful exit" (dm_host_shutdown's 1.5 s fallback bounds it)
-    g_thread_on = 0; g_final = 0;
+    pthread_mutex_lock(&g_mu);   // the flags are reset under the mutex a hitch in the shutdown window might hold
+    g_thread_on = 0; g_final = 0; g_req = 0;
+    pthread_mutex_unlock(&g_mu);
 }

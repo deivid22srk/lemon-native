@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """Fase 0 triage analyzer: parse [longframe] telemetry + video presentation gaps.
 
+Usage (from anywhere):
+    python3 scripts/analyze_stutter.py            # repo root, expects the logs in .work/logs/
+
+Inputs (all under <repo>/.work/, gitignored — never committed):
+  logs/0100F7E00C70E000-*.log   the device's log files (inventoried by triage.md)
+  video/pts.txt                 ffprobe packet timestamps of the screen recording; made by:
+    ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,duration_time \
+      -of csv=p=0 .work/logs/screen-<date>.mp4 > .work/video/pts.txt
+  (if pts.txt is missing and a screen-*.mp4 exists in logs/, this script runs ffprobe itself)
+
 Longframe semantics (dm/gfx/nvn/hle_nvn.c ~2515): a line prints only when
 whole frame > 20 ms AND > 1.4x the sliding mean of the last 16 frames, or
 GPU > 16.7 ms AND > 1.3x its sliding mean; decided 8 frames later once GPU
@@ -13,12 +23,14 @@ video_gaps.json, summary.md
 import json
 import re
 import statistics
+import subprocess
 from pathlib import Path
 
-WORK = Path('/home/z/my-project/lemon-native/.work')
+REPO = Path(__file__).resolve().parents[1]          # .../lemon-native (works from any checkout, any cwd)
+WORK = REPO / '.work'
 LOGS = WORK / 'logs'
 OUT = WORK / 'analysis'
-OUT.mkdir(exist_ok=True)
+OUT.mkdir(parents=True, exist_ok=True)
 
 # tolerant sub-regexes: [longframe] lines are assembled from optional sections
 SUBS = [
@@ -197,6 +209,14 @@ def video_gaps(path):
 
 
 def main():
+    pts = WORK / 'video' / 'pts.txt'
+    if not pts.exists():
+        mp4s = sorted(LOGS.glob('screen-*.mp4'))
+        if mp4s:
+            pts.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                            '-show_entries', 'packet=pts_time,duration_time', '-of', 'csv=p=0',
+                            str(mp4s[0])], stdout=open(pts, 'w'), check=True)
     logs = {
         'log1_172921': LOGS / '0100F7E00C70E000-20261121-172921.log',
         'log2_203320': LOGS / '0100F7E00C70E000-20261121-203320.log',

@@ -6,15 +6,18 @@ Crítico com o formato obrigatório. Linha de base medida em `triage.md`/`timeli
 
 | Rodada | Run do CI | APK | Nota geral | Δ | Status |
 |---|---|---|---|---|---|
-| 1 | (a preencher após o run) | LemonNative-hogwarts-stutter-rNN-<sha>.apk | (a preencher) | — | em andamento |
+| 1 | r29 = run 44966959699 (26ae007), success | `LemonNative-hogwarts-stutter-r29-26ae007.apk` (33,2 MB) | 5.9 | — | avaliada |
+| 2 | r30 = run 44971206327 (bb1f9a0), success | `LemonNative-hogwarts-stutter-r30-bb1f9a0.apk` | 6.0 | +0.1 | avaliada |
 
 ## Métricas da linha de base (dos logs e do vídeo; fontes por linha)
 
-Frame time: das linhas `[nvn] timing` do log B (janelas de 300 frames — fonte exata,
-não dos `[longframe]`): p50 **32,1–33,4 ms** · p95 **47–86 ms** (window máx 79,5–85,6)
-· p99 por janela **46–1497,6 ms** (máx na janela do frame 2100, 1497,57 ms) ·
-máx da sessão **5741,6 ms**. Over-16,7 ms por janela: **267–300 de 300 frames**
-(linhas `[nvn] frame interval`; o limiar do log é 16,7 ms, não 33,3 — a média de
+Frame time: das linhas `[nvn] timing` do log B (**todas as 29 janelas** de 300 frames —
+faixas mín–máx honestas): p50 **32,09–57,02 ms** (15 de 29 janelas acima de 33,4;
+drift dentro da sessão: 33,4 nas primeiras janelas → 34,8–39,2 nas janelas 5100–6300
+→ **57,0 na janela 8400** — degradação sustentada, evidência do cluster GPU/H7)
+· p95 **42,02–187,63 ms** · p99 por janela **46–1497,6 ms** (máx na janela do frame 2100,
+1497,57 ms) · máx da sessão **5741,6 ms**. Over-16,7 ms por janela: **267–300 de 300
+frames** (linhas `[nvn] frame interval`; o limiar do log é 16,7 ms, não 33,3 — a média de
 30 fps está toda acima de 16,7). Cadência da tela (vídeo, gravação original):
 p50 32,8 ms · p95 67,6 ms · p99 253 ms · max 1002 ms · CV 1,33.
 Congelamentos > 100 ms: 89 no vídeo (38/min) · > 250 ms: 39 · > 500 ms: 13.

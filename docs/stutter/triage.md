@@ -25,7 +25,7 @@ original do aparelho. Níveis de confiança: `provado` (dado direto de log/víde
 
 Sessões: A = 259 s, 5933 frames do guest, média 22,9 fps; B = 396 s, 8945 frames,
 média 22,6 fps. Média baixa = menus/carregamentos; gameplay assentado = 30 fps.
-Tamanhos dos logs: A = 55 linhas `[nxlaunch]` + 4 `[overlay]` + 153 `[nvn]`; B = 58 + 2 + 224.
+Tamanhos dos logs (linhas com a tag): A = 55 `[nxlaunch]` + 4 `[overlay]` + 153 `[nvn]`; B = 53 + 2 + 224.
 
 ## 2. Telemetria que já existe (importante para a Rodada 1)
 
@@ -47,10 +47,13 @@ térmicos/cpufreq por hitch, e numeração de wall-clock por evento.
 
 ## 3. Inventário dos logs
 
+Contagem = **linhas que contêm a tag** (uma linha pode ter mais de uma tag; A tem 60
+ocorrências de `[nxlaunch]` em 55 linhas, B tem 58 em 53).
+
 | Arquivo | Sessão | Conteúdo |
 |---|---|---|
-| `0100F7E00C70E000-20261121-172921.log` | A (Turnip 1.19) | 3107 linhas: 1554 `[longframe]`, 948 `[vk]`, 153 `[nvn]`, 60 `[nxlaunch]`, 20 `[overlay]`… termina "stopped by the user" |
-| `0100F7E00C70E000-20261121-203320.log` | B (PurpleVK 26.3) | 3929 linhas: 2052 `[longframe]`, 1170 `[vk]`, 224 `[nvn]` |
+| `0100F7E00C70E000-20261121-172921.log` | A (Turnip 1.19) | 3107 linhas: 1554 `[longframe]`, 948 `[vk]`, 153 `[nvn]`, 55 `[nxlaunch]`, 4 `[overlay]`… termina "stopped by the user" |
+| `0100F7E00C70E000-20261121-203320.log` | B (PurpleVK 26.3) | 3929 linhas: 2052 `[longframe]`, 1170 `[vk]`, 224 `[nvn]`, 53 `[nxlaunch]`, 2 `[overlay]` |
 | `screen-20261121-173341.mp4` | gravação do aparelho (17:33:41) | 1600x720 VFR, 140,7 s — fonte da timeline |
 
 Palavras-chave procuradas: `compile`, `pipeline cache`, `miss`, `stall`, `wait`,
