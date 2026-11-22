@@ -20,11 +20,12 @@ original do aparelho. Níveis de confiança: `provado` (dado direto de log/víde
 | FPS alvo (real) | **30 fps** — o cap do host não é aplicado (`present cap 60 fps not applied`); cadência observada 30 fps no vídeo/overlay | `[nvn]` + vídeo |
 | Swapchain do jogo | 3 texturas, interval 1, 1280x720, formato 0x25 | `[nvn] WindowInitialize` |
 | Upscaler | sgsr1 (default) | `[nxlaunch] settings` |
-| Thermal | eventos `throttle green`/`yellow` (status 0); caps de CPU observados 1497–2265 MHz por cluster | `[overlay]` |
+| Thermal | eventos `throttle green`/`yellow` (status 0); caps de CPU observados 1075–2995 MHz por cluster (6 linhas `[overlay]` nas duas sessões) | `[overlay]` |
 | Settings do usuário | `[adv] none: no Advanced row is set` — nenhum ajuste manual | `[nxlaunch]` |
 
 Sessões: A = 259 s, 5933 frames do guest, média 22,9 fps; B = 396 s, 8945 frames,
 média 22,6 fps. Média baixa = menus/carregamentos; gameplay assentado = 30 fps.
+Tamanhos dos logs: A = 55 linhas `[nxlaunch]` + 4 `[overlay]` + 153 `[nvn]`; B = 58 + 2 + 224.
 
 ## 2. Telemetria que já existe (importante para a Rodada 1)
 
@@ -102,10 +103,15 @@ Impacto = frequência × duração, somado sobre os `[longframe]` de cada sessã
 | 5 | **H8 Esperas guest (condvar/mutex)** | condvar RenderThread/TaskGraph até 5,4 s; 81+80 eventos | `provado` como sintoma de serialização (S1/S4) | 161 eventos | ~58 s | 5,4 s |
 | 6 | **H4 Alocação/pool placement** | `pool placement 112–223 ms (pools 11–50 MB)` nas transições; 80+73 eventos | `provado`, menor | 153 eventos | ~4,9 s | 223 ms |
 | 7 | **H6 Frame pacing / painel** | cadência p50 32,8 ms regular fora dos stalls; pacer do host agenda slots de refresh inteiro medido (`vka_panel_tick`); painel 144 Hz vs 30 fps = razão 4,8 não-inteira | `hipótese` (micro-judder não verificável no vídeo VFR) | — | — | — |
-| 8 | **H7 Térmico/cpufreq** | throttle green→yellow, status 0; caps de CPU 1497–2265 MHz; sem correlação com os piores stalls | `provado` que não domina | 20 eventos | — | — |
-| — | H3 Upload de textura | 4+3 eventos, 56 ms somados, máx 29 ms | `refutado` como causa de stutter nestas sessões | 7 | 0,1 s | 29 ms |
+| 8 | **H7 Térmico/cpufreq** | throttle green→yellow (6 linhas `[overlay]` nas duas sessões), status 0; caps de CPU 1075–2995 MHz; sem correlação com os piores stalls | `provado` que não domina | 6 eventos | — | — |
+| — | H3 Upload de textura | 4+3 eventos, 112,1 ms somados nas duas sessões, máx 29,4 ms | `refutado` como causa de stutter nestas sessões | 7 | 0,1 s | 29,4 ms |
 | — | H10 Log/instrumentação | sem pico de I/O de log nos hot paths; sampler de threads só em frames ≥ 100 ms | sem evidência de dano | — | — | — |
 | — | H11 GC do app | nenhuma pausa de GC correlacionada nos logs | `refutado` nestas sessões | — | — | — |
+
+Notas de verificação (Crítico rodada 1): H3 somado = 112,1 ms nas duas sessões
+(4+3 eventos, máx 29,4 ms); o maior frame GPU-bound bruto do log B é 422,7 ms
+(`GPU_bound.max_ms`) — o valor típico do episódio sustentado é 75–206 ms com span ≈ busy;
+as linhas `[overlay]` são 6 no total (4 em A, 2 em B).
 
 ## 6. Ranking por impacto (frequência × duração) e plano
 

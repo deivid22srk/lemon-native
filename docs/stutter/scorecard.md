@@ -8,17 +8,19 @@ Crítico com o formato obrigatório. Linha de base medida em `triage.md`/`timeli
 |---|---|---|---|---|---|
 | 1 | (a preencher após o run) | LemonNative-hogwarts-stutter-rNN-<sha>.apk | (a preencher) | — | em andamento |
 
-## Métricas da linha de base (dos logs e do vídeo; ver triage.md)
+## Métricas da linha de base (dos logs e do vídeo; fontes por linha)
 
-- Frame time (janelas de 300 frames do log B): p50 33,4–34,2 ms · p95 41–79 ms ·
-  p99 46–931 ms · max 5742 ms
-- Cadência de atualização da tela (vídeo, 141 s): p50 32,8 ms · p95 67,6 ms ·
-  p99 253 ms · max 1002 ms · CV 1,33
-- Congelamentos > 100 ms: 89 no vídeo (38/min) · > 250 ms: 39 · > 500 ms: 13
-- Over-target (33,3 ms) por janela de 300 frames: 269–295 de 300
-- Piores stalls individuais (reprodutíveis nos dois drivers): 5,45–5,74 s
-  (compilação de pipeline 3,1–4,8 s + gravação do replay 3,3–5,4 s + condvar
-  RenderThread 3,3–5,4 s) e 2,4–3,8 s (majflt 758–1266)
+Frame time: das linhas `[nvn] timing` do log B (janelas de 300 frames — fonte exata,
+não dos `[longframe]`): p50 **32,1–33,4 ms** · p95 **47–86 ms** (window máx 79,5–85,6)
+· p99 por janela **46–1497,6 ms** (máx na janela do frame 2100, 1497,57 ms) ·
+máx da sessão **5741,6 ms**. Over-16,7 ms por janela: **267–300 de 300 frames**
+(linhas `[nvn] frame interval`; o limiar do log é 16,7 ms, não 33,3 — a média de
+30 fps está toda acima de 16,7). Cadência da tela (vídeo, gravação original):
+p50 32,8 ms · p95 67,6 ms · p99 253 ms · max 1002 ms · CV 1,33.
+Congelamentos > 100 ms: 89 no vídeo (38/min) · > 250 ms: 39 · > 500 ms: 13.
+Piores stalls individuais (reprodutíveis nos dois drivers): 5,45–5,74 s
+(compilação de pipeline 3,1–4,8 s + gravação do replay 3,3–5,4 s + condvar
+RenderThread 3,3–5,4 s) e 2,4–3,8 s (majflt 758–1266).
 
 ## Rodada 1 — o que foi entregue pelo Criador
 
