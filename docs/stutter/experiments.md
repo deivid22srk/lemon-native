@@ -56,6 +56,18 @@ do log). Documentadas aqui porque são os controles das hipóteses H1/H6/H7:
 5. **E5 — pacing** (fpslocker do perfil + `DM_VK_PACE_PANEL`): confirmar se a cadência de 30 fps
    em painel 144 Hz (razão 4,8) gera judder percebido além dos hitches medidos.
 
+## Resultados (atualizado 2026-11-22)
+
+- **E1 — CUMPRIDO** (`provado`): primeiro `stutter_report.json` válido em 22/11 07:03
+  (7,2 min, `eeb5be5`, Turnip T30) — 91 hitches ≥100 ms (12,6/min), p50 32,3 ms,
+  dropped 4,1 %; contador oficial == parser do log (91). Detalhes e comparativo com o
+  baseline de 06:01 em triage.md §9. Reserva: `DM_MEM_FB_PREFETCH` ausente na sessão.
+- **E2 — parcial**: os números de 07:03 já incluem `DM_FS_FADV=1` (hitches −40 %,
+  tempo de I/O de transição 5,2→4,7 s; readahead não resolveu os hitches de boot em
+  t≈4/10 s; majflt +5,7×). Falta sessão limpa na mesma rota para o julgamento.
+- **E3 — não iniciado**: a sessão de 07:03 foi sem `DM_MEM_FB_PREFETCH`; re-adicionar.
+- **E4 — não iniciado** (decide H7/gaps antes da rodada 3).
+
 ## Métrica de sucesso (por flag)
 
 - E2: tempo somado de `files: read` nas transições cai ≥ 30% sem novo hitch noutra causa.

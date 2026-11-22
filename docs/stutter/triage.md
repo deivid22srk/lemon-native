@@ -187,3 +187,62 @@ Causas dos 132 hitches ≥100 ms desta sessão (contagem | tempo):
 
 `stutter_report.json` não foi gerado (flag off) — **o E1 oficial ainda não rodou**;
 a rodada 3 só codifica após E1–E3 (e E4 para os gaps), conforme o veredito da rodada 02.
+
+## 9. E1 oficial: primeiro `stutter_report.json` + `DM_FS_FADV=1` (2026-11-22 07:03) — `provado`
+
+Sessão de 7,2 min (frames até 12000, 434,7 s), **build `eeb5be5`, mesmo driver Turnip
+T30 Mr Purple 666**, painel 60,21 Hz (`window 30 fps`). Flags no eco do env:
+`DM_PERF_REPORT=1` e `DM_FS_FADV=1` — **`DM_MEM_FB_PREFETCH` NÃO estava nesta sessão**
+(estava ligado às 06:30; pedir para o usuário re-adicionar). O launcher imprime
+`[RED] ... is not a switch of this build: nothing reads it` para as duas flags, mas o
+report foi gravado e o readahead atuou — o aviso é falso-positivo do validador
+(`docs/env_switches.tsv` não lista as flags que só o código lê; registrar entrada no tsv
+como correção de rodada 3). Writer sem nenhum `[RED] perf report writer` — gravação
+íntegra; o JSON saiu com um `]` duplicado no fim (flush interrompido ao fechar o app;
+reparado no parse — candidatar `ftruncate`+flush final no exit gracioso).
+
+**Validação cruzada `provado`:** o contador oficial do report (91 hitches ≥100 ms)
+bate exato com a contagem do parser no log (91); ≥1 s (1) também bate.
+
+Comparação com a mesma metodologia (parser v2, TGT 33,3 ms), mesmo driver:
+
+| Métrica | 06:01 flags off | 07:03 FADV on | Δ |
+|---|---|---|---|
+| hitches ≥100 ms /min | 20,9 | **12,6** | −40 % |
+| hitches ≥200 ms /min | 5,9 | 3,8 | −36 % |
+| hitches ≥500 ms /min | 1,11 | 0,42 | −62 % |
+| hitches ≥1 s | 3 | 1 | −67 % |
+| pior frame | 1527 ms | 1388 ms | −9 % |
+| tempo perdido (≥100 ms) | 22,8 s | 15,8 s | −31 % |
+| presents dropped | 5,8 % | 4,1 % | −29 % |
+| p99 present | 100 ms | 50 ms | −50 % |
+| pipelines novos | 85 (3,8 s) | 42 (0,3 s) | −92 % no tempo (confundidor: cache quente) |
+| major faults na sessão | 13 172 | **74 673** | +5,7× (⚠) |
+
+Métricas oficiais do report: p50 mediano das janelas 32,3 ms (30 fps sustentado),
+p99 de janelas mediano 73,5 ms, dropped 4,10 %, footprint pico 2584 → fim 1590 MiB.
+
+Leitura honesta:
+
+1. **Progresso real, mas atribuição confundida** — o começo da rota é idêntico nos dois
+   logs (hitches de boot em t≈4 s e t≈10 s, ~1–1,5 s cada, ambos I/O de transição): o
+   FADV **não** resolveu os dois maiores hitches da sessão. A queda de −40 % inclui
+   cache de pipelines quente (H1: 3,8 s→0,3 s) e rota mid-game não garantida igual.
+2. **12,6 hitches/min = −59 % vs. o baseline original de 30,4 (21/11)**; a meta é
+   ≤6,1/min (−80 %) — falta ~um terço do caminho.
+3. Causas dos 91 hitches ≥100 ms desta sessão (n | tempo): **H9/emu misto 49 | 8,6 s**
+   (pace lines: replay recording 16–19 ms/frame no regime — 50 % do orçamento de
+   33,3 ms, alvo nº 1 da rodada 3); **gaps "nada ocupado" 21 | 3,9 s** (CPU vista a
+   998/1555/844 MHz com "ADPF no session" — H7, pede E4); **H2 I/O de transição
+   12 | 4,7 s**; H5 majflt 7 | 1,4 s.
+4. **⚠ majflt 5,7× maior sob FADV** (74 673 = ~172/s): hipótese — readahead enche o
+   page cache e expulsa páginas do app (RAM 7,2 GiB, footprint ~2,3 GiB + JIT);
+   espalhados não geram hitches grandes, mas podem puxar o p50 (32–33 ms) e os gaps.
+   Medir com `DM_ATRACE`/E4 antes de mudar política (ex.: `FADV_RANDOM` em direórios
+   de shader, readahead menor).
+5. Maior hitch da estabilidade (sem storm de boot): 504 ms no frame 9547
+   (replay recording 168 ms + condvar 86 ms) — H9 confirmado como maior causa única.
+
+E1 está **cumprido** (linha de base oficial instrumentada existe). E2 parcialmente
+(números acima); E3 precisa da sessão com `DM_MEM_FB_PREFETCH=1` re-adicionado.
+Rodada 3 só codifica após E2/E3 limpos na mesma rota (6–10 min) e E4 para os gaps.
