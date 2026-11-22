@@ -100,6 +100,8 @@ void nro_load(module_t *m);     // relocate an NRO against the loaded modules an
 void nro_unload(module_t *m);   // take an NRO out of the lookups and bind the imports that pointed into it again
 int svc_nro_deactivate(module_t *m);   // mark inactive under the memory map lock, refusing while a stack borrows its data
 void *module_sym(module_t *m, const char *name);
+const char *dm_sym_near(module_t *m, uint64_t off, uint64_t *sym_off);   // crash.c: the guest module's defined symbol at or below off (loader.c module_sym_near, registered at load; NULL without it, and in the test builds)
+void dm_sym_near_register(const char *(*fn)(module_t *, uint64_t, uint64_t *));   // loader.c registers its lookup once the modules' symbol tables are parsed
 int dm_sdk_major(void);   // SDK major version from the sdk module's version string (loader.c); 0 = unknown
 int dm_sdk_ounce(void);   // 1 when the sdk module was built for the Switch 2 (its spec string "spec: Ounce", loader.c)
 int dm_sdk_nvn2_item(unsigned item, int *out);   // a constant NVN2's own nvnDeviceGetInteger answers for item, read from the sdk module (loader.c); 0 when it has none

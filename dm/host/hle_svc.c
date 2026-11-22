@@ -47,6 +47,9 @@ __attribute__((weak)) void dm_gfx_guest_region(void *base, size_t size, const ch
 __attribute__((weak)) void dm_gfx_guest_open(void *lo, size_t n) { (void)lo; (void)n; }
 __attribute__((weak)) int dm_gfx_guest_release(uintptr_t lo, uintptr_t hi) { (void)lo; (void)hi; return 0; }
 __attribute__((weak)) void dm_gfx_recent_dump(void) { (void)0; }   // hle_nvn.c: the recent NVN calls, the Break report's boot window
+// The Break report's nearest-symbol lookup (crash.c dm_sym_near, loader.c module_sym_near registered into it): the tests that link
+// hle_svc.c without crash.c keep this stub, and the Break report prints module+offset as before
+__attribute__((weak)) const char *dm_sym_near(module_t *m, uint64_t off, uint64_t *sym_off) { (void)m; (void)off; (void)sym_off; return NULL; }
 static void *alias_windows_thread(void *arg);
 static void *regions_thread(void *arg);
 static void mem_init_once(void) {
@@ -823,6 +826,15 @@ uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
         module_t *mm = module_of((void *)regs[30]);
         static int nb;
         LOG("Break#%d reason=%#llx Result=%#x svc at %s+%#llx", ++nb, regs[0], res, mm ? mm->name : "?", orig_addr);
+        // Name the svc site the same way the backtrace below names its frames (dm_sym_near, crash.c): an abort whose funnel
+        // no import takeover reaches (AC3 Remastered's launcher, SDK 5.4.0) reports which SDK entry holds the svcBreak
+        if (mm) { uint64_t so; const char *nm = dm_sym_near(mm, orig_addr - (uint64_t)mm->base, &so);
+                  if (nm) LOG("Break svc site in %s [%s+%#llx]", mm->name, nm, (unsigned long long)(orig_addr - (uint64_t)mm->base - so)); }
+        // Registers x0..x30: a bare break (no payload) carries nothing in x1/x2, but the assert's leftover arguments — a Result
+        // pointer, a context struct, the message — may still sit in registers the abort funnel did not clear
+        { char t[700]; size_t o = (size_t)snprintf(t, sizeof t, "Break registers:");
+          for (int i = 0; i < 31 && o < sizeof t - 2; i++) o += (size_t)snprintf(t + o, sizeof t - o, " x%d=%#llx", i, (unsigned long long)regs[i]);
+          LOG("%s", t); }
         // Older SDKs (AC3 Remastered's 5.4.0) reach here from their abort code without any taken-over name (hle_sdk16.c
         // diag), so the report above is all bring-up had: dump the payload (some builds pass the assert text or a context
         // struct as it) and the recent guest diag strings, which carry the abort message the SDK logged before the break

@@ -117,6 +117,18 @@ class Verdicts(Base):
         self.assertLessEqual(text.count('\n'), 80)
         self.assertTrue(any('No stand-in shared font' in s['heading'] for s in d['symptoms']), d['symptoms'])
 
+    def test_crash_bt_symbols(self):
+        # dm_backtrace names the export each frame sits in ([name+off], crash.c dm_sym_near): the digest keeps 8 frames
+        # and the symbols ride along without counting toward the 8
+        bt = ('[dm] bt: sdk+0x4c9b8 [_ZN2nn4diag6Detail5AbortEv+0x10] nro2+0xd748 [launcher_f+0xd748] nro2+0xebc0 '
+              'nro2+0x11858 main+0x3dbc main+0x43e0 main+0x9 main+0xa main+0xb')
+        d = self.digest(start()[:20] + ['[dm] CRASH sig=6 addr=0x1 pc=sdk+0xd980c lr=sdk+0x4c9b8 sp=0x1', bt])
+        self.assertEqual(d['verdict']['kind'], 'crashed')
+        self.assertEqual(len([t for t in d['crash']['backtrace'] if not t.startswith('[')]), 8)   # 8 frames kept
+        self.assertIn('sdk+0x4c9b8', d['crash']['backtrace'])
+        self.assertEqual(d['crash']['backtrace'][1], '[_ZN2nn4diag6Detail5AbortEv+0x10]')        # the symbol rides with its frame
+        self.assertIn('main+0xa', d['crash']['backtrace'])                                       # the 8th frame is reached
+
     def test_host_fatal(self):
         d = self.digest(start()[:20] + ['[dm] FATAL the game files /storage/emulated/0/Switch2/Game/romfs (rom:) are missing: neither a folder nor a RomFS image',
                                        '[dm] CRASH sig=6 addr=0x1 pc=abort+0xa0 lr=abort+0x7c sp=0x1'])

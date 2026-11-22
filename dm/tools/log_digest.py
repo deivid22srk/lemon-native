@@ -675,7 +675,15 @@ class Digest:
         self.crash_wait -= 1
         c = self.crash
         if c is None: self.crash_wait = 0; return
-        if line.startswith('[dm] bt:') and not c['bt']: c['bt'] = line[8:].split()[:8]
+        if line.startswith('[dm] bt:') and not c['bt']:
+            # keep the first 8 frames; a frame's nearest-symbol token ([name+off], dm_backtrace's) rides along without
+            # counting toward the 8
+            bt, frames = [], 0
+            for t in line[8:].split():
+                if frames >= 8: break
+                bt.append(t)
+                if not t.startswith('['): frames += 1
+            c['bt'] = bt
         elif line.startswith('[dm] stack scan') and not c['stack_scan']: c['stack_scan'] = re.findall(r'\[[+-]\d+\](\S+)', line)[:6]
         if c['bt'] and c['stack_scan']: self.crash_wait = 0
 

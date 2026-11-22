@@ -92,17 +92,32 @@ static unsigned g_nsem;                          // Number of semantic implement
 // the object creations. The Break report could only say "after GetInteger 0/1". Keep the last of these calls: dm_gfx_recent_dump
 // (the Break case in hle_svc.c) then shows which NVN answers the guest had in hand when it aborted. A ring of the calls that
 // create or measure objects only -- the whole call stream is the counting trampolines' job (DM_NVN_COUNT, DM_NVN_FRAMES).
+// GetInteger entries record the value the host answered (nvn_recent_answer, written at the end of h_nvnDeviceGetInteger) as well
+// as the out pointer: the 2026-11-23 run read every capability item's slot back as 122 and the API version's as 313 -- the game
+// reused one slot for the whole scan and had written over it by the abort, so a readback alone cannot tell what was answered.
 #define NVN_RECENT_N 32
-typedef struct { _Atomic unsigned seq; const char *nm; uint64_t a, b; } nvn_recent_t;
+#define NVN_RECENT_NO_ANS (-0x7FFFFFFF - 1)   // INT_MIN: no answer recorded for this entry
+#define NVN_RECENT_GI "nvnDeviceGetInteger"
+typedef struct { _Atomic unsigned seq; const char *nm; uint64_t a, b; _Atomic int ans; } nvn_recent_t;
 static nvn_recent_t g_nvn_recent[NVN_RECENT_N];
 static _Atomic unsigned g_nvn_recent_wr;
 static void nvn_recent(const char *nm, uint64_t a, uint64_t b) {
     nvn_recent_t *r = g_nvn_recent + (atomic_fetch_add_explicit(&g_nvn_recent_wr, 1, memory_order_relaxed) % NVN_RECENT_N);
     r->nm = nm; r->a = a; r->b = b;
+    atomic_store_explicit(&r->ans, NVN_RECENT_NO_ANS, memory_order_relaxed);
     atomic_store_explicit(&r->seq, atomic_load(&g_nvn_recent_wr), memory_order_release);
 }
-// The device's integer item answers are read back live (the out pointer is the game's memory, still mapped at the abort); a
-// pointer the read fails on prints "?" instead of dereferencing. GetStorageSize / GetQueueMemorySize record their answer.
+// The answer h_nvnDeviceGetInteger just wrote, into the entry nvn_recent recorded for this same call (a second thread recording
+// in between leaves its entry alone: the mismatched name checks it)
+static void nvn_recent_answer(int v) {
+    unsigned wr = atomic_load_explicit(&g_nvn_recent_wr, memory_order_relaxed);
+    if (!wr) return;
+    nvn_recent_t *r = g_nvn_recent + (wr - 1) % NVN_RECENT_N;
+    if (strcmp(r->nm, NVN_RECENT_GI)) return;
+    atomic_store_explicit(&r->ans, v, memory_order_release);
+}
+// The device's integer item answers print as the value the host answered, with the out pointer's current content beside it (the
+// game may reuse the slot); a pointer the read fails on prints "?" instead of dereferencing. GetStorageSize / GetQueueMemorySize record their answer.
 void dm_gfx_recent_dump(void) {
     unsigned wr = atomic_load_explicit(&g_nvn_recent_wr, memory_order_relaxed);
     for (unsigned i = 0; i < NVN_RECENT_N; i++) {
@@ -110,10 +125,12 @@ void dm_gfx_recent_dump(void) {
         nvn_recent_t *r = g_nvn_recent + k;
         unsigned s = atomic_load_explicit(&r->seq, memory_order_acquire);
         if (!s || (unsigned)(wr - s) >= NVN_RECENT_N) continue;   // never written, or overwritten while we walked
-        if (!strcmp(r->nm, "nvnDeviceGetInteger")) {
+        if (!strcmp(r->nm, NVN_RECENT_GI)) {
+            int a = atomic_load_explicit(&r->ans, memory_order_relaxed);
             int v = 0; char t[16] = "?";
             if (r->b && !plat_mem_read(r->b, &v, 4)) snprintf(t, sizeof t, "%d", v);
-            LOG("nvn recent: nvnDeviceGetInteger item %#llx -> %s", (unsigned long long)r->a, t);
+            if (a != NVN_RECENT_NO_ANS) LOG("nvn recent: nvnDeviceGetInteger item %#llx -> answered %d, slot now %s", (unsigned long long)r->a, a, t);
+            else LOG("nvn recent: nvnDeviceGetInteger item %#llx -> slot now %s", (unsigned long long)r->a, t);
         } else LOG("nvn recent: %s(%#llx, %#llx)", r->nm, (unsigned long long)r->a, (unsigned long long)r->b);
     }
 }
@@ -249,11 +266,11 @@ NVN(nvnDeviceGetInteger, void, const NVNdevice *d, NVNdeviceInfo what, int *out)
     // 0x67 (SDK 19): FINAL FANTASY TACTICS - The Ivalice Chronicles reads it before every program it loads and passes it as the alignment of its copies of the shader's control section and code
     // (main+0x49800; its allocator raises anything below 8 to 8). Not measured on hardware: 256, the alignment of shader code in a memory pool; the host reads shaders by key, so any value works
     if (dm_sdk_ounce() && w < sizeof g_devinfo2 / sizeof *g_devinfo2 && (g_devinfo2[w] != DEVINFO_RT || w >= sizeof g_devinfo / sizeof *g_devinfo)) {
-        if (g_devinfo2[w] == DEVINFO_RT) { LOG("[RED] nvnDeviceGetInteger item %#x: NVN2 reads it from the GPU at run time, not known here; returning 0", w); *out = 0; return; }
+        if (g_devinfo2[w] == DEVINFO_RT) { LOG("[RED] nvnDeviceGetInteger item %#x: NVN2 reads it from the GPU at run time, not known here; returning 0", w); *out = 0; nvn_recent_answer(0); return; }
         *out = w <= 1 ? 0 : g_devinfo2[w];
-        if (w > 1) { dm_sdk_nvn2_item(w, out); OLOG("DeviceGetInteger %#x -> %d (NVN2)", w, *out); return; }   // the sdk's own constant where its switch has one: the GPU code versions move with the SDK
-    } else if (w == 0x67) { *out = 256; return; }
-    if (w >= sizeof g_devinfo / sizeof *g_devinfo) { LOG("[RED] nvnDeviceGetInteger unknown item %#x, returning 0", w); *out = 0; return; }
+        if (w > 1) { dm_sdk_nvn2_item(w, out); nvn_recent_answer(*out); OLOG("DeviceGetInteger %#x -> %d (NVN2)", w, *out); return; }   // the sdk's own constant where its switch has one: the GPU code versions move with the SDK
+    } else if (w == 0x67) { *out = 256; nvn_recent_answer(256); return; }
+    if (w >= sizeof g_devinfo / sizeof *g_devinfo) { LOG("[RED] nvnDeviceGetInteger unknown item %#x, returning 0", w); *out = 0; nvn_recent_answer(0); return; }
     *out = g_devinfo[w];
     // 0x2E / 0x30 describe the GPU code the host can translate, not the linked SDK's driver. Precompiled shaders can come from a newer compiler: ASTRAL CHAIN links SDK 6.4 but its
     // hwfillcolor.vso is 1.15; main+0x9e97d0 rejects the old SDK-based answer 1.14 and initialization unwinds into a null read at main+0x9c0d1c. Our chain translates through 1.16
@@ -264,6 +281,7 @@ NVN(nvnDeviceGetInteger, void, const NVNdevice *d, NVNdeviceInfo what, int *out)
         *out = w == 0x2E ? cur[0] : cur[1];
     }
     if (w <= 1) { pthread_once(&g_api_once, api_find); *out = g_api[w]; }   // once for every thread: a second thread reading api[] half written answered minor -1 (Mario Kart World then makes no graphics system)
+    nvn_recent_answer(*out);
     OLOG("DeviceGetInteger %#x -> %d", w, *out);
 }
 NVN(nvnDeviceGetImageHandle, NVNimageHandle, const NVNdevice *d, int id) { (void)d; return (NVNimageHandle)id; }

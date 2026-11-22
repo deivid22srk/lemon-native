@@ -97,6 +97,31 @@ module_t *module_of(const void *p) {
     return NULL;
 }
 
+// The module's defined symbol at or below offset off: the nearest export naming a code address, for the Break / crash reports, where
+// only module+offset was printed before. An abort that names nothing then names its function: AC3 Remastered's launcher aborts with a
+// bare svcBreak called from sdk+0x4c9b8 (nnSdk 5.4.0's abort funnel, reached through no import the host takes over) inside the
+// launcher NRO's NVN bring-up, and SDK 5.4.0's log manager (whose startup the host no-ops) swallows the assert text. The nearest
+// export names the SDK entry in question in the log itself, without a decompressed module and sdis.py --sym on the side.
+// Pure numeric scan over the symbol table (no string compares: sdk's is the largest at tens of thousands of entries, and a Break
+// report walks up to 32 frames); the first symbol at a value wins (lowest index, as module_sym's hash does).
+// Reached only through dm_sym_near (crash.c's registered slot): the test builds that link crash.c or hle_svc.c without loader.c
+// leave the slot empty and the reports print module+offset as before.
+static const char *module_sym_near(module_t *m, uint64_t off, uint64_t *sym_off) {
+    if (!m || !m->symtab || !m->strtab || off >= m->size) return NULL;
+    uint64_t best = 0; const char *nm = NULL;
+    for (unsigned i = 1; i < m->nsym; i++) {
+        const Elf64_Sym *s = &m->symtab[i];
+        if (!s->st_shndx || s->st_value > off || s->st_value < best) continue;
+        const char *n = m->strtab + s->st_name;
+        if (!*n) continue;
+        best = s->st_value; nm = n;
+        if (best == off) break;
+    }
+    if (!nm) return NULL;
+    *sym_off = best;
+    return nm;
+}
+
 // Whether main or an NRO imports a symbol whose name starts with prefix (an undefined dynamic symbol: one the module calls but another module defines), for behaviour that
 // follows what the game uses. The NROs count too, loaded or not: main may be only a boot stub that loads the game's code as an NRO (Mario Tennis Fever)
 int dm_game_imports(const char *prefix) {
@@ -1191,6 +1216,7 @@ void load_modules(const char *dir, const char **names, int n) {
     }
     xmod_apply_all(mdir, 0);   // PEANUTS: a code mod's branches between modules (see xmod_apply)
     force_init();
+    dm_sym_near_register(module_sym_near);   // the Break / crash reports symbolize guest frames from here on (crash.c)
     t = now_ns(); for (int i = 0; i < g_nmod; i++) relocate(&g_mod[i]); tr = now_ns() - t;
     xmod_apply_all(mdir, 1);   // PEANUTS: and the addresses of another module it keeps as data, over what relocate() wrote there
     force_check();

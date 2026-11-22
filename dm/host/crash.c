@@ -82,9 +82,18 @@ void crash_off(const char *tag, uint64_t a) {   // Also used by diag.c
     }
     else fprintf(stderr, " %s%s%#llx", tag, *tag ? "=" : "", a);
 }
+// The guest modules' nearest-symbol lookup (loader.c module_sym_near, registered once its symbol tables are parsed): the
+// Break report and dm_backtrace name the export each frame sits in. The test builds that link crash.c or hle_svc.c without
+// loader.c leave the slot empty (t_heap_size.c, t_svc_memory.c stub dm_sym_near), and the reports print module+offset as before.
+static const char *(*g_sym_near)(module_t *m, uint64_t off, uint64_t *sym_off);
+void dm_sym_near_register(const char *(*fn)(module_t *, uint64_t, uint64_t *)) { g_sym_near = fn; }
+const char *dm_sym_near(module_t *m, uint64_t off, uint64_t *sym_off) { return g_sym_near ? g_sym_near(m, off, sym_off) : NULL; }
 // Frame pointer backtrace: x29 chain [fp]=previous frame's fp, [fp+8]=return address; only 8-byte aligned, monotonically increasing frames are walked.
 // Each frame is read with vm_read_overwrite, which fails instead of faulting: code built without frame pointers keeps data in x29 (STEINS;GATE RE:BOOT's main+0x38921c: x29 = 0x430),
-// and a probe's backtrace there used to crash the host
+// and a probe's backtrace there used to crash the host.
+// Each guest frame also names the defined symbol at or below its return address (dm_sym_near, registered by loader.c): an abort that names nothing — AC3 Remastered's
+// launcher's bare svcBreak from sdk+0x4c9b8, reached through no import the host takes over — then names the SDK entry or the game function it sits in, in the log
+// itself, without pulling the module apart with sdis.py on the side.
 void dm_backtrace(uint64_t fp) {
     fprintf(stderr, "[dm] bt:");
     for (int i = 0; i < 32 && fp && !(fp & 7); i++) {
@@ -92,6 +101,9 @@ void dm_backtrace(uint64_t fp) {
         if (plat_mem_read((uint64_t)fp, w, sizeof w)) break;
         uint64_t nfp = w[0], ra = w[1];
         off("", ra);
+        module_t *m = module_of((void *)ra);
+        uint64_t so; const char *nm = m ? dm_sym_near(m, ra - (uint64_t)m->base, &so) : NULL;
+        if (nm) fprintf(stderr, " [%s+%#llx]", nm, (unsigned long long)(ra - (uint64_t)m->base - so));
         if (nfp <= fp) break;
         fp = nfp;
     }
