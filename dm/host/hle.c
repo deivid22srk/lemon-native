@@ -90,7 +90,8 @@ static void (*g_obs_fn[OBS_MAX])(uint64_t *regs, int param); static int g_obs_ha
 void gate_obs_set(int id, void (*fn)(uint64_t *regs, int param)) { if (id <= 0 || id >= OBS_MAX) die("observation gate number out of range %d", id); g_obs_fn[id] = fn; }
 int gate_obs_present(int id) { return id > 0 && id < OBS_MAX && g_obs_have[id]; }
 typedef struct { uint64_t ret; int kind, arg; uint64_t orig; } gate_t;
-#define GATE_BITS 15                     // 32768 slots, gate count ≤ 8192, load factor ≤ 1/4 (spin wait gates: Tears of the Kingdom's main has 843)
+#define GATE_BITS 16                     // 65536 slots, gate count ≤ 16384, load factor ≤ 1/4 (Assassin's Creed III Remastered rewrites 12565 gates: sdk 109, subsdk1 8,
+                                         // subsdk2 19, nro0 6251, nro2 6178; spin wait gates: Tears of the Kingdom's main has 843). Costs 1.5 MB of BSS on Android
 static gate_t g_gate[1u << GATE_BITS];
 static int g_ngate;
 static inline unsigned gate_h(uint64_t a) { return (unsigned)(((a >> 2) * 0x9E3779B97F4A7C15ull) >> (64 - GATE_BITS)); }

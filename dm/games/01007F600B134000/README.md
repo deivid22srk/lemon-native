@@ -40,6 +40,11 @@ The display version (1.0.0) is the base package's `control.nacp`.
 
 These are the survey's guesses, not measurements. SDK 5 is older than every profile's SDK 16 object layout: NVN object sizes, the API version and service layouts differ by SDK, so the host may need SDK 5 fixes before the game reaches its frame loop ([NVN objects](../../../docs/reference/nvn-objects.md), [SDK differences](../../../docs/reference/services.md)).
 
+## Bring-up
+
+- **Empty shader tables (resolved 2026-11-22):** the first on-device Build reached the split with an empty `shader_map.tsv`, selected 0 of 265 RomFS files and stopped; the full split of the dump and the tables now committed are described under [Graphics and shaders](#graphics-and-shaders).
+- **`FATAL gate overflow` (resolved 2026-11-22):** the first launch loaded `main`, `subsdk1`, `subsdk2` and `sdk` (136 host gates), then aborted while loading the NRO DLLs: one has 6251 rewritten gates and another 6178, 12565 in all, over the host's old 8192 limit. The host's gate table was enlarged to 16384 registrations ([Gate table capacity](../../../docs/reference/rewriter.md#gate-table-capacity)). No gameplay has been seen yet.
+
 ## Open
 
 - Every runtime step: first boot, SDK 5 NVN / service layouts, audio (Wwise), movie playback (`subsdk2`), DLC (`acl/`), the Forge archives, and the GLSLC capture's completeness.

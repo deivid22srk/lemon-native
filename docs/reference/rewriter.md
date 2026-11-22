@@ -282,6 +282,13 @@ To enroll a cut for any game's own module:
   - The engine region's gate sits on a store that reads x10 (`str x1, [x10, #0x280]`, Octopath Traveler 0 `main+0x12e20`), which the old rule refused: [Unreal's engine address region and its options](memory.md#unreals-engine-address-region-and-its-options).
 - **Note:** the gate table takes the original instruction as a word value (`aa1303e0`), the cut table as bytes (`e00313aa`).
 
+### Gate table capacity
+
+- **Symptom:** the host aborts at startup with `FATAL gate overflow` just after loading a game's NRO modules (`<nro>: gates <n> patch_off …`), before any game code runs.
+- **Cause:** `dm/host/hle.c` kept 32768 gate slots and refused more than 8192 registrations (one quarter load factor for its open-addressing hash). The rewriter gates every `svc` / `mrs cntpct_el0` site, and a game whose several NRO DLLs hold many of those can exceed the limit: the base modules register 136 gates, one NRO 6251 and another 6178, 12565 in total.
+- **Fix:** since 2026-11-22 the table has 65536 slots (`GATE_BITS 16`, 16384 registrations) for 1.5 MB of BSS on Android. The lookup is unchanged; the larger table only keeps the load factor at or below one quarter as games get more rewritten NRO code. This is a capacity fix, not a game-specific rule.
+- **Found on:** [Assassin's Creed III Remastered](../../dm/games/01007F600B134000/README.md#bring-up).
+
 ## Functions, unwind entries and data in text
 
 ### Code before the first unwind entry is one function
