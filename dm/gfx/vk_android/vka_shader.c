@@ -853,8 +853,13 @@ int vka_prog_shaders(const prog_t *p, vka_progsh *out) {
             static _Atomic int n;
             if (atomic_fetch_add(&n, 1) < 32)
                 VRED("shader %016llx (program stage %u) is not in the shader library", (unsigned long long)key, i);
-            static const char *shd; static int shd_init;
-            if (!shd_init) { shd = getenv("DM_NVN_SHDUMP"); shd_init = 1; if (shd && *shd) mkdir(shd, 0777); }
+            static const char *shd; static char shd_buf[1024]; static int shd_init;
+            if (!shd_init) {
+                shd = getenv("DM_NVN_SHDUMP");
+                if (!shd && dm_capture_beside_game("nvn_shdump", shd_buf, sizeof shd_buf)) shd = shd_buf;
+                shd_init = 1;
+                if (shd && *shd) { mkdir(shd, 0777); VRED("shaders the library lacks are saved to %s", shd); }
+            }
             if (shd && p->sd[i].control) {
                 char path[1024]; FILE *f; uint32_t ncode = 0, nctl = 0;
                 nvn_ctl_lens(p->sd[i].control, &nctl, &ncode);

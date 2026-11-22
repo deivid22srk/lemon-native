@@ -5,29 +5,12 @@
 // The compile object's first word points at its last results {GLSLCcompilationStatus *, GLSLCoutput *}; the status has "success" at +0xc and "allocation error" at +0xd, which is what the
 // game itself reads after the call (main+0x9c8a04)
 #include "hle.h"
-#include <string.h>
 #include <sys/stat.h>
 
-// The folder a run's GLSLC outputs are saved to when DM_GLSLC_CAPTURE is not set: beside the game (<dir of DM_ROMFS>/glslc_capture), so a normal phone run's outputs
-// land where the packer and a profile update can read them (DM_ROMFS is `<file>.nup:<selector>/romfs` or `<dump>/<package>/romfs`).
-static const char *capture_default_dir(void) {
-    static char buf[1024]; static int done;
-    if (done) return buf[0] ? buf : NULL;
-    done = 1;
-    const char *rf = getenv("DM_ROMFS");
-    if (!rf || !*rf) return NULL;
-    snprintf(buf, sizeof buf, "%s", rf);
-    char *c = strchr(buf, ':');
-    if (c) *c = 0;                                              // a .nup selector
-    size_t n = strlen(buf);
-    if (n >= 6 && !strcmp(buf + n - 6, "/romfs")) buf[n - 6] = 0;   // a folder dump's romfs folder
-    char *slash = strrchr(buf, '/');
-    if (slash) *slash = 0;                                      // the folder that holds it (the game folder)
-    if (!buf[0]) return NULL;
-    n = strlen(buf);
-    snprintf(buf + n, sizeof buf - n, "/glslc_capture");
-    return buf;
-}
+// The folder a run's GLSLC outputs are saved to when DM_GLSLC_CAPTURE is not set: beside the game (<dir of DM_ROMFS>/glslc_capture, dm.h), so a normal phone run's
+// outputs land where the packer and a profile update can read them.
+static char g_cap_dir[1024];
+static const char *capture_default_dir(void) { return dm_capture_beside_game("glslc_capture", g_cap_dir, sizeof g_cap_dir) ? g_cap_dir : NULL; }
 
 static void capture(const void *obj) {
     static const char *dir; static int init;

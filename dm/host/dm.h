@@ -8,6 +8,25 @@
 #include <string.h>
 #include "game_profile.h"   // constants of the current game profile (generated from dm/games/<id>/game.tsv, chosen by the Makefile's GAME)
 
+// A capture folder beside the game: `<dir of DM_ROMFS>/<name>`, where a run's run-time artifacts (GLSLC compile outputs, shaders the library lacks) are saved so the
+// packer and a profile update can read them. DM_ROMFS is `<file>.nup:<selector>/romfs` or `<dump>/<package>/romfs`. Writes into out (a static buffer of the caller);
+// returns 0 when DM_ROMFS is not set.
+static inline int dm_capture_beside_game(const char *name, char *out, size_t cap) {
+    const char *rf = getenv("DM_ROMFS");
+    if (!rf || !*rf || !cap) return 0;
+    snprintf(out, cap, "%s", rf);
+    char *c = strchr(out, ':');
+    if (c) *c = 0;                                                  // a .nup selector
+    size_t n = strlen(out);
+    if (n >= 6 && !strcmp(out + n - 6, "/romfs")) out[n - 6] = 0;   // a folder dump's romfs folder
+    char *slash = strrchr(out, '/');
+    if (slash) *slash = 0;                                          // the folder that holds it (the game folder)
+    if (!out[0]) return 0;
+    n = strlen(out);
+    snprintf(out + n, cap - n, "/%s", name);
+    return 1;
+}
+
 // Explicit host work does not occupy a guest core (Metal submission, or a blocked native codec lock). A contended host mutex must count as blocked: a signal's same-core handoff
 // can otherwise wait forever for a peer that needs the signaller's native lock. Uncontended locks retain guest ordering; the counter nests inside existing host work.
 extern __thread _Atomic int dm_host_work;
