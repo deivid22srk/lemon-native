@@ -74,6 +74,8 @@ final class WebApplet {
 
     private static void finish(Request r, String url, int reason) {   // UI thread
         if (r.view != null) {
+            r.view.stopLoading();
+            r.view.setWebViewClient(new WebViewClient());   // the internal loading callbacks stop running into a destroyed view
             if (r.view.getParent() instanceof FrameLayout) ((FrameLayout) r.view.getParent()).removeView(r.view);
             r.view.destroy();
             r.view = null;
@@ -244,8 +246,19 @@ final class WebApplet {
         r.view.evaluateJavascript("(function(){try{if(window.controller&&controller.handleKeyEvent)controller.handleKeyEvent('" + pageKey + "');}catch(e){}})();", null);
     }
 
+    // window.nx, the nn::web JS extension the page guards every use of (no-ops: the system sounds and the footer labels do nothing here), and a patch for the page's
+    // own route timing: on a route change it sets the global 'controller' to null and points it at the new controller only 250 ms later, after the page's XHR, so a
+    // click in that window throws "controller.handleKeyEvent is not a function". Point it at the route's controller at once.
     private static final String NX_STUB =
-            "(function(){if(window.nx)return;function noop(){return true;}" +
+            "(function(){try{" +
+            "if(!window.nx){function noop(){return true;}" +
             "window.nx={playSystemSe:noop,playSystemBgm:noop," +
-            "footer:{assign:noop,unsetAssign:noop,show:noop,hid:noop,setLabel:noop,setTitle:noop,setArrow:noop}};})();";
+            "footer:{assign:noop,unsetAssign:noop,show:noop,hid:noop,setLabel:noop,setTitle:noop,setArrow:noop}};}" +
+            "function patch(){if(window.RouteModule&&!RouteModule.__nxpatch){RouteModule.__nxpatch=true;" +
+            "var orig=RouteModule.prototype.render;RouteModule.prototype.render=function(){" +
+            "var r=orig.apply(this,arguments);" +
+            "try{if(this.currentRoute&&this.currentRoute.controller)window.controller=this.currentRoute.controller;}catch(e){}" +
+            "return r;};}}" +
+            "if(window.RouteModule)patch();else document.addEventListener('DOMContentLoaded',patch);" +
+            "}catch(e){}})();";
 }
