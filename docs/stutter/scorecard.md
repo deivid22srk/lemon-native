@@ -104,3 +104,58 @@ Nota por cluster: a) H1+H9 **6.1** (Causa 8 / Efet. 1.5 / Seg. 9 / Custo 9 / Rob
 ### Verificação de números (Crítico, rodada 1)
 
 15 números conferidos contra os dados brutos; 6 discrepâncias, todas em docs (nenhuma nos JSONs) — corrigidas nas rodadas 1-fix-up e 2 (tabela completa no relatório original do Crítico, arquivado no histórico da conversa e resumido acima).
+
+### Rodada 03 — Nota geral: 6.2 / 10 (anterior: 6.0, Δ +0.2)
+
+Alvo único: o cluster (a) H9. A causa foi afunilada ao nível da imagem: os spikes de
+`replay recording` (100–190 ms) são **storms de imagens novas no thread de replay**
+(frame 702: 86 imagens / 168,7 ms; frame 749: 300 / 92,9 ms com majflt 237 e pool
+placement 99,8 ms; frame 7602: 107,8 ms gravando com **33,7 ms de CPU** — travado,
+não trabalhando). H1 está coberto pelo prewarm (1005 keys, 2,3 s, frame path esperou
+0 ms); a prioridade do replay thread já existe (`DM_VK_REPLAY_NICE`, default −8 —
+uma proposta minha duplicada foi revertida antes do commit).
+
+Nota por cluster (mesma régua da rodada 02):
+
+| Cluster (ID, tipo, impacto) | Causa raiz | Efetividade | Segurança | Custo | Robustez | Telemetria | Código | Docs | Nota |
+|---|---|---|---|---|---|---|---|---|---|
+| a) H9: storms de imagens novas no replay, 1,0 | **9** | 2 | 9 | 9 | 7 | 8.5 | 8.5 | 8.5 | **6.9** |
+| b)–e) inalterados (sem código novo) | 7 | 2 | 8 | 7–10 | 2–5.5 | 7–8 | 8 | 8 | idem rodada 02 |
+
+Nota geral = (6.9×1.0 + 5.9×0.6 + 5.6×0.9 + 6.0×0.35 + 6.0×0.2)/3.05 = **6.2**.
+
+O que subiu: Causa raiz de (a) 8 → **9** (o hitch agora nomeia a operação, não só o
+thread); Telemetria 9 → 8.5→(a) com o split `(driver ...)` na linha dos longframes —
+a próxima sessão diz se o storm é driver (BO/alocação no kernel) ou host. Efetividade
+**2** é a trava honesta: o cache das queries é uma `hipótese` de ganho (a query pode
+não ser o gargalo do ~2 ms/imagem; o split vai dizer).
+
+**Segurança**: memoização pura de query idempotente; o fallback (derrubar STORAGE,
+depois os usos de attachment) fica semânticamente idêntico (`VkResult != VK_SUCCESS`
+== a condição original); tabela sem lock **depende da disciplina g_tmu** — os cinco
+callers de `img_create` documentam "caller holds g_tmu"; um sexto caller fora do lock
+corromperia a tabela (registrado como limite). Tabela cheia sobrescreve o slot do
+probe: re-pergunta, como antes. Zero mudança de comportamento visível ao jogo; outros
+jogos não leem os switches novos (todos os caminhos novos são Android + log).
+
+**Travas aplicadas**: nenhuma correção sem medição (a rodada codifica causa provada +
+telemetria que mede o resto); nada de default-on novo (o REPLAY_PRIO duplicado foi
+revertido); docs `env_switches.tsv` corrigidos com tabs preservadas (a primeira tentativa
+espalhou espaços por 1588 linhas — pegada no diff antes do commit).
+
+**Falhas**: **[MODERADA]** o ganho do cache não tem número — só a sessão de aparelho
+diz (intencional, mas é o que separa 6.9 de 8+). **[POLIMENTO]** o log one-shot do
+cache (1024 acertos) pode não disparar numa sessão curta; `VK_INCOMPLETE` como
+inicializador de `lr` é cosmético (a condição do loop o sobrescreve sempre).
+
+**Hipóteses**: provado (a causa dos spikes H9 = criação de imagens no replay thread;
+o prewarm cobre H1; majflt/prefetch já resolvido na rodada de flags). Provável (parte
+do custo/imagem era a query de formato). Em aberto (o resto do ~2 ms/imagem: driver
+vs host — o split responde; classic render passes como E5; seed do aparelho
+`vk_pipelines.keys` → `game.py seed`).
+
+**Veredito**: **Continuar.** Condições para a rodada 4: (1) sessão de aparelho com o
+APK desta rodada — a linha `new images N, X ms (driver Y)` decide a próxima correção;
+(2) se o resto for driver, a candidata é criar imagens fora do replay thread (grande,
+arriscada, precisa de desenho próprio); se for host, seed + classic RP (E5, env
+`DM_VK_CLASSIC_RP=1`) primeiro. Meta ≤6,1/min; a rodada 2 mediu 7,9/min.
