@@ -299,3 +299,31 @@ rodando** — é a que este ambiente não pode produzir (sem Android SDK/emulado
 é a spec render `docs/images/lemon-design-sheet.png`, provada pixel-fiel pelo Crítico e reproduzível do
 checkout por `python3 peanuts/scripts/design_sheet.py`. Apresentar o app em um emulador/cloud device (ou
 ratificar esta declaração) fecha o programa; o histórico completo dos seis relatórios verbatim está acima.
+
+## Setup screen cycle (LEMON, 2026-11-21) — the dedicated first-run setup
+
+A new owner brief ran the same loop over a feature: a dedicated first-run setup screen
+(`dev.peanuts.ui.SetupActivity`, five steps, step pills, Back/Continue/Skip, checklist + Appearance,
+all texts en + pt-BR). Six iterations, the same eight-criterion rubric and the same Critic sub-agent
+(the isolated reports live with the owner; each round's score is in its commit body). The Critic's
+terminal declaration follows the table.
+
+| Round | Commit | Nota | Build | Principais mudanças |
+|---|---|---|---|---|
+| 1 | `1ac6781` + `ea027e5` (compile fix) | **7.8** | r1 queimou o compile (import de `BananaBackgroundView`), corrigido no ato; verde: run 44951278969 | A tela em 5 etapas, pills, barra Voltar/Continuar/Pular, gate pela `setupDone`, strings en/pt |
+| 2 | `c8a2671` | **7.9** | verde no primeiro push: 44954237005 | Firmware assíncrono chega ao wizard (`fontsRunning` + hook), i18n das linhas de valor, auto-scroll das pills, copy honesta |
+| 3 | `f34095f` + `8604ed1` (compile fix) | **7.9** | r3 queimou o compile (import de R, assinatura), corrigido; verde: 44957374868 | Estados coarse do firmware (`fontsKind`: idle/running/failed/waiting), `LibrarySettings.resume` no wizard, diálogos por recursos |
+| 4 | `58b9a9e` | **8.0** | verde no primeiro push: 44959021694 | 8 chaves library_* conectadas (zero mortas), estados no checklist, lemons vivos, gate isenta extras de jogo |
+| 5 | `f496fae` | **8.2** | verde no primeiro push: 44960786395 | Hook onStart/onStop/onPause, FONTS_NO_IMPORTER, porta única `fontsStop`, motion bidirecional, passo Pronto em dois cards |
+| 6 (fechamento) | `43e2556` + hardening | **8.2** | verde no primeiro push: 44961890914 | O passo inteiro entra (card de Appearance incluído), zero escrita nua de estado, hardening pós-aprovação |
+
+### Estado terminal do ciclo do setup (declaração do Crítico, r6)
+
+**APROVADO — nota final do ciclo neste ambiente: 8.2/10** (7.8 → 7.9 → 7.9 → 8.0 → 8.2 → 8.2), 6
+iterações, 3 pushes verdes consecutivos no fim, zero achado Alto/Médio aberto, §6 (Ui/PUi) intacto em
+todas as rodadas, strings en/pt casadas, 106 testes Python passando (10 do setup,
+`peanuts/tests/test_setup_screen.py`). O que o **9.5** exigiria: o glass-pass do owner (os 5 passos em
+claro/escuro, en/pt-BR, D-pad, densidade real 320–640 dp, o retorno dos pickers e da página de acesso,
+a recriação por troca de tema) fechando os critérios visuais em pixels — sem device, inalcançável por
+construção do contrato do ciclo. O gate de compilação local do Criador (javac sobre as 235 fontes com
+android.jar + stubs de BuildConfig/R) é do ambiente, não do repositório.

@@ -65,7 +65,8 @@ public final class AppearanceSection {
         return b;
     }
 
-    private static void apply(Context c, String value) {
+    /** The choice applied (LEMON: public for the setup's Appearance step, dev.peanuts.ui.SetupActivity — the same one door Settings uses). */
+    public static void apply(Context c, String value) {
         UiModeManager m = c.getSystemService(UiModeManager.class);
         if (m == null) return;
         m.setApplicationNightMode(LIGHT.equals(value) ? UiModeManager.MODE_NIGHT_NO

@@ -78,6 +78,7 @@ public final class MainActivity extends Activity {
         PadFocus.watch(getWindow());   // a controller: the focus frame (PadFocus)
         build();
         if (saved == null) { setIntent(gated(getIntent())); fromIntent(getIntent()); dev.peanuts.GameReturn.back(this, getIntent()); /* PEANUTS: Home made anew by the app's icon while a game runs (GameReturn) */ }   // start() reads no_pause from getIntent() too
+        if (saved == null) dev.peanuts.ui.SetupActivity.launch(this, getIntent());   // LEMON: the dedicated first-run setup (dev.peanuts.ui.SetupActivity) — once, until it is done; an intent carrying a game or a .nup takes over instead
         GpuGl.probe(this, () -> { if (!isFinishing() && settingsGame != null) gameSettingsAgain(); });   // the GPU's name and, before any readiness check, the system driver's facts for the recommendations
         Updater.onStart(this);   // the release app: a newer release on GitHub opens the update popup (once per process start: not on a resume or a rotation)
         dev.peanuts.ctl.Ctl.attach(this);   // PEANUTS: control commands that waited for this screen run now (they come from dev.peanuts.ctl's own queue, never from this intent)
@@ -1094,6 +1095,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == dev.peanuts.ui.SetupActivity.REQ_SETUP && result == RESULT_OK) { refresh(); return; }   // LEMON: the first-run setup finished (dev.peanuts.ui.SetupActivity): Home is drawn again, its first-run card gone
         if (dev.peanuts.ui.LibrarySettings.result(this, request, result, data)) return;   // PEANUTS: the library's pickers (keys, folders, the sheet's files)
         if (Ondevice.activityResult(this, request, result, data)) return;
         if (request == ReadinessActivity.REQUEST) { if (result == ReadinessActivity.FIX_DRIVER) dev.peanuts.ui.DriverActivity.open(this); return; }   // its "Pick a GPU driver"; PEANUTS: the GPU driver page
