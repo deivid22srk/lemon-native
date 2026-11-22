@@ -343,11 +343,13 @@ android {
                 // run time, instead of a compiled-in pair per title - gated here, not on by default, so the per-title path (today's APK) stays available.
                 if (nxGenericHost) {
                     arguments '-DNX_GENERIC_HOST=ON', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON', "-DNX_LSFG=${nxLsfg ? 'ON' : 'OFF'}"
-                    targets(*(['nxhost', 'nxlaunch', 'nxadreno', 'hook_impl', 'main_hook'] + (nxApp == 'peanuts' ? ['nximport'] : [])))
+                    // PEANUTS: the NSP/XCI importer library (libnximport.so) goes into the Peanuts app and the Lemon app; the launcher's Build calls it through
+                    // dev.peanuts.importer.Native when the player's input is an NSP/XCI. Other app builds keep the smaller APK without it.
+                    targets(*(['nxhost', 'nxlaunch', 'nxadreno', 'hook_impl', 'main_hook'] + (nxApp in ['peanuts', 'lemon'] ? ['nximport'] : [])))
                 } else {
                     arguments "-DNX_GAMES=${nxGames.join(',')}", '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON', "-DNX_LSFG=${nxLsfg ? 'ON' : 'OFF'}"
                     // a host and its shim per game, then the custom GPU drivers' loader and hooks (DM_VK_DRIVER)
-                    targets(*(nxGames.collectMany { ["nxhost_$it".toString(), "nxlaunch_$it".toString()] } + ['nxadreno', 'hook_impl', 'main_hook'] + (nxApp == 'peanuts' ? ['nximport'] : [])))   // PEANUTS: the importer library
+                    targets(*(nxGames.collectMany { ["nxhost_$it".toString(), "nxlaunch_$it".toString()] } + ['nxadreno', 'hook_impl', 'main_hook'] + (nxApp in ['peanuts', 'lemon'] ? ['nximport'] : [])))   // PEANUTS: the importer library
                 }
             }
         }
