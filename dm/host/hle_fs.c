@@ -29,8 +29,7 @@ static void img_fadvise(romfs_img *m) {
     static int v = -1; if (v < 0) { const char *e = getenv("DM_FS_FADV"); v = (e && *e && strcmp(e, "0")) ? 1 : 0; }
     if (!v) return;
     struct stat st; if (fstat(m->fd, &st) || st.st_size < 64 << 20) return;   // small images: the kernel already reads them ahead
-    (void)posix_fadvise(m->fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-    (void)fcntl(m->fd, F_RDAHEAD, 1);
+    (void)posix_fadvise(m->fd, 0, 0, POSIX_FADV_SEQUENTIAL);   // bionic has no F_RDAHEAD; SEQUENTIAL is the readahead switch Android knows
 }
 
 // Every take-over in this file runs on the big host stack (hle_bigstack.c): path buffers are sized by PATH_MAX and one file open takes 6-7 KB of stack, while a game's save thread can have as little as 8 KB (Super Mario 3D World + Bowser's Fury)
