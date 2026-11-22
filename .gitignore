@@ -20,3 +20,6 @@ HANDOFF*.md
 ONDEVICE*.md
 STUTTER-TEST*.md
 *.internal.md
+
+# LEMON: diagnostic material from the user (video, logs, frame crops) never enters the repository
+.work/

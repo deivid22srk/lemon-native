@@ -459,6 +459,7 @@ DM_VK_AFF_REPLAY	developer	Diagnostics			text			both
 DM_VK_BANDS	developer	Graphics			text			both						
 DM_VK_BAR_KEEP	developer	Diagnostics			text			both						
 DM_VK_BAR_NARROW	developer	Graphics			text			both						
+DM_VK_BCN_ZEROLOG	developer	Diagnostics			text			both						
 DM_VK_BC_RT	developer	Graphics			text			both						
 DM_VK_BIGIMG_MB	developer	Diagnostics			text			both						
 DM_VK_BIND_LOG	developer	Diagnostics			text			both						
@@ -662,6 +663,7 @@ DM_VK_PRUNE_MS	developer	Graphics			text			both
 DM_VK_PSO_ASYNC	advanced	Performance	Background pipelines		toggle			game		Game settings > Background pipelines				
 DM_VK_PSO_FAIR_MS	developer	Performance			text			both						
 DM_VK_PSO_ORDER	developer	Performance			text			both						
+DM_VK_PSO_SKIPLOG	developer	Diagnostics			text			both						
 DM_VK_PSO_SLOTS	developer	Performance			text		1 with Turnip, 4 with other drivers	both						
 DM_VK_PUSH_DEDUP	developer	Graphics			text			both						
 DM_VK_PUSH_DELTA	developer	Diagnostics			text			both						
@@ -685,7 +687,10 @@ DM_VK_ROWS	developer	Graphics			text			both
 DM_VK_RP_AREA	developer	Graphics			text			both						
 DM_VK_RT_LOG	developer	Diagnostics			text			both						
 DM_VK_RT_LOG_LINES	developer	Diagnostics			text			both						
+DM_VK_SAMP_ANISO	developer	Graphics			text			both						
+DM_VK_SAMP_LOD_BIAS	developer	Graphics			text			both						
 DM_VK_SAMP_LOG	developer	Diagnostics			text			both						
+DM_VK_SAMP_MIP_FLOOR	developer	Graphics			text			both						
 DM_VK_SAMP_SLOTS	developer	Diagnostics			text			both						
 DM_VK_SB_PEEK	developer	Diagnostics			text			both						
 DM_VK_SB_PEEK_AT	developer	Diagnostics			text			both						

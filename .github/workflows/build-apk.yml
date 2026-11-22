@@ -3,7 +3,7 @@ name: build-apk
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, fix/hogwarts-legacy-gpu-artifacts]   # LEMON: the hogwarts gfx-artifact fix branch builds too
     paths:
       - 'android/**'
       - 'dm/**'
@@ -76,11 +76,22 @@ jobs:
           ./gradlew --no-daemon -PnxPackStage="$RUNNER_TEMP/packstage/stage" \
             -PnxGames=0100F7E00C70E000 -PnxApp=lemon apk
 
+      - name: Name the APK with the round and the commit
+        run: |
+          # LEMON: the tester must know which build they run: LemonNative-<branch>-rNN-<sha>.apk,
+          # the round from the latest gfx(round-NN) commit subject (0 before the first one)
+          cd android/app/out
+          sha="$(git rev-parse --short=8 HEAD)"
+          round="$(git log --format=%s | grep -oE 'round-[0-9]+' | head -1 | grep -oE '[0-9]+' || echo 0)"
+          branch="$(git rev-parse --abbrev-ref HEAD | sed 's#/#-#g')"
+          for f in *.apk; do mv "$f" "LemonNative-${branch}-r${round}-${sha}.apk"; done
+          ls -la
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: LemonNative
-          path: android/app/out/*.apk
+          path: android/app/out/LemonNative-*.apk
           if-no-files-found: error
           # Hard cap: GitHub does not accept sub-day retention, so 1 day is
           # the floor. The expire-apk job below removes the APK after 1 hour;
