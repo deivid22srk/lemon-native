@@ -46,6 +46,7 @@ int dm_guest_as_contains(uintptr_t a) { uintptr_t b = (uintptr_t)g_as; return g_
 __attribute__((weak)) void dm_gfx_guest_region(void *base, size_t size, const char *name) { (void)base; (void)size; (void)name; }
 __attribute__((weak)) void dm_gfx_guest_open(void *lo, size_t n) { (void)lo; (void)n; }
 __attribute__((weak)) int dm_gfx_guest_release(uintptr_t lo, uintptr_t hi) { (void)lo; (void)hi; return 0; }
+__attribute__((weak)) void dm_gfx_recent_dump(void) { (void)0; }   // hle_nvn.c: the recent NVN calls, the Break report's boot window
 static void *alias_windows_thread(void *arg);
 static void *regions_thread(void *arg);
 static void mem_init_once(void) {
@@ -835,6 +836,7 @@ uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
             }
         }
         diag_dump();
+        dm_gfx_recent_dump();   // the NVN answers in hand when the guest aborted (hle_nvn.c; AC3 Remastered's launcher aborts in the NVN init window)
         dm_backtrace(regs[29]);
         if (regs[0] & 0x80000000ull) return 0;   // notification only, can continue
         _exit(42);

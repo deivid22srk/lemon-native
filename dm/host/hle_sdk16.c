@@ -459,8 +459,30 @@ HLE_FORCE("_ZN2nn4diag6detail9AbortImplEPKNS_6ResultE", "game aborted (with Resu
 // Older SDKs spell the namespace Detail (capital D); when a game's sdk has that AbortImpl, take it over too, so an old-SDK abort
 // is reported with its call site like the newer detail one (AC3 Remastered's 5.4.0 aborted in svcBreak with no report beyond a
 // backtrace). The no-argument form reads no argument, so the takeover is safe whatever its real signature takes; the Result and
-// VAbortImpl forms differ by SDK and stay with the SDK's own code (their message reaches the Break report's diag_dump instead).
+// VAbortImpl forms in the Detail spelling follow below, each reading only what it validates first.
 HLE_FORCE("_ZN2nn4diag6Detail9AbortImplEv", "game aborted (SDK 5's Detail spelling)", void, h_diag_Abort0_D, void) { diag_abort(0, __builtin_return_address(0)); }
+// The Result form in SDK 5's Detail spelling: an abort that carries a Result. The pointer is the only argument read, so the
+// takeover stays safe whatever the caller passes beside it (AC3 Remastered's launcher aborts with Result 0 and no payload,
+// so its Break report's Result line was the payload read, which 5.4.0 does not fill)
+HLE_FORCE("_ZN2nn4diag6Detail9AbortImplEPKNS_6ResultE", "game aborted (SDK 5's Detail spelling, with a Result)", void, h_diag_AbortR_D, const uint32_t *r) { diag_abort(r ? *r : 0, __builtin_return_address(0)); }
+// SDK 5 spells the VAbortImpl namespace Detail too; its signature may differ from SDK 16's, so every string is read through
+// plat_mem_read first (diag_str): a wrong argument order prints (?) instead of crashing the host, and the call site and
+// backtrace still report. The takeover is what keeps the message at all here: the SDK's own form sends it to the log manager,
+// whose startup the host no-ops (nndiagStartup), so the text the assert had was lost on its way to the Break report's diag
+static const char *diag_str(uint64_t a, char *buf, size_t n) {
+    if (!a || plat_mem_read(a, buf, n - 1)) return "(?)";
+    buf[n - 1] = 0;
+    return buf;
+}
+HLE_FORCE("_ZN2nn4diag6Detail10VAbortImplEPKcS3_S3_iPKNS_6ResultEPKNS_2os17UserExceptionInfoES3_RSt9__va_list", "SDK abort message (SDK 5's Detail spelling)", void, h_diag_VAbort_D,
+          const char *fn, const char *expr, const char *file, int line, const void *res, const void *info, const char *fmt, void *ap) {
+    (void)info; (void)ap;
+    char f[80], e[80], fl[80], m[128]; uint32_t rr = 0;
+    if (res) plat_mem_read((uint64_t)(uintptr_t)res, &rr, 4);   // a Result the read cannot reach aborts with 0, as the Break report saw
+    LOG("[diag] abort at %s: %s (%s:%d) message format %s", diag_str((uint64_t)(uintptr_t)fn, f, sizeof f), diag_str((uint64_t)(uintptr_t)expr, e, sizeof e),
+        diag_str((uint64_t)(uintptr_t)file, fl, sizeof fl), line, diag_str((uint64_t)(uintptr_t)fmt, m, sizeof m));
+    diag_abort(rr, __builtin_return_address(0));   // VAbortImpl never returns to its caller
+}
 HLE_FORCE("_ZN2nn4diag12GetBacktraceEPmi", "backtrace; the host provides none (0 frames)", int, h_diag_Bt, uint64_t *out, int n) { (void)out; (void)n; return 0; }
 // An assert, a C++ exception that nothing caught (std::terminate) or an SDK check reached VAbortImpl: print where it came from and the message's FORMAT, which
 // names the failure on its own ("libc++abi: terminating due to uncaught exception of type ...", Well Dweller's first boot). The arguments the format would fill

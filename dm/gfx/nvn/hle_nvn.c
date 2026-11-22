@@ -86,6 +86,38 @@ void nvn_serial_floor(uint64_t s) { uint64_t c = atomic_load(&g_serial); while (
 static unsigned g_nsem;                          // Number of semantic implementations (filled by nvn_init_slots)
 #define OLOG(...) do { if (g_log) LOG("[nvn] " __VA_ARGS__); } while (0)
 
+// ---------- Recent NVN calls, printed with every Break report ----------
+// An abort that names nothing (AC3 Remastered's launcher: a bare svcBreak between the API version query and the window-origin
+// call, both of which log) sits in a window where the host answers silently: the device's integer items, the builder sizes,
+// the object creations. The Break report could only say "after GetInteger 0/1". Keep the last of these calls: dm_gfx_recent_dump
+// (the Break case in hle_svc.c) then shows which NVN answers the guest had in hand when it aborted. A ring of the calls that
+// create or measure objects only -- the whole call stream is the counting trampolines' job (DM_NVN_COUNT, DM_NVN_FRAMES).
+#define NVN_RECENT_N 32
+typedef struct { _Atomic unsigned seq; const char *nm; uint64_t a, b; } nvn_recent_t;
+static nvn_recent_t g_nvn_recent[NVN_RECENT_N];
+static _Atomic unsigned g_nvn_recent_wr;
+static void nvn_recent(const char *nm, uint64_t a, uint64_t b) {
+    nvn_recent_t *r = g_nvn_recent + (atomic_fetch_add_explicit(&g_nvn_recent_wr, 1, memory_order_relaxed) % NVN_RECENT_N);
+    r->nm = nm; r->a = a; r->b = b;
+    atomic_store_explicit(&r->seq, atomic_load(&g_nvn_recent_wr), memory_order_release);
+}
+// The device's integer item answers are read back live (the out pointer is the game's memory, still mapped at the abort); a
+// pointer the read fails on prints "?" instead of dereferencing. GetStorageSize / GetQueueMemorySize record their answer.
+void dm_gfx_recent_dump(void) {
+    unsigned wr = atomic_load_explicit(&g_nvn_recent_wr, memory_order_relaxed);
+    for (unsigned i = 0; i < NVN_RECENT_N; i++) {
+        unsigned k = (wr + NVN_RECENT_N - 1 - i) % NVN_RECENT_N;   // newest first
+        nvn_recent_t *r = g_nvn_recent + k;
+        unsigned s = atomic_load_explicit(&r->seq, memory_order_acquire);
+        if (!s || (unsigned)(wr - s) >= NVN_RECENT_N) continue;   // never written, or overwritten while we walked
+        if (!strcmp(r->nm, "nvnDeviceGetInteger")) {
+            int v = 0; char t[16] = "?";
+            if (r->b && !plat_mem_read(r->b, &v, 4)) snprintf(t, sizeof t, "%d", v);
+            LOG("nvn recent: nvnDeviceGetInteger item %#llx -> %s", (unsigned long long)r->a, t);
+        } else LOG("nvn recent: %s(%#llx, %#llx)", r->nm, (unsigned long long)r->a, (unsigned long long)r->b);
+    }
+}
+
 static void nvn_init_slots(void) {
     static int done; if (done) return; done = 1;
     g_log = getenv("DM_NVN_LOG") != NULL;
@@ -124,6 +156,7 @@ HLE_FORCE("nvnBootstrapLoader", "the NVN graphics API is replaced wholesale with
 NVN(nvnDeviceBuilderSetDefaults, void, NVNdeviceBuilder *b) { memset(b, 0, sizeof(dev_builder_t)); }
 NVN(nvnDeviceBuilderSetFlags, void, NVNdeviceBuilder *b, int f) { ((dev_builder_t *)b)->flags = f; }
 NVN(nvnDeviceInitialize, NVNboolean, NVNdevice *d, const NVNdeviceBuilder *b) {
+    nvn_recent("nvnDeviceInitialize", (uint64_t)(uintptr_t)d, ((const dev_builder_t *)b)->flags);
     dev_t_ *o = (dev_t_ *)d; memset(o, 0, sizeof *o);
     o->magic = MAGIC('D', 'E', 'V', 0); o->flags = ((const dev_builder_t *)b)->flags;
     nvn_gob_switch2 = dm_sdk_ounce();   // the Switch 2's order inside a GOB, for the textures the game tiled itself (nvn_deswizzle.h)
@@ -210,6 +243,7 @@ static void nvn_api(int api[2]) {
 }
 NVN(nvnDeviceGetInteger, void, const NVNdevice *d, NVNdeviceInfo what, int *out) {
     (void)d;
+    nvn_recent("nvnDeviceGetInteger", (uint64_t)what, (uint64_t)(uintptr_t)out);
     unsigned w = (unsigned)what;
     // 0x5F separate sampler binding count and 0x60/0x61 are not in the table measured on SMO: 0x5F is given 4096 per the sampler pool limit, unverified; 0x60/0x61 report a failure and return 0
     // 0x67 (SDK 19): FINAL FANTASY TACTICS - The Ivalice Chronicles reads it before every program it loads and passes it as the alignment of its copies of the shader's control section and code
@@ -239,7 +273,7 @@ NVN(nvnDeviceGetSeparateSamplerHandle, NVNseparateSamplerHandle, const NVNdevice
 NVN(nvnDeviceInstallDebugCallback, void, NVNdevice *d, const PFNNVNDEBUGCALLBACKPROC cb, void *data, uint32_t enable) {
     dev_t_ *o = (dev_t_ *)d; o->dbg_cb = B(enable) ? (void *)cb : NULL; o->dbg_data = data;
 }
-NVN(nvnDeviceSetWindowOriginMode, void, NVNdevice *d, NVNwindowOriginMode m) { ((dev_t_ *)d)->origin = m; mtl_set_origin_lower_left(m == NVN_WINDOW_ORIGIN_MODE_LOWER_LEFT); LOG("[nvn] window origin %s", m ? "upper left (as D3D / Metal)" : "lower left (GL)"); }
+NVN(nvnDeviceSetWindowOriginMode, void, NVNdevice *d, NVNwindowOriginMode m) { nvn_recent("nvnDeviceSetWindowOriginMode", (uint64_t)m, 0); ((dev_t_ *)d)->origin = m; mtl_set_origin_lower_left(m == NVN_WINDOW_ORIGIN_MODE_LOWER_LEFT); LOG("[nvn] window origin %s", m ? "upper left (as D3D / Metal)" : "lower left (GL)"); }
 NVN(nvnDeviceSetDepthMode, void, NVNdevice *d, NVNdepthMode m) { ((dev_t_ *)d)->depth_mode = m; mtl_set_depth_zero(m != 0); LOG("[nvn] depth mode %s", m ? "near=0 (as D3D / Metal)" : "near=-w (GL)"); }
 // Pokémon Sword sets neither mode and reads both, keeping NVN's defaults (lower-left origin, near = -w); the two were red stubs
 NVN(nvnDeviceGetWindowOriginMode, NVNwindowOriginMode, const NVNdevice *d) { return ((const dev_t_ *)d)->origin; }
@@ -570,6 +604,7 @@ static void shp_report(uint64_t presents) {
 }
 NVN(nvnMemoryPoolInitialize, NVNboolean, NVNmemoryPool *p, const NVNmemoryPoolBuilder *b) {
     const pool_builder_t *s = (const pool_builder_t *)b; pool_t *o = (pool_t *)p;
+    nvn_recent("nvnMemoryPoolInitialize", (uint64_t)(uintptr_t)p, (uint64_t)s->size);
     pthread_mutex_lock(&g_pl_mu);   // (a pool initialized again without a Finalize: readers see its new fields only with its new serial)
     o->magic = MAGIC('P', 'O', 'O', 'L'); o->flags = s->flags; o->mem = s->mem; o->size = s->size; o->vp = NULL; o->vmode = 0;
     pl_put(o, ++g_plgen); uint64_t gen = g_plgen; pthread_mutex_unlock(&g_pl_mu);
@@ -697,6 +732,7 @@ NVN(nvnTextureBuilderGetStorageSize, size_t, const NVNtextureBuilder *b) {
     nvn_texlayout L; nvn_tex_layout(&((const tex_builder_t *)b)->d, &L);
     if (!L.bpb) LOG("[RED] TextureBuilderGetStorageSize unknown format %#x", ((const tex_builder_t *)b)->d.format);
     log_layout((const tex_builder_t *)b, &L);
+    nvn_recent("nvnTextureBuilderGetStorageSize", ((const tex_builder_t *)b)->d.format, L.size);   // the answer is what a caller asserts on
     return L.size;
 }
 NVN(nvnTextureBuilderGetStorageAlignment, size_t, const NVNtextureBuilder *b) {
@@ -840,6 +876,7 @@ int nvn_flushed(const void *p, uint64_t n) {   // whether the CPU flushed any of
 }
 __attribute__((weak)) int dm_codec_is_video_mem(const void *mem, uint64_t size, uint32_t *stride) { (void)mem; (void)size; (void)stride; return 0; }
 NVN(nvnTextureInitialize, NVNboolean, NVNtexture *t, const NVNtextureBuilder *b) {
+    nvn_recent("nvnTextureInitialize", (uint64_t)(uintptr_t)t, (uint64_t)((const tex_builder_t *)b)->d.format);
     const tex_builder_t *s = (const tex_builder_t *)b; tex_t *o = TX(t);
     // Re-initializing a texture object that is still live (without a Finalize first): release the host texture of the old serial first. SMBW re-initializes its transient render targets on the same object every frame and never Finalizes them;
     //   previously every init created a new private MTLTexture and the old one stayed in the serial table forever, so GPU memory grew about 13 MB per frame (killed by the memory watchdog at 24 GB)
@@ -989,6 +1026,7 @@ NVN(nvnSamplerFinalize, void, NVNsampler *s) { ((samp_t *)s)->magic = 0; }
 
 // ---------- Programs ----------
 NVN(nvnProgramInitialize, NVNboolean, NVNprogram *p, NVNdevice *d) {
+    nvn_recent("nvnProgramInitialize", (uint64_t)(uintptr_t)p, 0);
     (void)d; memset(p, 0, sizeof(prog_t)); ((prog_t *)p)->magic = MAGIC('P', 'R', 'O', 'G'); return 1;
 }
 static void pk_drop(const void *p);
@@ -1062,6 +1100,7 @@ int prog_key(const prog_t *p, unsigned st, uint8_t key[8]) {
 // The Android frame replayer (vka_replay.c): a captured program's stage keys (its shader data is not in the capture)
 void nvn_prog_keys_set(const prog_t *p, const uint8_t key[6][8], uint8_t ok) { prog_keys_t *k = pk_get(p, 1); memcpy(k->key, key, sizeof k->key); k->ok = ok; }
 NVN(nvnProgramSetShaders, NVNboolean, NVNprogram *p, int n, const NVNshaderData *sd) {
+    nvn_recent("nvnProgramSetShaders", (uint64_t)(uintptr_t)p, (uint64_t)n);
     prog_t *o = (prog_t *)p;
     if (n < 0 || n > 6) { LOG("[RED] ProgramSetShaders stage count %d", n); return 0; }
     mtl_prog_release(o); o->nstage = n; memcpy(o->sd, sd, n * sizeof *sd); o->serial = nvn_new_serial();
@@ -1154,10 +1193,13 @@ NVN(nvnQueueBuilderSetCommandFlushThreshold, void, NVNqueueBuilder *b, size_t n)
 // Queue memory: the sum of the command + compute + control blocks rounded to 4 KiB (the host does not use it; the game only needs to allocate this size)
 NVN(nvnQueueBuilderGetQueueMemorySize, size_t, const NVNqueueBuilder *b) {
     const queue_builder_t *o = (const queue_builder_t *)b;
-    return (o->cmd_sz + o->comp_sz + o->ctl_sz + 4095) & ~(size_t)4095;
+    size_t n = (o->cmd_sz + o->comp_sz + o->ctl_sz + 4095) & ~(size_t)4095;
+    nvn_recent("nvnQueueBuilderGetQueueMemorySize", o->cmd_sz + o->comp_sz + o->ctl_sz, n);   // asked size and the rounded answer
+    return n;
 }
 NVN(nvnQueueBuilderSetQueueMemory, void, NVNqueueBuilder *b, void *m, size_t n) { QB(b)->mem = m; QB(b)->mem_sz = n; }
 NVN(nvnQueueInitialize, NVNboolean, NVNqueue *q, const NVNqueueBuilder *b) {
+    nvn_recent("nvnQueueInitialize", (uint64_t)(uintptr_t)q, 0);
     NVNdevice *d = ((const queue_builder_t *)b)->dev;
     // NVN emits SET_WINDOW_ORIGIN / FLIP_Y into the queue's initial GPU state.
     // Changing the device origin later changes viewport construction, but does
@@ -1186,6 +1228,7 @@ NVN(nvnQueueFinish, void, NVNqueue *q) { (void)q; atomic_fetch_add_explicit(&nvn
 #define OP_RESERVE 16
 
 NVN(nvnCommandBufferInitialize, NVNboolean, NVNcommandBuffer *c, NVNdevice *d) {
+    nvn_recent("nvnCommandBufferInitialize", (uint64_t)(uintptr_t)c, 0);
     memset(c, 0, sizeof(cmd_t)); CB(c)->magic = MAGIC('C', 'M', 'D', 'B'); CB(c)->dev = d; return 1;
 }
 NVN(nvnCommandBufferFinalize, void, NVNcommandBuffer *c) { CB(c)->magic = 0; }
