@@ -413,6 +413,17 @@ int nximport_write_nup(const char *out_nup, const char **inputs, int n_inputs, c
         int rom_tree = base_rom >= 0 && !base_prog->sec[base_rom].sparse;
         NxNode *romfs = rom_tree ? nx_romfs_tree(base_prog, base_rom) : NULL; if (rom_tree && !romfs) { nx_node_free(exefs); goto out; }
         if (add_pkg(j, 0, base->title_id, base->version, exefs, romfs)) goto out;
+        // The HtmlDocument content (cnmt content type 4), the offline HTML page applet's document tree: the game's web menus (a launcher, a manual). Kept as a
+        // "htdocs" folder beside exefs/romfs so the packer can give it to the applet; a game without one adds nothing.
+        if (base->html[0]) {
+            NxNca *hn = job_nca(j, base->c, base->html);
+            int hsec = hn ? nx_nca_find_section(hn, NX_FS_ROMFS) : -1;
+            NxNode *ht = hsec >= 0 ? nx_romfs_tree(hn, hsec) : NULL;
+            if (ht) {
+                free(ht->name); ht->name = strdup("htdocs");
+                if (!ht->name || !nx_node_add(j->pk[0].root, ht)) { nx_node_free(ht); NX_FAIL("html-document: cannot add its tree"); }
+            }
+        }
         j->base_rom = base_prog; j->base_rom_sec = base_rom;
     }
 

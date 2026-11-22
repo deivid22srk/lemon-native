@@ -835,7 +835,7 @@ int nx_container_titles(NxContainer *c, NxTitle **out, int *count) {
         for (uint32_t k = 0; k < cc; k++) {
             size_t ro = 0x20 + ext + 0x38 * k; if (ro + 0x38 > cf->size) break;
             const uint8_t *r = b + ro; int ct = r[0x36];
-            if (ct == 1 && !t.program[0]) hexid(t.program, r + 0x20); else if (ct == 3 && !t.control[0]) hexid(t.control, r + 0x20); else if (ct == 2 && !t.data[0]) hexid(t.data, r + 0x20);
+            if (ct == 1 && !t.program[0]) hexid(t.program, r + 0x20); else if (ct == 3 && !t.control[0]) hexid(t.control, r + 0x20); else if (ct == 2 && !t.data[0]) hexid(t.data, r + 0x20); else if (ct == 4 && !t.html[0]) hexid(t.html, r + 0x20);
         }
         free(b); nx_node_free(root); nx_nca_close(&m);
         if (t.kind < 0) continue;   // system/delta metas are not titles of the library

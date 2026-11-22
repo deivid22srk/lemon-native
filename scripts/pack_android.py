@@ -13,6 +13,7 @@
 #   scene_res/<preset>/<RomFS path>, scene_res.tsv   for a profile with scene_scale_palette rows: the game's dynamic resolution palette rewritten, one RomFS overlay folder per
 #                scene_scale row and per res_preset row with a floor or fixed scene (dm/tools/scene_res.py), which the launcher's Resolution passes as DM_ROMFS_OVERLAY; made from the dump's own RomFS
 #   cheats/<build>.txt   the profile's Atmosphère-format cheat files (game.tsv cheats rows; place_cheats), for the launcher's Game settings › Cheats; not in the rewrite key
+#   htdocs/              the game's HtmlDocument content (the offline HTML page applet's page; the importer's .nup "htdocs" folder, place_htdocs), for the app's web applet
 # The RomFS is not in the pack (the app gives the host <game folder>/<romfs> as DM_ROMFS) and neither is anything else of the dump but the rewritten code.
 # The game may be a NUP file instead of a folder (android/NUP.md): its packages are read in place (pack_dump.scan, dm/tools/nup.py), the modules and the RomFS are
 # named `<name>.nup:update/<version>/...` (or `:base/...`), the DLC `<name>.nup:addon/<title ID>/romfs`, and pack.tsv's paths are relative to the folder holding the file.
@@ -1011,6 +1012,22 @@ def place_cheats(g, out):
     if files: print(f'cheats: {", ".join(f.name for f in files)} into {d}')
 
 
+def place_htdocs(dump, out):
+    """The game's HtmlDocument content: the page the offline HTML page applet (nn::web) shows, a launcher menu or a manual. The importer keeps it in a .nup package's
+    "htdocs" folder beside exefs/romfs (nximport.c); a folder dump has <dump>/base/htdocs. Copied to <out>/htdocs, from where the app gives it to the applet. A dump with
+    none removes one an earlier pack left"""
+    R = rfs()
+    src = f'{dump}:base/htdocs' if pack_dump.nup.is_nup(dump) else str(Path(dump) / 'base' / 'htdocs')
+    dst = Path(out) / 'htdocs'
+    if not R.isdir(src): shutil.rmtree(dst, ignore_errors=True); return
+    tmp = Path(out) / 'htdocs.partial'; shutil.rmtree(tmp, ignore_errors=True); tmp.mkdir(parents=True)
+    for dp, _, fs in R.os.walk(src):
+        for f in fs:
+            p = R.os.path.join(dp, f); t = tmp / R.os.path.relpath(p, src); t.parent.mkdir(parents=True, exist_ok=True)
+            with R.open(p, 'rb') as h: t.write_bytes(h.read())
+    shutil.rmtree(dst, ignore_errors=True); os.replace(tmp, dst)
+    print(f'htdocs: the HTML document (nn::web) into {dst}')
+
 def main():
     ap = argparse.ArgumentParser(description='Pack a dumped game for the Android launcher: its code modules rewritten with --target android, no RomFS')
     ap.add_argument('game', type=Path, help='the game folder (base/exefs, base/romfs or an update\'s romfs, updates/<version>/, dlc/), or a .nup file')
@@ -1158,6 +1175,7 @@ def main():
             upgrade_keys(srcs | {n: coll / f'{n}.nro' for n in pack_nros(out) if coll and (coll / f'{n}.nro').is_file()}, out, g, xmod_files)   # PEANUTS: xmod_files. Before the copy below replaces the game.tsv an earlier key was made with (a rewrite run did it in rewrite)
         shutil.copyfile(g.dir / 'game.tsv', out / 'game.tsv')
         place_cheats(g, out)
+        place_htdocs(folder, out)
         # a program n > 0 splits program 0's RomFS (its conorig) and the add-ons with its own main: its own RomFS holds no shaders (Wonder's program 1: one text file)
         shaders = None if a.no_shaders else pack_shaders(a, g, work, out, vdir, (conorig, exe) if a.program else (romfs, exe), list(dlc.values()) if a.program else ())
         scenes = scene_overlays(g, romfs, out)

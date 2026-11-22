@@ -118,7 +118,7 @@ long nx_lz4_decompress(const uint8_t *src, size_t slen, uint8_t *dst, size_t dle
 // ---- titles (CNMT)
 typedef struct NxTitle {
     uint64_t title_id, app_id; int kind /* 0 base 1 update 2 dlc */; uint32_t version;
-    char program[33], control[33], data[33];   // NCA ids (hex, "" none)
+    char program[33], control[33], data[33], html[33];   // NCA ids (hex, "" none); html: the HtmlDocument content (4), the offline HTML page applet's document
     const NxContainer *c; const NxEntry *meta;
     char name[256], publisher[256];
 } NxTitle;
