@@ -17,6 +17,20 @@
 #include "nup_image.h"
 #include "../peanuts/peanuts_nsp.h"   // PEANUTS: DM_ROMFS=nsp:<dump>[|<dump>]: the RomFS read straight from the player's dumps (an image whose file entries have IMG_ENT_NSP)
 #include "save_sync.h"
+#include "dm_atrace.h"   // DM_ATRACE=1: the big guest reads show in the trace (the triage's H2)
+
+// DM_FS_FADV=1 (default off): tell the kernel the game's packages are read front to back (Unreal streams
+// linearly) — posix_fadvise SEQUENTIAL + F_RDAHEAD widen the kernel's readahead so the bursts the triage
+// measured (58-97 MB in 192-775 ms, dm/stutter/triage.md H2) overlap the game's decode instead of
+// stalling it. One call per image at open; the game's reads need no change. Cost: the page cache keeps
+// read-ahead pages a while longer (bounded by the VM's dirty/entropy limits, no allocation of ours).
+static void img_fadvise(romfs_img *m) {
+    if (!m || m->fd < 0) return;
+    static int v = -1; if (v < 0) { const char *e = getenv("DM_FS_FADV"); v = (e && *e && strcmp(e, "0")) ? 1 : 0; }
+    if (!v) return;
+    struct stat st; if (fstat(m->fd, &st) || st.st_size < 64 << 20) return;   // small images: the kernel already reads them ahead
+    (void)posix_fadvise(m->fd, 0, 0, POSIX_FADV_SEQUENTIAL);   // bionic has no F_RDAHEAD; SEQUENTIAL is the readahead switch Android knows
+}
 
 // Every take-over in this file runs on the big host stack (hle_bigstack.c): path buffers are sized by PATH_MAX and one file open takes 6-7 KB of stack, while a game's save thread can have as little as 8 KB (Super Mario 3D World + Bowser's Fury)
 #undef HLE_FORCE
@@ -153,7 +167,7 @@ static romfs_img *img_open(const char *path) {
     if (pn_nsp_is_spec(path)) {
         static uint64_t pid; if (!pid) { const char *e = getenv("DM_PROGRAM_ID"); pid = e ? strtoull(e, NULL, 16) : DM_GAME_PROGRAM_ID; }
         char why[400] = ""; romfs_img *m = pn_nsp_open(path, pid, dm_main_build(), why, sizeof why);
-        if (m) LOG("fs dumps %s: %llu entries, read where they are (%s)", path, (unsigned long long)m->n, pn_nsp_describe(m));
+        if (m) { LOG("fs dumps %s: %llu entries, read where they are (%s)", path, (unsigned long long)m->n, pn_nsp_describe(m)); img_fadvise(m); }
         else LOG("[RED] fs dumps %s: %s (errno=%d)", path, why, errno);
         return m;
     }
@@ -169,13 +183,13 @@ static romfs_img *img_open(const char *path) {
                 return img_open(alt); } }
         // PEANUTS end
 #endif
-        if (m) LOG("fs NUP %s: %llu entries, %llu compressed files (decompressed when opened, cache %llu MiB)", path, (unsigned long long)m->n,
-                   (unsigned long long)((nup_aux *)m->aux)->nz, (unsigned long long)(((nup_aux *)m->aux)->budget >> 20));
+        if (m) { LOG("fs NUP %s: %llu entries, %llu compressed files (decompressed when opened, cache %llu MiB)", path, (unsigned long long)m->n,
+                   (unsigned long long)((nup_aux *)m->aux)->nz, (unsigned long long)(((nup_aux *)m->aux)->budget >> 20)); img_fadvise(m); }
         else LOG("[RED] fs NUP %s: %s (errno=%d)", path, why, errno);
         return m;
     }
     romfs_img *m = romfs_image_open(path);
-    if (m) LOG("fs RomFS image %s: %llu entries", path, (unsigned long long)m->n);
+    if (m) { LOG("fs RomFS image %s: %llu entries", path, (unsigned long long)m->n); img_fadvise(m); }
     else LOG("[RED] fs RomFS image %s is not a complete image (copied in part? errno=%d)", path, errno);
     if (m && m->damaged) LOG("[RED] fs RomFS image %s: damaged files %llu: the image marks them as failing a hash check when it was made; a crash or a wrong picture may come from their bytes", path, (unsigned long long)m->damaged);
     return m;
@@ -1050,6 +1064,8 @@ HLE_FORCE("_ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm", "fsp-srv → pread(2)", 
     }
     uint64_t fst0 = now_ns();
     dm_guest_write_prepare(buf, sz);   // The destination may be a texture pool page write-protected by the graphics layer: a kernel write to a read-only page returns EFAULT instead of page-faulting, so unprotect and mark dirty first
+    int traced = sz >= (1 << 20);      // DM_ATRACE: the burst reads the triage measured (58-97 MB), one section per >= 1 MiB read
+    if (traced) DM_ATRACE_BEGIN("guest ReadFile (pread)");
     while (got < sz) {
         ssize_t r = pread(fd, (uint8_t *)buf + got, sz - got, base + off + got);
         if (r < 0) { if (errno == EINTR) continue;
@@ -1064,10 +1080,12 @@ HLE_FORCE("_ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm", "fsp-srv → pread(2)", 
                 int kr = plat_mem_region((uint64_t)(uintptr_t)((uint8_t *)buf + got), &ra, &rs, &prot);
                 LOG("[RED] fs ReadFile into %p+%#zx failed at +%#zx (EFAULT): VM region %#lx+%#lx protection %d%s", buf, sz, got, (unsigned long)ra, (unsigned long)rs, !kr ? prot : -1, !kr ? "" : " (none)");
                 errno = e; }
+            if (traced) DM_ATRACE_END();
             return err_res("pread", "fd"); }
         if (r == 0) break;
         got += r;
     }
+    if (traced) DM_ATRACE_END();
     *out = got;
     fs_stat_note(1, fst0, got);
     if (g_fslog) { pthread_mutex_lock(&g_fslog_lock);

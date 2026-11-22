@@ -120,6 +120,14 @@ static inline int vkfb_to_file(int fd, uint64_t off, uintptr_t lo, size_t n, con
         }
     }
     if (held) vkfb_drop(fd, off, t, from, at);
+    // DM_MEM_FB_PREFETCH=1 (default off): warm the page cache over the range just moved (async readahead,
+    // the mapping itself stays unmapped). The reads that fault the range back in — pipeline compiles reading
+    // their shader code, the triage's H5 majflt storms (758-2309 faults in one frame) — then hit the cache
+    // and are minor faults. Cost: the page cache keeps up to the pool's file-backed bytes (what the
+    // DONTNEED in vkfb_drop had freed); on, the RAM that saved returns. Measured decision, flag-gated:
+    // docs/stutter/experiments.md
+    { static int pf = -1; if (pf < 0) { const char *e = getenv("DM_MEM_FB_PREFETCH"); pf = (e && *e && strcmp(e, "0")) ? 1 : 0; }
+      if (pf && *copied) (void)posix_fadvise(fd, (off_t)off, (off_t)n, POSIX_FADV_WILLNEED); }
     return vkfb_move(t, lo, n, lost_map);
 }
 // The file's [off, off + n), mapped at [lo, lo + n), back to anonymous pages: the data extents' pages that are readable and not all zero. *copied: bytes copied.

@@ -21,6 +21,7 @@
 #include "vka.h"
 #include "vka_qsched.h"
 #include "../nvn/nvn_mtl.h"
+#include "../../host/dm_atrace.h"   // DM_ATRACE=1: the replay worker's recording shows in the trace (the triage's H9: 3.3-5.4 s bursts)
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -187,11 +188,13 @@ static int qs_run_cb(void *c, qs_sub *s) {
     vka_rp_queue_activate(s->serial); vka_rp_set_queue_origin(s->origin_ll);
     vka_gp_sub_frame(s->frame); vka_exec_sub_frame(s->frame); vka_rp_sub_cont(s->resumed || s->hi > 0); vka_rp_sub_begin();
     int parked = 0;
+    DM_ATRACE_BEGIN("replay worker: record submission");   // DM_ATRACE: the recording bursts the triage measured (H9)
     while (s->hi < s->nh) {
         int r = s->resumed ? vka_rp_resume(&s->cont, s->fence, &s->cont) : vka_rp_exec_pk(s->h[s->hi], s->fence, &s->cont);
         if (r) { s->resumed = 1; parked = 1; break; }
         s->resumed = 0; s->hi++;
     }
+    DM_ATRACE_END();
     uint64_t sig = qs_commit(&g_qs, s->fence, !parked);
     vka_rp_sub_commit_sig(s->fence, sig);
     vka_qtrace(QT_COMMIT, s->serial, s->fence, sig, !parked, (uint32_t)vka_done(), (uint32_t)vka_fence_queued(), 0, NULL);
@@ -288,6 +291,7 @@ static void qs_stats(uint64_t ticket) {
 }
 static void *worker_main(void *arg) {
     (void)arg; pthread_setname_np(pthread_self(), "vk-replay"); vka_fp_host("vk-replay");
+    // (the replay thread's priority is the recording thread's own DM_VK_REPLAY_NICE, vka_exec.c, live, default -8 already: not set here)
     t_worker = 1; int qon = qs_on();
     for (;;) {
         uint64_t t0 = wns();

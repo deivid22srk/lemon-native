@@ -20,6 +20,7 @@
 #include "nvn_timestamp.h"
 #include "../../host/front.h"
 #include "nvn_dirty.h"
+#include "hle_perf_report.h"   // stutter_report.json (DM_PERF_REPORT, default off): tsummary's windows + the [longframe] lines
 #if PLAT_APPLE
 #include <mach/mach.h>
 #include <mach/thread_policy.h>
@@ -1988,6 +1989,9 @@ int nxhost_fps_limit_get(void) __attribute__((weak));   // the host's frame limi
 __attribute__((weak)) uint64_t vka_panel_tick(uint64_t period_ns) { return period_ns; }
 __attribute__((weak)) void vka_panel_line(unsigned long long frame, const double *iv_ms, unsigned n, uint64_t nominal_ns, uint64_t tick_ns) { (void)frame; (void)iv_ms; (void)n; (void)nominal_ns; (void)tick_ns; }
 static uint64_t g_pace_nominal, g_pace_tick;
+// Carried from tsummary's blocks to its end for the stutter report (DM_PERF_REPORT, default off): the frame interval window, the over-target count and the on-screen present numbers.
+static double g_rpt_ft[TWIN]; static unsigned g_rpt_n, g_rpt_over, g_rpt_pn, g_rpt_drop, g_rpt_discard;
+static double g_rpt_p99, g_rpt_fp;
 static void tsummary(uint64_t frame) {
     char line[1024]; size_t o = 0;
     for (int k = 0; k < 6; k++) {
@@ -2000,7 +2004,8 @@ static void tsummary(uint64_t frame) {
     double tgt = 1000.0 / mtl_fps_target();   // milliseconds one frame should take: 16.7 at 60 fps, 33.3 when the game itself asks for 30 (the over-time / dropped-frame counts below use it)
     { unsigned n = g_tn[0] < TWIN ? g_tn[0] : TWIN, over = 0; double v[TWIN];   // frame interval gets its own line (M1 baseline): number of frames longer than one frame period in this window and p99
       if (n) { memcpy(v, g_tw[0], n * sizeof *v); qsort(v, n, sizeof *v, dcmp); for (unsigned i = 0; i < n; i++) over += v[i] > tgt;
-        LOG("[nvn] frame interval up to frame %llu: >%.1fms %u / %u frames, p99 %.2f ms", frame, tgt, over, n, v[(n * 99) / 100 < n ? (n * 99) / 100 : n - 1]); } }
+        LOG("[nvn] frame interval up to frame %llu: >%.1fms %u / %u frames, p99 %.2f ms", frame, tgt, over, n, v[(n * 99) / 100 < n ? (n * 99) / 100 : n - 1]);
+        memcpy(g_rpt_ft, v, n * sizeof *v); g_rpt_n = n; g_rpt_over = over; } }   // carried to the stutter report at the end of tsummary (DM_PERF_REPORT)
     { unsigned n = g_presn < TWIN ? g_presn : TWIN, k = 0, drop = 0, discard = 0; double v[TWIN];   // on-screen present: dropped frame = on screen longer than its hold × 1.5 (pres_expect_ms) or discarded
       for (unsigned i = 0; i < n; i++) { double x = g_pres_iv[i]; if (x < 0) { drop++; discard++; } else if (x > 0) { v[k++] = x; drop += x > g_pres_exp[i] * 1.5; } }
       // Paced by the host's frame limiter (hle_fpslock.c; presents on the display's own tick): a frame is held as long as the game takes, so the hold of one present
@@ -2012,6 +2017,7 @@ static void tsummary(uint64_t frame) {
       int64_t foot = plat_footprint_bytes(); double fp = foot >= 0 ? foot / 1048576.0 : -1;
       double br = dm_brightness_now();   // footprint / brightness are carried on the on-screen present row: does not depend on the tick-entry observation gate (camp runs have it too)
       if (k) { qsort(v, k, sizeof *v, dcmp); LOG("[nvn] on-screen up to frame %llu: %u frames, dropped %u (discarded %u), p99 %.2f ms; footprint %.0f MiB; brightness %.2f; thermal %d", frame, k + discard, drop, discard, v[(k * 99) / 100 < k ? (k * 99) / 100 : k - 1], fp, br, dm_thermal_now()); }
+      { g_rpt_pn = k + discard; g_rpt_drop = drop; g_rpt_discard = discard; g_rpt_p99 = k ? v[(k * 99) / 100 < k ? (k * 99) / 100 : k - 1] : 0.0; g_rpt_fp = fp; }   // carried to the stutter report at the end of tsummary (DM_PERF_REPORT)
       vka_panel_line(frame, g_pres_iv, n, g_pace_nominal, g_pace_tick);   // PEANUTS: the panel's period, the pacer's source, on-screen intervals in refreshes
       g_presn = 0; }
     power_line(frame);
@@ -2041,6 +2047,7 @@ static void tsummary(uint64_t frame) {
     unsigned cpu_tex = mtl_cpu_tex_count();   // (read before LOG: its arguments are read with stderr's lock held, and this takes the replay's texture lock)
     uint64_t mpf; int mpe; nvn_dirty_mp_fail(&mpf, &mpe);
     LOG("[nvn] packaged textures: first uploads %llu, re-uploads on pool content change %llu, writes beside a texture only (not re-uploaded) %llu; write-protection faults %llu, pages unprotected before host writes %llu; missed %llu (cumulative); CPU-written textures alive %u; mprotect failures %llu (last errno %d)", up, re, es, fa, pr, miss, cpu_tex, (unsigned long long)mpf, mpe);
+    { if (dm_perf_report_on() && g_rpt_n) dm_perf_report_window(frame, g_rpt_ft, g_rpt_n, tgt, g_rpt_over, g_rpt_pn, g_rpt_drop, g_rpt_discard, g_rpt_p99, g_rpt_fp, dm_thermal_now()); }
     memset(g_tn, 0, sizeof g_tn);
 }
 // DM_SLOWFRAME=1 (test switch, read over the log port on a real device): per-frame timings are first stored in a ring of the last 16 frames; dropped frames are judged 8 frames late (GPU / on-screen present times are back by then),
@@ -2521,7 +2528,8 @@ NVN(nvnQueuePresentTexture, void, NVNqueue *q, NVNwindow *w, int idx) {
               snprintf(b, sizeof b, "frame %llu (%.2f s) whole frame %.1f ms, submit+present %.1f ms, GPU %.1f ms%s; new pipelines %u + shader libraries %u, %.1f ms in all; texture uploads %u first + %u re-uploads, %.1f MB / %.1f ms; draws with a hybrid pipeline %u%s",
                        (unsigned long long)r->f, r->t_s, r->fr, r->nv, g, gx, r->pso, r->lib, r->make_ms, r->up, r->rup, r->up_mb, r->up_ms, r->hy, r->ex);
               // Visibility: during the time a long frame "comes out late", what stays on screen is the previous frame; if the previous frame was a loading screen (or this frame itself is one), all the player sees is the loading screen staying a bit longer, with no motion interrupted
-              dm_longframe_note(b); } }
+              dm_longframe_note(b);
+              dm_perf_report_hitch((unsigned long long)r->f, r->fr, b); } }
         uint64_t g0, g1; if (frame_rec() && mtl_gpu_span(f - 8, &g0, &g1)) { trow(f - 8, "@gpu_beg_ms", (g0 - g_t0_ns) / 1e6); trow(f - 8, "@gpu_end_ms", (g1 - g_t0_ns) / 1e6); } }
     prev_in = t0; prev_pass = ps; prev_draw = dr;
     dump_frame();

@@ -519,6 +519,13 @@ static vka_img *img_create(const tex_t *t, const vka_fmt *f, uint32_t base) {
 // res: a sparse residency image; *why (with res, on NULL): 1 = the sparse address space is full, 2 = refused otherwise (a dense one may be made), 3 = the format has no sparse
 // residency at this shape (a dense one may be made)
 static VkFormat class_twin(VkFormat v, int cls);
+// PEANUTS (round-03, H9): the physical device's image format properties, remembered per (format, type, usage, flags). A burst of new images asks the same question
+// hundreds of times on the replay thread (an area load made 300 in one frame; the query loop below runs up to three times per image), and each answer only depends
+// on the tuple. img_create_ runs under g_tmu (vka_tex_get), so a plain table, no lock: a hit copies the kept verdict, a miss runs the same fallback as before
+// (drop storage, then the attachment usages) and keeps what the driver said. A full table overwrites its probe slot (the next miss re-asks, as before).
+typedef struct { VkImageFormatProperties ip; VkFormat f; VkImageType it; VkImageUsageFlags u0, u_out; VkImageCreateFlags fl; uint32_t ok; } fmtq_ent;
+static _Atomic uint64_t g_fmtq_hit, g_fmtq_ask;
+static _Atomic uint64_t g_new_drv_ns;   // PEANUTS (round-03 H9): img_create_'s driver calls alone (create, requirements, bind), summed with the new-image stats below
 static vka_img *img_create_(const tex_t *t, const vka_fmt *f, uint32_t base, int res, int *why, uint64_t *need) {
     const nvn_texdesc *d = &t->d;
     // PEANUTS(upstream-candidate): buffer textures as 2D row-wrapped images (Three Houses' KTGL decal/light lists); general fix, not Peanuts-specific. Threads through this
@@ -611,11 +618,34 @@ static vka_img *img_create_(const tex_t *t, const vka_fmt *f, uint32_t base, int
     if (g_rswant) { im->w = vkrs_dim(im->w, vka_rs_q); im->h = vkrs_dim(im->h, vka_rs_q); im->rsc = 1; zs = 0; fl &= ~(VkImageCreateFlags)VK_IMAGE_CREATE_ALIAS_BIT; }   // PEANUTS: a scaled render target (vka_resscale.inc): its format list above is the texture's own size's, so it shares as before
     VkImageType it = is3d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
     VkImageFormatProperties ip;
-    for (int k = 0; k < 3 && vk.vkGetPhysicalDeviceImageFormatProperties(V.pd, f->vk, it, VK_IMAGE_TILING_OPTIMAL, u, fl, &ip); k++)
-        u &= k == 0 ? ~(VkImageUsageFlags)VK_IMAGE_USAGE_STORAGE_BIT : ~(VkImageUsageFlags)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    {   // (fmtq above, round-03 H9)
+        static fmtq_ent fq[128];
+        const VkImageUsageFlags u0 = u;
+        fmtq_ent *e = NULL;
+        const uint32_t fh = (uint32_t)f->vk * 2654435761u ^ (uint32_t)it * 9176u ^ (uint32_t)u ^ (uint32_t)fl;
+        for (uint32_t k = 0; k < 8; k++) {
+            fmtq_ent *c = &fq[(fh + k) & 127u];
+            if (!c->f || (c->f == f->vk && c->it == it && c->u0 == u0 && c->fl == fl)) { e = c; break; }
+        }
+        if (!e) e = &fq[fh & 127u];   // table full: the probe slot, overwritten (that key re-asks, as before)
+        if (e->f == f->vk && e->it == it && e->u0 == u0 && e->fl == fl) {
+            atomic_fetch_add_explicit(&g_fmtq_hit, 1, memory_order_relaxed);
+            u = e->u_out; if (e->ok) ip = e->ip;
+        } else {
+            VkResult lr = VK_INCOMPLETE;   // the loop keeps the last result: a success stops it, three failures leave its last error
+            for (int k = 0; k < 3 && (lr = vk.vkGetPhysicalDeviceImageFormatProperties(V.pd, f->vk, it, VK_IMAGE_TILING_OPTIMAL, u, fl, &ip)) != VK_SUCCESS; k++)
+                u &= k == 0 ? ~(VkImageUsageFlags)VK_IMAGE_USAGE_STORAGE_BIT : ~(VkImageUsageFlags)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            atomic_fetch_add_explicit(&g_fmtq_ask, 1, memory_order_relaxed);
+            e->f = f->vk; e->it = it; e->u0 = u0; e->u_out = u; e->fl = fl; e->ok = lr == VK_SUCCESS; if (e->ok) e->ip = ip;
+        }
+        { static _Atomic int logged; if (!logged && atomic_load_explicit(&g_fmtq_hit, memory_order_relaxed) >= 1024 && atomic_exchange(&logged, 1))
+            VLOG("image format queries answered from the cache: %llu of %llu (H9: the new-image storms' per-image queries)", (unsigned long long)atomic_load(&g_fmtq_hit),
+                 (unsigned long long)(atomic_load(&g_fmtq_hit) + atomic_load(&g_fmtq_ask))); }
+    }
     im->usage = u; im->cflags = fl; im->nvf = (uint32_t)nfl; memcpy(im->vf, fls, sizeof im->vf);   // (fls: 2 + VKFL_MAX entries, as vf)
     VkImageCreateInfo ci = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .pNext = nfl ? &fli : NULL, .flags = fl, .imageType = it, .format = f->vk, .extent = {im->w, im->h, im->depth}, .mipLevels = im->levels,
         .arrayLayers = im->layers, .samples = (VkSampleCountFlagBits)im->samples, .tiling = VK_IMAGE_TILING_OPTIMAL, .usage = u, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
+    uint64_t t_drv = now_ns();   // PEANUTS (round-03 H9): the driver calls of one new image (create, requirements, bind), the "new images" line's (driver ...) split
     VkResult r = vk.vkCreateImage(V.dev, &ci, NULL, &im->img);
     if (r && res) { VRED_ONCE("sparse residency image of serial %llu: vkCreateImage %d: dense images instead", (unsigned long long)t->serial, r); *why = 2; free(im); return NULL; }
     if (r) { VRED("texture serial %llu %ux%ux%u format %#x (VkFormat %d) levels %u layers %u samples %u: vkCreateImage %d", (unsigned long long)t->serial, im->w, im->h, im->depth, d->format, f->vk, im->levels, im->layers, im->samples, r); free(im); return NULL; }
@@ -631,6 +661,7 @@ static vka_img *img_create_(const tex_t *t, const vka_fmt *f, uint32_t base, int
         static _Atomic int n; if (atomic_fetch_add(&n, 1) < 32) { char st[256]; vks_stats(st, sizeof st);
             VLOG("sparse residency image: serial %llu %ux%u layers %u levels %u+%u format %#x, tiles %ux%u, %u levels by tile, %.0f MiB of address space (%s)", (unsigned long long)t->serial, im->w, im->h,
                  im->layers, base, im->levels, d->format, rtw, rth, vks_tiled(im->rs), mr.size / 1048576.0, st); }
+        atomic_fetch_add_explicit(&g_new_drv_ns, now_ns() - t_drv, memory_order_relaxed);
         return im;
     }
     int fresh = 0;
@@ -653,6 +684,7 @@ static vka_img *img_create_(const tex_t *t, const vka_fmt *f, uint32_t base, int
             VLOG("zero-shared image: texture serial %llu %ux%u layers %u levels %u format %#x flags %#x: %.1f MiB of zeroed memory %s (memory of its own at its first write)", (unsigned long long)t->serial,
                  im->w, im->h, im->layers, im->levels, d->format, d->flags, mr.size / 1048576.0, fresh ? "made for its create info" : "shared with images of the same create info");
     } else { im->bytes = mr.size; g_img_bytes += mr.size; vka_mem_grew(mr.size); }
+    atomic_fetch_add_explicit(&g_new_drv_ns, now_ns() - t_drv, memory_order_relaxed);
     g_img_made_n++; g_img_made_b += im->bytes ? im->bytes : fresh ? mr.size : 0;   // (a zero-shared image's bytes are the shared allocation's: counted once, when it is made)
     if (mr.size >= (VkDeviceSize)(VKA_ENVF("DM_VK_BIGIMG_MB", 64.0) * 1048576.0)) { static _Atomic int n; if (atomic_fetch_add(&n, 1) < 32)   // large images, for memory walls
         VLOG("large image: texture serial %llu %ux%ux%u layers %u levels %u (base %u) samples %u format %#x target %d flags %#x: %.1f MiB of image memory (storage %.1f MiB at %p, pool flags %#x)",
@@ -688,7 +720,7 @@ uint64_t mtl_upload_bytes(void) { return atomic_load(&g_up_bytes); }
 // New images (vka_tex_get: the search for one to share, the cache's prune, the image, its memory and its first content, the uploads above included), cumulative: the
 // [longframe] line's "new images" (vka_perf.c mtl_frame_extra), which tells a frame of many first texture uses from one of slow uploads
 static _Atomic uint64_t g_new_ns, g_new_n;
-void vka_tex_new_stats(uint64_t *n, uint64_t *ns) { *n = atomic_load_explicit(&g_new_n, memory_order_relaxed); *ns = atomic_load_explicit(&g_new_ns, memory_order_relaxed); }
+void vka_tex_new_stats(uint64_t *n, uint64_t *ns, uint64_t *drv_ns) { *n = atomic_load_explicit(&g_new_n, memory_order_relaxed); *ns = atomic_load_explicit(&g_new_ns, memory_order_relaxed); if (drv_ns) *drv_ns = atomic_load_explicit(&g_new_drv_ns, memory_order_relaxed); }
 // mem_any over guest storage: pages the guest has not mapped are skipped (inaccessible; they read as zeros: unmapped_content)
 static int mem_any_mapped(const uint8_t *c, const tex_t *t) {
     if (c != t->mem || !dm_guest_unmapped((uintptr_t)c, t->L.size)) return mem_any(c, t->L.size);

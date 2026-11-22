@@ -168,3 +168,41 @@ Upstream candidate: yes (the decoder is shared with the Mac path, where this exa
 to 0 for this game (it must, if the handle form above is present in this build's shaders) and whether any black-rendering
 symptom remains once both this fix and the streamed-texture fix above are in the same build — that would mean a third cause.
 
+
+## Audio reported muffled ("abafado", like a cinema recording)
+
+<!-- PEANUTS: device report 2026-11-22; no fix yet — measure first (DM_AUDIO_DUMP) -->
+
+Reported by the tester (2026-11-22): character speech sounds muffled/echoey —
+"como um filme gravado no cinema". A gameplay video was shared but cannot be
+listened to here; the measurements below are from the device log.
+
+Measurements from `0100F7E00C70E000-20261122-072915.log` (build `eeb5be5`,
+Turnip T30):
+
+- The game opens **both** an audren renderer (`OpenAudioRenderer rate 48000
+  samples per frame 240 mix buffers 6 ... voices 32 sinks 1 effects 0`,
+  original device mode 0 → CPU/manual) and a plain AudioOut
+  (`main+0x585ef70`, no release event, the game polls) — the Wwise output, the
+  arrangement Fire Emblem Engage shows ([Several outputs at
+  once](../../../docs/reference/audio.md#several-outputs-at-once-audio-n)).
+- The audren renderer is **silent**: `renderer 0 rendered 36000 frames, 0 of
+  them not silent` (the counter checks the final int16 samples — the canonical
+  check for "the game's sound reaches the output"). Everything audible is
+  audio #1's.
+- audio #1 is healthy: 4 underruns total (16 ms zero-padded, first 2000
+  callbacks only), then 0; ~3.9 blocks queued at callback; 48 kHz PCM16 into
+  an AAudio stream at 48 kHz PCM16 — **no resampler** (rate matches), no
+  downmix (channels 2), no tone shaping: the host path is a memcpy
+  pass-through (`pull_x` → `aa_feeder` ring → `aa_take`).
+- So the host does not shape this signal. A muffled sound must already be in
+  the game's own mix — the Switch port's compressed audio assets are a known
+  quality aspect of this title — or in the device's output chain (Bluetooth
+  A2DP is a common muffled-sound cause on Android).
+
+Next diagnostic: `DM_AUDIO_DUMP=<file>` writes every PCM block the game
+appends (16-bit, 48 kHz, stereo, ~11.5 MB/min of gameplay) — RMS per second,
+clipping share, spectral flatness and FFT peaks ([Checking audio without
+listening](../../../docs/reference/audio.md#checking-audio-without-listening))
+tell whether the game's PCM is already low-bandwidth (assets) or full-band
+(then the muffling sits downstream of the host: device/output chain).

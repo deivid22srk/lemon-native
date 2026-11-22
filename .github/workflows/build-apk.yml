@@ -3,7 +3,7 @@ name: build-apk
 on:
   workflow_dispatch:
   push:
-    branches: [main, fix/hogwarts-legacy-gpu-artifacts]   # LEMON: the hogwarts gfx-artifact fix branch builds too
+    branches: [main, fix/hogwarts-legacy-gpu-artifacts, 'perf/**']   # main, the hogwarts gfx-artifact fix branch, and perf/**: the stutter round branches (docs/stutter/ loop) build too
     paths:
       - 'android/**'
       - 'dm/**'
@@ -76,15 +76,18 @@ jobs:
           ./gradlew --no-daemon -PnxPackStage="$RUNNER_TEMP/packstage/stage" \
             -PnxGames=0100F7E00C70E000 -PnxApp=lemon apk
 
-      - name: Name the APK with the round and the commit
+      - name: Name the APK by branch, round and SHA
         run: |
-          # LEMON: the tester must know which build they run: LemonNative-<branch>-rNN-<sha>.apk,
-          # the round from the latest gfx(round-NN) commit subject (0 before the first one)
           cd android/app/out
-          sha="$(git rev-parse --short=8 HEAD)"
-          round="$(git log --format=%s | grep -oE 'round-[0-9]+' | head -1 | grep -oE '[0-9]+' || echo 0)"
-          branch="$(git rev-parse --abbrev-ref HEAD | sed 's#/#-#g')"
-          for f in *.apk; do mv "$f" "LemonNative-${branch}-r${round}-${sha}.apk"; done
+          sha="$(echo "${{ github.sha }}" | cut -c1-7)"
+          # The stutter loop's branch: LemonNative-hogwarts-stutter-rNN-<sha>.apk (NN = the run that built it;
+          # docs/stutter/scorecard.md maps run NN to the round). Other branches: a slugged branch name.
+          case "${{ github.ref_name }}" in
+            perf/hogwarts-legacy-stutter) slug="hogwarts-stutter-r${{ github.run_number }}" ;;
+            *) slug="$(echo "${{ github.ref_name }}" | tr '/' '-')" ;;
+          esac
+          for f in *.apk; do mv "$f" "LemonNative-${slug}-${sha}.apk"; done
+
           ls -la
 
       - name: Upload APK
