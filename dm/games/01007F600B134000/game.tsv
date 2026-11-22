@@ -20,6 +20,11 @@ app_category	public.app-category.action-games
 pad_layout	full
 
 # ---- Versions ----
+# The launcher NRO (launcher_f.nro, NvnDevice::Init at nro2+0xd640) requires exactly NVN API 53.209, the version
+# SDK 5.4.0 was built against: it aborts through nn::diag when nvnDeviceGetInteger item 0/1 is not 53/209. The host's
+# default for SDK 10 and older is 53.313, so the launcher stopped before the window-origin call. SDK 5.5.0 (Cuphead)
+# and SDK 10 report 53.313; only this build pins 53.209.
+device_api	53.209
 build	v0	1.0.0	main=10ac5e3aefdf16d10130195845171cee	subsdk1=11975fb8bdba5b7bf8128785e47dc9d5	subsdk2=41097c438a36afd2e879fa6f5e0f0850	sdk=26ffb122262ca25e4c016c0af2f92a29
 package	v0
 shader_versions	v0

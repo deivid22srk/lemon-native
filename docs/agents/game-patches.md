@@ -280,7 +280,7 @@ Every patch bound tighter than it could be: the open gaps, then the blocked, kep
 
   </details>
 
-  - host [loader.c:325](../../dm/host/loader.c#L325): build check
+  - host [loader.c:350](../../dm/host/loader.c#L350): build check
 
 ### Batman: Arkham Knight
 
@@ -784,7 +784,7 @@ Every patch bound tighter than it could be: the open gaps, then the blocked, kep
   - frame step `+0x3e5638`: scvtf moved into the stub at the load
   - frame step `+0xbe14a8`: swapchain argument 1 when on (FPSLocker)
   - render scale stub (the launcher offers DM_RENDER_SCALE)
-  - host [loader.c:326](../../dm/host/loader.c#L326): build check
+  - host [loader.c:351](../../dm/host/loader.c#L351): build check
 
 ### Xenoblade Chronicles 3
 
@@ -877,6 +877,7 @@ Profile keys (`game.tsv`) whose value changes what the host does, set away from 
 | `android_window 1920x1080` | [Fire Emblem Fortune's Weave](../../dm/games/04007EF01F8AE000/README.md) | `game`, at goal | the same default as without the key (Phone 1080p), named in the profile so that one line changes the game's default output (Fire Emblem Fortune's Weave: handheld; original would give docked) |
 | `android_window original` | [Mario Tennis Fever](../../dm/games/0400D4201C6EA000/README.md) | `game`, at goal | a game with graphics_scale rows whose start is not Phone 1080p keeps that start as its default (Mario Tennis Fever: console scale 1, 2048x1152), so adding the rows changes no player's picture |
 | `av1_decoder dav1d` | [Fire Emblem Fortune's Weave](../../dm/games/04007EF01F8AE000/README.md) | `game` → `host`, gap | the default decoder drops frames of this game's movies on the phone; frame-parallel dav1d for every game once it is checked on the other games' movies |
+| `device_api 53.209` | [Assassin's Creed III Remastered](../../dm/games/01007F600B134000/README.md) | `game`, at goal | the game's own linked NVN version: SDK 5.4.0's launcher pins exactly 53.209, where the host's SDK 10-and-older default is 53.313 (SDK 5.5.0 and 10 report 53.313) |
 | `draw_barriers game` | [The Legend of Zelda: Ocarina of Time](../../dm/games/0400486024DEC000/README.md) | `game` → `host`, gap | what NVN specifies: a default for every game after `regress.py check` on the games |
 | `drs_ctl e25c90c1c136638885659fd55bf8a03b 0x38e100 0x38de2c 0x38dcbc 0x38dbc8` | [Donkey Kong Bananza](../../dm/games/040074A01BF12000/README.md) | `build` → `engine`, gap | four places in sead / agl's MaintainGpuPercentage controller, at fixed offsets per main build (each checked for its instruction); a fingerprint of the controller could find them in other games on that engine |
 | `enc_thread on` | [Need For Speed™ Hot Pursuit Remastered](../../dm/games/010029B0118E8000/README.md) | `game` → `host`, gap | what iOS does for every game: a default for every game after `regress.py check` on the games |

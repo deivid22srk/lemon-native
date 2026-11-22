@@ -615,10 +615,10 @@ Games read this count as a position in their own command memory and size their h
 
 ### The device's API version
 
-- **Symptom:** a null-pointer crash early in `nnMain`, right after NVN setup should have happened (Super Mario 3D World + Bowser's Fury, `main+0x759e08`: the device singleton `main+0x1a28ea0` is still null).
-- **Cause:** the game checks `nvnDeviceGetInteger(API_MAJOR / API_MINOR)` for major == 53 and minor ≥ 313 (`main+0x711c88`) and quietly skips creating its device otherwise.
-- **Fix:** the reported version follows the SDK (`hle_nvn.c` `nvn_api`: 53.313 for SDK 10 and older, 55.15 for later ones, Mario's requirement); the profile key `device_api` overrides it. NVN 53 also brings `nvnQueueAcquireTexture` (the older window acquire: the queue waits instead of a sync object), `nvnSamplerCompare` and the debug group calls (no-ops).
-- **Found on:** [Super Mario 3D World + Bowser's Fury](../../dm/games/010028600EBDA000/README.md) (SDK 10); [Super Mario Bros. Wonder](../../dm/games/010015100B514000/README.md) (needs 55.15).
+- **Symptom:** a null-pointer crash early in `nnMain`, right after NVN setup should have happened (Super Mario 3D World + Bowser's Fury, `main+0x759e08`: the device singleton `main+0x1a28ea0` is still null); or a bare `nn::diag` abort in a launcher NRO's `NvnDevice::Init`, between the capability scan and the window-origin call.
+- **Cause:** the game checks `nvnDeviceGetInteger(API_MAJOR / API_MINOR)` and quietly skips creating its device (`main+0x711c88`: major == 53 and minor ≥ 313) or aborts on a mismatch (Assassin's Creed III Remastered's launcher, `NvnDevice::Init` at `nro2+0xd640`: exactly 53 and 209, `cmp w23,#0x35` / `cmp w8,#0xd1` at `nro2+0xd718` / `+0xd724`).
+- **Fix:** the reported version follows the SDK (`hle_nvn.c` `nvn_api`: 53.313 for SDK 10 and older, 55.15 for later ones, Mario's requirement); the profile key `device_api` overrides it for a game whose own NVN version differs (SDK 5.4.0's NVN is 53.209, and Assassin's Creed III Remastered's launcher requires exactly that). NVN 53 also brings `nvnQueueAcquireTexture` (the older window acquire: the queue waits instead of a sync object), `nvnSamplerCompare` and the debug group calls (no-ops).
+- **Found on:** [Super Mario 3D World + Bowser's Fury](../../dm/games/010028600EBDA000/README.md) (SDK 10); [Super Mario Bros. Wonder](../../dm/games/010015100B514000/README.md) (needs 55.15); [Assassin's Creed III Remastered](../../dm/games/01007F600B134000/README.md) (SDK 5.4.0, needs exactly 53.209).
 
 ### Newest GPU code version reported by the driver
 

@@ -219,6 +219,9 @@ SWITCH_BINDING = [
     ('rt_pool', '', {'what': "the render target pool sized at load for the starting render setting (at least the first larger size on a device of more than 12 GB), and render_cfg's max_render raised with it (DM_RT_POOL_MB; loader.c)", 'now': 'build', 'goal': 'engine', 'purpose': 'memory',
      'why': "the pool's size is one movz in the game's text, at a fixed offset per build (the build and the word checked before the write); a fingerprint of the pool's constructor call could find it in other builds"}),
     ('op_mode', '', {'what': 'the operation mode at start', 'now': 'game', 'goal': 'game', 'purpose': 'runtime', 'why': "the game's controls (handheld: the touch screen instead of a gyro pointer)"}),
+    # PEANUTS: the NVN API version is a fact about the game's own linked NVN, which the host cannot read from the game's replaced driver yet.
+    ('device_api', '', {'what': 'the NVN API version the host reports to the game', 'now': 'game', 'goal': 'game', 'purpose': 'runtime',
+     'why': "the game's own linked NVN version: SDK 5.4.0's launcher pins exactly 53.209, where the host's SDK 10-and-older default is 53.313 (SDK 5.5.0 and 10 report 53.313)"}),
 ]
 
 
