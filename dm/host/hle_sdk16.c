@@ -456,6 +456,11 @@ static void diag_abort(uint32_t res, void *lr) {
 }
 HLE_FORCE("_ZN2nn4diag6detail9AbortImplEv", "game aborted", void, h_diag_Abort0, void) { diag_abort(0, __builtin_return_address(0)); }
 HLE_FORCE("_ZN2nn4diag6detail9AbortImplEPKNS_6ResultE", "game aborted (with Result)", void, h_diag_AbortR, const uint32_t *r) { diag_abort(r ? *r : 0, __builtin_return_address(0)); }
+// Older SDKs spell the namespace Detail (capital D); when a game's sdk has that AbortImpl, take it over too, so an old-SDK abort
+// is reported with its call site like the newer detail one (AC3 Remastered's 5.4.0 aborted in svcBreak with no report beyond a
+// backtrace). The no-argument form reads no argument, so the takeover is safe whatever its real signature takes; the Result and
+// VAbortImpl forms differ by SDK and stay with the SDK's own code (their message reaches the Break report's diag_dump instead).
+HLE_FORCE("_ZN2nn4diag6Detail9AbortImplEv", "game aborted (SDK 5's Detail spelling)", void, h_diag_Abort0_D, void) { diag_abort(0, __builtin_return_address(0)); }
 HLE_FORCE("_ZN2nn4diag12GetBacktraceEPmi", "backtrace; the host provides none (0 frames)", int, h_diag_Bt, uint64_t *out, int n) { (void)out; (void)n; return 0; }
 // An assert, a C++ exception that nothing caught (std::terminate) or an SDK check reached VAbortImpl: print where it came from and the message's FORMAT, which
 // names the failure on its own ("libc++abi: terminating due to uncaught exception of type ...", Well Dweller's first boot). The arguments the format would fill

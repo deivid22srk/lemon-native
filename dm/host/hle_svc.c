@@ -563,6 +563,33 @@ static void *regions_thread(void *arg) {
 
 int svc_thread(int num, uint64_t *regs);   // hle_thread.c: thread and synchronization kind
 
+// ---------- Guest debug strings ----------
+// The guest's diag output reaches the host as svcOutputDebugString. Newer SDKs' abort helpers are taken over by name
+// (hle_sdk16.c diag), so their abort message is printed; older SDK builds (AC3 Remastered's 5.4.0) call svcBreak straight
+// from their abort code, and without DM_DBG the message was dropped, leaving the Break report only a backtrace. Keep the
+// last ones: a Break report then shows what the guest said just before it aborted (the assert text, the failed check).
+#define DIAG_N 24
+#define DIAG_CAP 384
+static char g_diag[DIAG_N][DIAG_CAP];
+static _Atomic unsigned g_diag_wr;
+static void diag_record(uint64_t a, uint64_t n) {
+    if (!a || !n) return;
+    if (n > DIAG_CAP - 1) n = DIAG_CAP - 1;
+    unsigned k = atomic_fetch_add_explicit(&g_diag_wr, 1, memory_order_relaxed) % DIAG_N;
+    char *d = g_diag[k];
+    if (plat_mem_read(a, d, n)) return;   // unmapped or unreadable: the previous message stays
+    d[n] = 0;
+    for (uint64_t i = 0; i < n; i++) if ((unsigned char)d[i] < 9 || ((unsigned char)d[i] > 13 && (unsigned char)d[i] < 32)) d[i] = ' ';
+    while (n && (d[n - 1] == '\n' || d[n - 1] == ' ' || d[n - 1] == '\0')) d[--n] = 0;
+}
+static void diag_dump(void) {
+    unsigned wr = atomic_load_explicit(&g_diag_wr, memory_order_relaxed);
+    for (unsigned i = 0; i < DIAG_N; i++) {
+        unsigned k = (wr + DIAG_N - 1 - i) % DIAG_N;   // newest first; empty slots are the ones never written
+        if (g_diag[k][0]) LOG("guest diag: %s", g_diag[k]);
+    }
+}
+
 uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
     { void hlecount_svc(int); hlecount_svc(num); }   // DM_HLECOUNT: svc counts by number
     mem_init();
@@ -795,12 +822,26 @@ uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
         module_t *mm = module_of((void *)regs[30]);
         static int nb;
         LOG("Break#%d reason=%#llx Result=%#x svc at %s+%#llx", ++nb, regs[0], res, mm ? mm->name : "?", orig_addr);
+        // Older SDKs (AC3 Remastered's 5.4.0) reach here from their abort code without any taken-over name (hle_sdk16.c
+        // diag), so the report above is all bring-up had: dump the payload (some builds pass the assert text or a context
+        // struct as it) and the recent guest diag strings, which carry the abort message the SDK logged before the break
+        if (regs[1] && regs[2]) {
+            uint8_t p[64]; size_t n = regs[2] > sizeof p ? sizeof p : (size_t)regs[2];
+            if (!plat_mem_read(regs[1], p, n)) {
+                char t[3 * sizeof p + 1]; size_t o = 0;
+                for (size_t i = 0; i < n && o + 2 < sizeof t; i++) o += (size_t)snprintf(t + o, sizeof t - o, "%02x", p[i]);
+                t[o] = 0;
+                LOG("Break payload at %#llx (%llu bytes): %s", (unsigned long long)regs[1], (unsigned long long)regs[2], t);
+            }
+        }
+        diag_dump();
         dm_backtrace(regs[29]);
         if (regs[0] & 0x80000000ull) return 0;   // notification only, can continue
         _exit(42);
     }
     case 0x1E: guest_clock_read_wait(); regs[0] = 0; regs[1] = guest_ticks(); return 0;   // GetSystemTick
     case 0x27: {  // OutputDebugString(str, len)
+        diag_record(regs[0], regs[1]);   // kept for the Break report (diag_dump); DM_DBG still prints live
         if (g_flag.dbg) fprintf(stderr, "[guest] %.*s\n", (int)regs[1], (char *)regs[0]);
         regs[0] = 0; return 0;
     }
