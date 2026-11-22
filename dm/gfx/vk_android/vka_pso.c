@@ -11,6 +11,7 @@
 #include "vka_pwlist.h"
 #include "vka_psogate.h"
 #include "vka_psosync.h"   // PEANUTS: the draws that are not skipped while their pipeline is made in the background (vka_gfx_pipeline_now, below)
+#include "../../host/dm_atrace.h"   // DM_ATRACE=1: atrace/Perfetto markers on the paths the stutter triage pointed at (docs/stutter/triage.md)
 #include "vk_prewarm_seed.h"   // the profile's seed list (dm/games/<id>/vk_prewarm.bin; dm/games/game.py seed): dm_vk_prewarm_seed, dm_vk_prewarm_seed_len (0: none)
 #include "../nvn/nvn_mtl.h"
 #include <stdlib.h>
@@ -581,7 +582,9 @@ static VkPipeline full_pipeline(pstate *P, vka_shader *const sh[VKA_NSTAGE], con
     VkPipeline p = VK_NULL_HANDLE;
     const vka_shader *pre0 = P->mesh ? sh[7] : sh[0];
     int bslot = build_begin("whole graphics pipeline", pre0 ? pre0->key : 0, sh[1] ? sh[1]->key : 0);
+    DM_ATRACE_BEGIN("vkCreateGraphicsPipelines (whole)");   // DM_ATRACE: the driver's compile time is the triage's H1 evidence; the trace shows which pipeline and which thread
     VkResult r = vk.vkCreateGraphicsPipelines(V.dev, g_pc, 1, &P->ci, NULL, &p);
+    DM_ATRACE_END();
     build_end(bslot);
     P->ci.pNext = fbi.pNext;
     uint64_t dns = now_ns() - t0; double ms_ = dns / 1e6;

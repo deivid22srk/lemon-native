@@ -5,7 +5,7 @@
 #include <stdatomic.h>
 #include <signal.h>
 #include <unistd.h>
-void hlecount_flush(void); void dm_rec_finish(void);
+void hlecount_flush(void); void dm_rec_finish(void); void dm_perf_report_flush(const char *why);   // stutter_report.json (hle_perf_report.c, DM_PERF_REPORT): _exit skips atexit, write the last report here
 static void shutdown_late(void *unused) { (void)unused; LOG("[RED] graceful exit not done in 1.5 seconds, exiting at once"); _exit(0); }
 static void on_sigterm(void *unused) { (void)unused; dm_host_shutdown("SIGTERM"); }
 void dm_host_shutdown(const char *why) {
@@ -13,6 +13,7 @@ void dm_host_shutdown(const char *why) {
     uint64_t t0 = now_ns(); LOG("received %s: graceful exit", why);
     plat_after_ns(1500000000ull, shutdown_late, NULL);
     hlecount_flush();                               // DM_HLECOUNT: _exit does not run atexit, write a copy here
+    dm_perf_report_flush("graceful exit");          // the stutter report's final write (why = graceful exit)
     dm_rec_finish();                                // DM_REC: the held state and the buffered steps (hle_hid.c)
     dm_cheats_exit();                               // a clean exit: no safe mode for the cheats at the next launch (atexit does not run either)
     dm_audio_suspend(1);
