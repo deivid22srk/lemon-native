@@ -145,3 +145,45 @@ fila enche e o submit do jogo espera.
 - A "GPU busy" do log mede o span de submissão do replay; um span muito acima do
   busy é CPU do worker de replay (vka_perf.c) — os episódios de GPU usados no
   rank 3 são os com span ≈ busy (GPU de fato trabalhando).
+
+## 8. Log do aparelho após o APK da rodada 02 (2026-11-22 06:01) — `provado`
+
+Sessão de 6,3 min (frames até 10094), **build `eeb5be5` (rodada 02), mesmo driver do
+log de ontem** (`Turnip_Adreno_Driver_T30_Mr_Purple_666_`) — a pré-condição de mesmo
+driver do plano de validação é satisfeita entre os dois logs. Jogo a 30 fps em painel
+60,16 Hz (pace lines `window 30 fps`). **Nenhum flag de perf ligado** (sem
+`DM_PERF_REPORT`/`DM_FS_FADV`/`DM_MEM_FB_PREFETCH`/`DM_ATRACE` no eco do env) — não
+é um teste das correções; é um segundo baseline, com cache de pipelines quente.
+
+Comparação mesmo driver, ~6,5 min cada:
+
+| Métrica | 21/11 (`6bfe805c`) | 22/11 (`eeb5be5`) | Δ |
+|---|---|---|---|
+| hitches ≥100 ms /min | 30,4 | 20,9 | −31 % |
+| hitches ≥500 ms /min | 5,19 | 1,11 | −79 % |
+| hitches ≥1 s | 11 | 3 | −73 % |
+| pior frame | 5742 ms | 1527 ms | −73 % |
+| presents dropped | 11,5 % | 5,8 % | −50 % |
+| pipelines novos (s de compile) | 447 (28,3 s) | 85 (3,8 s) | −81 % |
+| tempo perdido em hitches ≥100 ms | 67,6 s | 22,8 s | −66 % |
+
+Leitura honesta: a cauda melhorou (explicação mais provável: cache de pipelines
+quente — os storms de 3–5,5 s de H1 de ontem sumiram; 34→3 hitches de H1), mas
+**20,9 hitches ≥100 ms/min segue 3,4× acima da meta** (−80 % ⇒ ≤6,1/min). Sem os
+flags ligados, nada da rodada 02 estava em teste.
+
+Causas dos 132 hitches ≥100 ms desta sessão (contagem | tempo):
+
+1. **H9/emu misto — 78 | 11,4 s**: frames de 100–500 ms com replay recording
+   10–30 ms + waits espalhados. As pace lines mostram recording de 24 ms/frame
+   com 57 draws e lookup de pipeline a 253 µs/draw numa janela — alvo da rodada 3.
+2. **Gaps "nada ocupado" — 34 | 7,3 s** (ontem: 106 | 24,8 s): frames em que GPU,
+   replay, guest e I/O somam <30 % do frame. Pista forte de **H7**: CPU MHz visto
+   em 998/710/844 numa janela pesada com "ADPF no session" — o piso de clock da
+   GPU (KGSL) está ativo, o da CPU não. Precisa de trace (E4) para nomear.
+3. **H2 I/O de transição — 12 | 5,2 s**: t=3,8–34 s (frames 4/134/666), leituras
+   de 36–89 MB com 182–587 ms no caminho principal — alvo direto de `DM_FS_FADV=1` (E2).
+4. H1 residual 3 (1,2 s) · H8 sync 3 (1,8 s) · H5 2 (0,3 s).
+
+`stutter_report.json` não foi gerado (flag off) — **o E1 oficial ainda não rodou**;
+a rodada 3 só codifica após E1–E3 (e E4 para os gaps), conforme o veredito da rodada 02.
