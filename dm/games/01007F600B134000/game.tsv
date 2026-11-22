@@ -3,8 +3,9 @@
 # Ubisoft's AnvilNext (the "scimitar" runtime), SDK 5.4.0, NVN. Modules main + subsdk1 (GLSLC, NVN's runtime shader compiler) + subsdk2 (NintendoSDK_movie) + sdk.
 # subsdk0 (NintendoSDK_OpenGL) is not loaded: main imports nothing from it, and the host answers its EGL imports where a game uses them. The NROs in nro/ import
 # from subsdk2, so the movie module is loaded as well. RomFS: 265 files in ac3/, acl/, videos/, nro/ and .nrr/, 11.65 GB.
-# The game compiles shaders at run time with its own GLSLC (main imports glslcCompile; the NROs call it too), so those outputs are captured on the device during
-# Build (the glslc_capture group below), as for Fire Emblem: Three Houses. No static shader table is available yet.
+# The shaders are BNSH programs inside the three NRO modules (1005 keys) and GameBg.bnsh (4 keys): a full shader_split.py of the dump reads them all. An empty
+# table made the on-device split select 0 files and stop the pack; the tables here are that full split. The NROs also call glslcCompile, so further outputs may be
+# compiled at run time and captured during Build (the glslc_capture group below), as for Fire Emblem: Three Houses.
 # Written from the survey of the user's own dump (scripts/build_ipa_from_nsp.py / dm/games/profile_guess.py) and checked against the game files; README.md beside this file.
 
 # ---- Identity ----
@@ -39,6 +40,6 @@ app_pool	0xCD500000
 sys_resource	0x0
 
 # ---- Shader split ----
-# glslc_capture: the outputs the game's own GLSLC makes at run time, captured during Build (hle_glslc.c); the rest is what shader_split.py finds in the RomFS
+# /nro/=nro: the BNSH programs inside the three NROs; /glslc_capture/=runtime: any further outputs the game's own GLSLC makes at run time (hle_glslc.c)
 shader_groups	/ac3/=ac3 /acl/=acl /videos/=videos /.nrr/=nrr /nro/=nro /glslc_capture/=runtime
 shader_note	Assassin's Creed III Remastered shaders (provisional profile; runtime GLSLC capture)

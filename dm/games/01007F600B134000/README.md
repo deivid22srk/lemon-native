@@ -2,7 +2,7 @@
 
 Base game 1.0.0 (v0), SDK 5.4.0. Ubisoft's AnvilNext (the `scimitar` runtime) on **NVN**. Modules `main`, `subsdk1` (GLSLC, NVN's runtime shader compiler), `subsdk2` (NintendoSDK_movie) and `sdk`; `subsdk0` is NVIDIA's OpenGL driver and is never loaded (main imports nothing from it). The RomFS holds 265 files and 11.65 GB: `ac3/` (the `*.forge` world archives, 6.86 GB, plus 133 movies and 2 sound banks), `acl/` (the add-on content's data, 1.38 GB, with 40 movies), `ac3/videos/` and `acl/videos/` together 173 `.bik`/`.mp4` movies (1.39 GB), `nro/` and `.nrr/`, and 13 per-language epilepsy-warning clips plus a Ubisoft logo under `videos/`.
 
-**Status: provisional, never run on a device.** The profile comes from the survey of a dump made from the user's own NSP (`scripts/build_ipa_from_nsp.py --survey-only`, notes in the profile's `game.tsv`). The build IDs, modules, RomFS marker, memory partition and shader source are read from the game files. Nothing has been booted: no phone run, no Mac run, no shader library, no prewarm seed. Treat it as a starting point for bring-up, not as a supported title.
+**Status: provisional, never played on a device.** The profile comes from the survey of a dump made from the user's own NSP (`scripts/build_ipa_from_nsp.py --survey-only`, notes in the profile's `game.tsv`). The build IDs, modules, RomFS marker and memory partition are read from the game files. A first on-device Build imported the NSP and rewrote the code, then stopped at the shader split because the profile's table was empty (see Graphics and shaders); that table is now filled from a full split of the dump. The game itself has not booted: no phone run, no GLSLC capture, no prewarm seed. Treat it as a starting point for bring-up, not as a supported title.
 
 ## Builds
 
@@ -17,10 +17,10 @@ The display version (1.0.0) is the base package's `control.nacp`.
 
 ## Graphics and shaders
 
-- The game renders with NVN and compiles shaders at run time with its own **GLSLC** in `subsdk1`: `main` imports `glslcCompile`, `glslcCompileSpecialized`, `glslcFinalize` and the other GLSLC entry points, and the loose NROs in `nro/` import the compiler as well. No game file holds those outputs.
-- The profile's `shader_groups` has `/glslc_capture/=runtime`, so the Android Build step captures the outputs by booting the game with `DM_GLSLC_CAPTURE` and translates them, the same way as [Fire Emblem: Three Houses](../010055D009F78000/README.md#files-and-shaders) (see also [Built-in shaders compiled with the game's own GLSLC](../../../docs/reference/shaders.md#built-in-shaders-compiled-with-the-games-own-glslc)).
-- The only BNSH seen in the survey is `GameBg.bnsh` at the RomFS root; the rest of the shaders are the runtime GLSLC outputs. `shader_map.tsv` and the other tables are empty until a build captures and splits them.
-- The survey found no `.pak`, Unity, Unreal or SPIR-V content: there is nothing else for `shader_split.py` to read.
+- The game renders with NVN. A full `shader_split.py` of the dump reads **1009 shaders**: 1005 BNSH programs inside the three NRO modules in `nro/` (`launcher_f.nro`, `scimitar_ac3_dll_bundleengine_nx_f.nro`, `scimitar_acl_dll_bundleengine_nx_f.nro`) and 4 in `GameBg.bnsh` at the RomFS root. That full split is the profile's `shader_map.tsv` (1009 rows), `shader_facts.tsv`, `shader_pairs.tsv` and `pso_pairs.tsv`.
+- Six more BNSH variations in the `*.forge` archives are unreadable: their vertex code area's header magic does not match the stage, so `shader_split.py` leaves them out. They are the only shader shapes the tool could not read in this dump.
+- `main` imports `glslcCompile`, `glslcCompileSpecialized`, `glslcFinalize` and the other GLSLC entry points, and the NROs call the compiler in `subsdk1` too. Any further outputs those calls make at run time are captured during Build through the profile's `/glslc_capture/=runtime` group (`DM_GLSLC_CAPTURE`, `hle_glslc.c`), as for [Fire Emblem: Three Houses](../010055D009F78000/README.md#files-and-shaders). None had been captured when the tables above were made.
+- The first on-device Build with empty shader tables stopped at the split: a targeted split selects only the RomFS files named in `shader_map.tsv`, selected 0 of 265, and the app refuses a pack with an empty shader library (`build/01007F600B134000.log`, 2026-11-22). The tables above fix that; no other dump is needed.
 
 ## Files
 
@@ -44,4 +44,4 @@ These are the survey's guesses, not measurements. SDK 5 is older than every prof
 
 - Every runtime step: first boot, SDK 5 NVN / service layouts, audio (Wwise), movie playback (`subsdk2`), DLC (`acl/`), the Forge archives, and the GLSLC capture's completeness.
 - `romfs_marker ac3/DataNX.forge` and `pad_layout full` are checks/guesses from the files; no device run confirms them.
-- `bf_want.tsv`, `pso_manifest.tsv`, `shader_map.tsv` and the other shader tables are empty; there is no `pso_pairs.tsv`, no `patches.py` and no prewarm seed. No frame-rate work has been done.
+- The 1009-key table is from a full split of the base dump; no device run has confirmed it, and no GLSLC runtime capture has been made yet. `bf_want.tsv` and `pso_manifest.tsv` are empty; there is no `patches.py` and no prewarm seed. No frame-rate work has been done.
