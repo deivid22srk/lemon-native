@@ -1477,6 +1477,10 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
     @Override public boolean dispatchKeyEvent(KeyEvent e) {
         if (dev.peanuts.build.ShaderCapture.active(this) && gamepad(e.getSource())) return true;   // PEANUTS: no gameplay input during preparation
         if (panel == null) return super.dispatchKeyEvent(e);   // no host for this game (onCreate): only the message is shown
+        if (WebApplet.up() && (gamepad(e.getSource()) || e.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {   // the offline HTML page applet is up: the pad drives the page, not the game
+            String pk = WebApplet.pageKey(e.getKeyCode());
+            if (pk != null) { if (e.getAction() == KeyEvent.ACTION_DOWN) WebApplet.key(pk); return true; }
+        }
         // A controller opens and closes the in-game panel (PadPanel.Combo: Home, or − and + held; Settings › Controller: in-game panel); while it is open the pad moves
         // through it and the game gets no pad keys. A key the panel took a press of stays the panel's until it comes up
         int k = e.getKeyCode();

@@ -119,6 +119,10 @@ final class WebApplet {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        // The page's CSS sets its rem unit only at exactly 1280px or 1920px (size.css); the phone's CSS viewport is neither, so the layout would be ~1.5x too
+        // large and the taps would land off the controls. Force the console's 1280x720 viewport (fixViewport below), which the WebView scales to the screen.
+        s.setUseWideViewPort(true);
+        s.setLoadWithOverviewMode(true);
         w.setBackgroundColor(Color.BLACK);
         w.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v, String url) {
@@ -136,7 +140,9 @@ final class WebApplet {
                 try {
                     if (!f.isFile()) return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
                     byte[] data = read(f);
-                    return new WebResourceResponse(mime(f.getName()), null, new ByteArrayInputStream(data));
+                    String m = mime(f.getName());
+                    if (m.startsWith("text/html")) data = fixViewport(data);
+                    return new WebResourceResponse(m, "utf-8", new ByteArrayInputStream(data));
                 } catch (IOException e) {
                     return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
                 }
@@ -198,6 +204,46 @@ final class WebApplet {
     }
 
     // window.nx, the nn::web JS extension the page guards every use of. No-ops: the system sounds and the footer labels simply do nothing here.
+    // The page's CSS defines its rem unit only under @media (width: 1280px) or (width: 1920px) (size.css). The WebView has no meta of its own, and the game's
+    // says width=device-width, so on a phone the layout runs at the browser default (16px a rem) and everything is a third too large. Rewrite it to the console's
+    // 1280x720, which useWideViewPort + loadWithOverviewMode then scale to the screen.
+    private static final java.util.regex.Pattern VIEWPORT_META = java.util.regex.Pattern.compile("(?i)<meta[^>]*name=[\"']viewport[\"'][^>]*>");
+    private static byte[] fixViewport(byte[] data) {
+        String html = new String(data, StandardCharsets.UTF_8);
+        if (html.indexOf("viewport") < 0) return data;
+        String out = VIEWPORT_META.matcher(html).replaceFirst("<meta name=\"viewport\" content=\"width=1280, height=720, user-scalable=no\">");
+        return out.equals(html) ? data : out.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** The applet is up: GameActivity sends it a controller's buttons as the page's own key names instead of the game's */
+    static boolean up() { synchronized (WebApplet.class) { return pending != null; } }
+    /** A controller button as the page's key name (handleKeyEvent), on the UI thread. Unknown key codes return null */
+    static String pageKey(int keycode) {
+        switch (keycode) {
+            case android.view.KeyEvent.KEYCODE_BUTTON_A: case android.view.KeyEvent.KEYCODE_DPAD_CENTER: case android.view.KeyEvent.KEYCODE_ENTER: return "A";
+            case android.view.KeyEvent.KEYCODE_BUTTON_B: case android.view.KeyEvent.KEYCODE_BACK: return "B";
+            case android.view.KeyEvent.KEYCODE_BUTTON_X: return "X";
+            case android.view.KeyEvent.KEYCODE_BUTTON_Y: return "Y";
+            case android.view.KeyEvent.KEYCODE_BUTTON_L1: return "L";
+            case android.view.KeyEvent.KEYCODE_BUTTON_R1: return "R";
+            case android.view.KeyEvent.KEYCODE_BUTTON_L2: return "ZL";
+            case android.view.KeyEvent.KEYCODE_BUTTON_R2: return "ZR";
+            case android.view.KeyEvent.KEYCODE_BUTTON_START: return "ADD";
+            case android.view.KeyEvent.KEYCODE_BUTTON_SELECT: return "MINUS";
+            case android.view.KeyEvent.KEYCODE_DPAD_UP: return "UP";
+            case android.view.KeyEvent.KEYCODE_DPAD_DOWN: return "DOWN";
+            case android.view.KeyEvent.KEYCODE_DPAD_LEFT: return "LEFT";
+            case android.view.KeyEvent.KEYCODE_DPAD_RIGHT: return "RIGHT";
+            default: return null;
+        }
+    }
+    static void key(String pageKey) {
+        Request r;
+        synchronized (WebApplet.class) { r = pending; }
+        if (r == null || r.view == null) return;
+        r.view.evaluateJavascript("(function(){try{if(window.controller&&controller.handleKeyEvent)controller.handleKeyEvent('" + pageKey + "');}catch(e){}})();", null);
+    }
+
     private static final String NX_STUB =
             "(function(){if(window.nx)return;function noop(){return true;}" +
             "window.nx={playSystemSe:noop,playSystemBgm:noop," +
