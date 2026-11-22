@@ -286,3 +286,38 @@ Vereditos:
    residual (8 | 2,3 s).
 
 A rodada 3 pode codificar: os dois maiores alvos têm causa nomeada e medida.
+
+## 11. Rodada 3 codificada (2026-11-22): o custo da criação de imagens novas (H9) — `provado` na causa, `hipótese` no ganho
+
+Decomposição da gravação na sessão de 07:29 (`pace cost`, frame 168): **14,4 ms/frame =
+draws 4,0 + other records 8,5 + commit 1,4 + submissão 0,2 + texturas 0,3** — e os spikes
+H9 (os hitches ≥100 ms com `replay recording` 100–190 ms) são **storms de imagens novas no
+thread de replay**: frame 702 = 86 imagens em 168,7 ms (~2 ms cada); frame 749 = 300 imagens
+em 92,9 ms (majflt 237 + pool placement 99,8 ms no mesmo frame); frame 7602 = gravação de
+107,8 ms com **33,7 ms de CPU** (travado, não trabalhando). O prewarm já cobre H1
+(1005 pipelines feitos à frente em 2,3 s; o frame path esperou 0 ms). As prioridades do
+replay thread já existem (`DM_VK_REPLAY_NICE`, live, default −8).
+
+Codificado nesta rodada (gate: nada muda para outros jogos; toda a mudança é dentro de
+`__ANDROID__` e os outros títulos continuam sem os switches):
+
+1. **Cache das queries de formato** (`vka_tex.c`): `vkGetPhysicalDeviceImageFormatProperties`
+   perguntava ao driver até 3× por imagem nova, sempre a mesma resposta para o mesmo
+   (formato, tipo, uso, flags) — num storm de 300 imagens, centenas de perguntas na mesma
+   janela, todas no thread de replay. Agora uma tabela de 128 entradas (sob `g_tmu`) guarda
+   o veredito por tupla; o fallback (derrubar STORAGE, depois os usos de attachment) fica
+   idêntico. Log único ao passar de 1024 acertos. `hipótese`: parte do custo por imagem
+   (0,3–2 ms) era a query; o quanto, o aparelho diz.
+2. **Split do custo no log** (`vka_perf.c`): a linha dos longframes agora separa o tempo de
+   driver das imagens novas — `new images 86, 168.7 ms (driver 84.2) with their first
+   content` — para a próxima sessão do aparelho dizer se o storm é driver (BO/alocação no
+   kernel) ou host (walk/compartilhamento/primeiro conteúdo). `provado` como instrumento.
+3. **`env_switches.tsv`**: entradas de `DM_ATRACE`, `DM_FS_FADV`, `DM_MEM_FB_PREFETCH`,
+   `DM_PERF_REPORT` — o launcher marcava as flags como "not a switch" (falso-positivo
+   visto nos logs de 06:30/07:03/07:29). `provado`.
+
+Medição honesta esperada: se a query era o gargalo, os storms de imagens caem
+proporcionalmente aos acertos do cache; o split (driver) nomeia o que sobrar para a
+rodada 4 (as candidatas: criar a imagem fora do thread de replay — grande e arriscada —,
+e o seed de prewarm do aparelho, `vk_pipelines.keys` → `vk_prewarm.bin` via `game.py seed`).
+A meta segue ≤6,1/min; a rodada 2 fechou em 7,9/min.

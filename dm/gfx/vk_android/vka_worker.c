@@ -291,6 +291,7 @@ static void qs_stats(uint64_t ticket) {
 }
 static void *worker_main(void *arg) {
     (void)arg; pthread_setname_np(pthread_self(), "vk-replay"); vka_fp_host("vk-replay");
+    // (the replay thread's priority is the recording thread's own DM_VK_REPLAY_NICE, vka_exec.c, live, default -8 already: not set here)
     t_worker = 1; int qon = qs_on();
     for (;;) {
         uint64_t t0 = wns();
