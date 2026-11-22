@@ -3,7 +3,7 @@ name: build-apk
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'perf/**']   # perf/**: the stutter round branches (docs/stutter/ loop) build without touching main
     paths:
       - 'android/**'
       - 'dm/**'
@@ -75,6 +75,19 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon -PnxPackStage="$RUNNER_TEMP/packstage/stage" \
             -PnxGames=0100F7E00C70E000 -PnxApp=lemon apk
+
+      - name: Name the APK by branch, round and SHA
+        run: |
+          cd android/app/out
+          sha="$(echo "${{ github.sha }}" | cut -c1-7)"
+          # The stutter loop's branch: LemonNative-hogwarts-stutter-rNN-<sha>.apk (NN = the run that built it;
+          # docs/stutter/scorecard.md maps run NN to the round). Other branches: a slugged branch name.
+          case "${{ github.ref_name }}" in
+            perf/hogwarts-legacy-stutter) slug="hogwarts-stutter-r${{ github.run_number }}" ;;
+            *) slug="$(echo "${{ github.ref_name }}" | tr '/' '-')" ;;
+          esac
+          for f in *.apk; do mv "$f" "LemonNative-${slug}-${sha}.apk"; done
+          ls -la
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
