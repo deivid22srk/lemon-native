@@ -10,14 +10,14 @@
 #ifdef __ANDROID__
 #include <stdlib.h>
 #include <string.h>
-#include <trace.h>
+#include <android/trace.h>   // the NDK's API (ATrace_*, libandroid, API 23+): the platform-only <trace.h> is not in the NDK sysroot
 static inline int dm_atrace_on(void) {
     static int v = -1;
     if (v < 0) { const char *e = getenv("DM_ATRACE"); v = (e && *e && strcmp(e, "0")) ? 1 : 0; }
     return v;
 }
-#define DM_ATRACE_BEGIN(name) do { if (dm_atrace_on()) atrace_begin_section(name); } while (0)
-#define DM_ATRACE_END() do { if (dm_atrace_on()) atrace_end_section(); } while (0)
+#define DM_ATRACE_BEGIN(name) do { if (dm_atrace_on()) ATrace_beginSection(name); } while (0)
+#define DM_ATRACE_END() do { if (dm_atrace_on()) ATrace_endSection(); } while (0)
 #else
 #define DM_ATRACE_BEGIN(name) do { (void)(name); } while (0)
 #define DM_ATRACE_END() do { } while (0)
