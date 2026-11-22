@@ -1010,3 +1010,5 @@ vs_other.bin	0	vertex	20a77afb1ab9bdbc	/GameBg.bnsh#BNSH@0x0#var0
 ps_other.bin	0	pixel	3bad67b4482bfdab	/GameBg.bnsh#BNSH@0x0#var0
 vs_other.bin	1	vertex	15f472209b40ee27	/GameBg.bnsh#BNSH@0x0#var1
 ps_other.bin	1	pixel	17ca2173e242864f	/GameBg.bnsh#BNSH@0x0#var1
+ps_runtime.bin	0	pixel	2b73d886250dd1ad	/glslc_capture/d5654c0c7ea6d7a8.glslc#GLSLC@0x0
+vs_runtime.bin	0	vertex	eaec2602f2107f88	/glslc_capture/e7fd5715c7c9dbe0.glslc#GLSLC@0x0
