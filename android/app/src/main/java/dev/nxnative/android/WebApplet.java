@@ -52,6 +52,7 @@ final class WebApplet {
 
     private static GameActivity screen;
     private static File pack;
+    private static File gameDir;
     private static Request pending;
 
     private static String utf8(byte[] b) { return b == null ? "" : new String(b, StandardCharsets.UTF_8); }
@@ -82,8 +83,8 @@ final class WebApplet {
     }
 
     /** The game's screen is up (onCreate): a page the game is waiting on shows on it */
-    static void screen(GameActivity a, File packDir) {
-        screen = a; pack = packDir;
+    static void screen(GameActivity a, File packDir, File game) {
+        screen = a; pack = packDir; gameDir = game == null ? null : game.getParentFile();
         show();
     }
 
@@ -103,13 +104,12 @@ final class WebApplet {
         Request r;
         synchronized (WebApplet.class) { r = pending; }
         GameActivity a = screen;
-        File dir = pack;
-        if (r == null || r.done || r.view != null || a == null || a.isFinishing() || a.isDestroyed() || dir == null) return;
+        if (r == null || r.done || r.view != null || a == null || a.isFinishing() || a.isDestroyed()) return;
         FrameLayout root = a.rootView();
         if (root == null) return;
-        final File base = documentRoot(dir);
+        final File base = documentRoot(pack, gameDir);
         if (base == null) {
-            Native.note("[RED] web applet: no htdocs in the pack: " + dir + " (Prepare the game again)");
+            Native.note("[RED] web applet: no htdocs in the pack or beside the game (Prepare the game again, or put the HtmlDocument page in <game folder>/htdocs/)");
             finish(r, null, 0);
             return;
         }
@@ -154,12 +154,16 @@ final class WebApplet {
         r.view = w;
     }
 
-    // The document root: the HtmlDocument content's RomFS root (html-document/), or the pack's htdocs/ when an older pack copied the tree flat
-    private static File documentRoot(File pack) {
-        File nested = new File(pack, "htdocs/html-document");
-        if (nested.isDirectory()) return nested;
-        File flat = new File(pack, "htdocs");
-        return flat.isDirectory() ? flat : null;
+    // The document root: the pack's htdocs/ (the packer's copy of the HtmlDocument content) or the one beside the game folder, nested (html-document/) or flat
+    private static File documentRoot(File pack, File gameDir) {
+        File[] bases = {
+            pack == null ? null : new File(pack, "htdocs/html-document"),
+            pack == null ? null : new File(pack, "htdocs"),
+            gameDir == null ? null : new File(gameDir, "htdocs/html-document"),
+            gameDir == null ? null : new File(gameDir, "htdocs"),
+        };
+        for (File f : bases) if (f != null && f.isDirectory()) return f;
+        return null;
     }
 
     private static byte[] read(File f) throws IOException {

@@ -190,7 +190,9 @@ public final class GameActivity extends Activity implements SurfaceHolder.Callba
             dev.peanuts.launch.RecentGames.touch(this, getIntent().getStringExtra("peanuts_list_id") != null ? getIntent().getStringExtra("peanuts_list_id") : id, getIntent().getStringExtra("name"));   // PEANUTS: last-3-played dynamic shortcuts (LAUNCHERS.md), by the title ID the list holds (an edition's start: MainActivity.start)
         }   // PEANUTS
         TextInput.screen(this);
-        WebApplet.screen(this, getIntent().getStringExtra("pack") == null ? null : new File(getIntent().getStringExtra("pack")));   // the offline HTML page applet (nn::web) shows on this screen too
+        WebApplet.screen(this,   // the offline HTML page applet (nn::web) shows on this screen too
+                getIntent().getStringExtra("pack") == null ? null : new File(getIntent().getStringExtra("pack")),
+                getIntent().getStringExtra("game") == null ? null : new File(getIntent().getStringExtra("game")));
         CtrlScreen.screen(this);   // the controller applet's join screen shows on this screen (again, when the game was waiting on it as the screen was recreated)
         UserPicker.screen(this);   // the user selector shows on this screen, as the input box   // the keyboard applet's input box shows on this screen (again, when the game was waiting on it as the screen was recreated)
         // The host starts once per process. A screen created again while it runs (Android recreated the activity: "Don't keep activities", a font or language
