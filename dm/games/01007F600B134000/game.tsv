@@ -1,0 +1,44 @@
+# Game profile of Assassin's Creed III Remastered (Switch, base game 1.0.0 = v0). Provisional: never run on a device yet
+# Format: see dm/games/README.md
+# Ubisoft's AnvilNext (the "scimitar" runtime), SDK 5.4.0, NVN. Modules main + subsdk1 (GLSLC, NVN's runtime shader compiler) + subsdk2 (NintendoSDK_movie) + sdk.
+# subsdk0 (NintendoSDK_OpenGL) is not loaded: main imports nothing from it, and the host answers its EGL imports where a game uses them. The NROs in nro/ import
+# from subsdk2, so the movie module is loaded as well. RomFS: 265 files in ac3/, acl/, videos/, nro/ and .nrr/, 11.65 GB.
+# The game compiles shaders at run time with its own GLSLC (main imports glslcCompile; the NROs call it too), so those outputs are captured on the device during
+# Build (the glslc_capture group below), as for Fire Emblem: Three Houses. No static shader table is available yet.
+# Written from the survey of the user's own dump (scripts/build_ipa_from_nsp.py / dm/games/profile_guess.py) and checked against the game files; README.md beside this file.
+
+# ---- Identity ----
+title_id	01007F600B134000
+program_id	01007F600B134000
+
+# ---- App ----
+name	Assassin's Creed III Remastered
+ipa	AssassinsCreedIIIRemastered.ipa
+app_category	public.app-category.action-games
+# guess: a 3D action game with a free camera on the right stick; no file decides it
+pad_layout	full
+
+# ---- Versions ----
+build	v0	1.0.0	main=10ac5e3aefdf16d10130195845171cee	subsdk1=11975fb8bdba5b7bf8128785e47dc9d5	subsdk2=41097c438a36afd2e879fa6f5e0f0850	sdk=26ffb122262ca25e4c016c0af2f92a29
+package	v0
+shader_versions	v0
+
+# ---- Files ----
+# main takes nothing from subsdk0 (NintendoSDK_OpenGL); the NROs import from subsdk2 (NintendoSDK_movie)
+modules	main subsdk1 subsdk2 sdk
+romfs_marker	ac3/DataNX.forge
+zip_store	.bik:.bntx:.bnsh:.forge:.mp4:.nro:.pck:.txt:.xml:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region. Not measured on a device yet.
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon
+sys_resource	0x0
+
+# ---- Shader split ----
+# glslc_capture: the outputs the game's own GLSLC makes at run time, captured during Build (hle_glslc.c); the rest is what shader_split.py finds in the RomFS
+shader_groups	/ac3/=ac3 /acl/=acl /videos/=videos /.nrr/=nrr /nro/=nro /glslc_capture/=runtime
+shader_note	Assassin's Creed III Remastered shaders (provisional profile; runtime GLSLC capture)
