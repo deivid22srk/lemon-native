@@ -246,3 +246,43 @@ Leitura honesta:
 E1 está **cumprido** (linha de base oficial instrumentada existe). E2 parcialmente
 (números acima); E3 precisa da sessão com `DM_MEM_FB_PREFETCH=1` re-adicionado.
 Rodada 3 só codifica após E2/E3 limpos na mesma rota (6–10 min) e E4 para os gaps.
+
+## 10. E2/E3: sessão de 07:29 com os TRÊS flags (2026-11-22) — `provado`
+
+Sessão de 7,9 min (frames até 13482), build `eeb5be5`, mesmo driver, painel 60,18 Hz.
+`DM_PERF_REPORT=1` + `DM_FS_FADV=1` + `DM_MEM_FB_PREFETCH=1` (os três ✓). Validação
+cruzada de novo exata: report 62 hitches ≥100 ms == parser 62.
+
+| Métrica | 21/11 original | 06:01 off | 07:03 FADV | 07:29 3 flags |
+|---|---|---|---|---|
+| hitches ≥100 ms /min | 30,4 | 20,9 | 12,6 | **7,9** |
+| hitches ≥500 ms /min | 5,19 | 1,11 | 0,42 | 0,38 |
+| hitches ≥1 s | 11 | 3 | 1 | 1 |
+| tempo perdido (≥100 ms) | 67,6 s | 22,8 s | 15,8 s | **11,7 s** |
+| presents dropped | 11,5 % | 5,8 % | 4,1 % | **2,4 %** |
+| major faults na sessão | — | 13 172 | 74 673 | **7 975** |
+| H2 I/O de transição (n\|tempo) | 12 \| 5,2 s | 12 \| 5,2 s | 12 \| 4,7 s | **8 \| 3,8 s** |
+| gaps "nada ocupado" (n\|tempo) | 106 \| 24,8 s | 34 \| 7,3 s | 21 \| 3,9 s | **8 \| 2,3 s** |
+| H9/emu misto (n\|tempo) | — | 78 \| 11,4 s | 49 \| 8,6 s | 46 \| 7,6 s |
+| footprint pico | — | — | 2584 MiB | 2626 MiB (+1,6 %) |
+
+Vereditos:
+
+1. **E3 CUMPRIDO** — o prefetch eliminou o efeito colateral do FADV: majflt
+   74 673 → 7 975 (−89 % vs. a sessão FADV, o comparador relevante; −39 % vs. o
+   baseline sem flags), footprint +1,6 % (≤ 10 %). Os gaps "nada ocupado" caíram
+   junto (21 → 8 | 3,9 → 2,3 s) — consistente com as falhas de página que o
+   readahead empurrava.
+2. **E2 PARCIAL** — I/O de transição 5,2 → 3,8 s = −27 % (alvo ≥30 %), contagem
+   12 → 8, sem hitch novo noutra causa. Ficou a um passo do critério; rota não
+   garantida idêntica pode explicar a diferença.
+3. **Acumulado: −74 % vs. o baseline original (30,4 → 7,9/min)**; a meta é
+   ≤6,1/min (−80 %). Tempo perdido −83 % (67,6 → 11,7 s), dropped −79 %
+   (11,5 → 2,4 %). Falta remover ~1,8 hitches/min.
+4. **H9 é agora 65 % do tempo perdido** (46 | 7,6 s de 11,7 s) e o custo de
+   replay recording segue 16–19 ms/frame no regime (`pace lines`) — **alvo nº 1 da
+   rodada 3, provado sem E4**. Os hitches de boot continuam (frames 4/127/754:
+   948/1546/733 ms, I/O de transição) — alvo nº 2. E4 fica opcional para o H7
+   residual (8 | 2,3 s).
+
+A rodada 3 pode codificar: os dois maiores alvos têm causa nomeada e medida.

@@ -62,11 +62,17 @@ do log). Documentadas aqui porque são os controles das hipóteses H1/H6/H7:
   (7,2 min, `eeb5be5`, Turnip T30) — 91 hitches ≥100 ms (12,6/min), p50 32,3 ms,
   dropped 4,1 %; contador oficial == parser do log (91). Detalhes e comparativo com o
   baseline de 06:01 em triage.md §9. Reserva: `DM_MEM_FB_PREFETCH` ausente na sessão.
-- **E2 — parcial**: os números de 07:03 já incluem `DM_FS_FADV=1` (hitches −40 %,
-  tempo de I/O de transição 5,2→4,7 s; readahead não resolveu os hitches de boot em
-  t≈4/10 s; majflt +5,7×). Falta sessão limpa na mesma rota para o julgamento.
-- **E3 — não iniciado**: a sessão de 07:03 foi sem `DM_MEM_FB_PREFETCH`; re-adicionar.
-- **E4 — não iniciado** (decide H7/gaps antes da rodada 3).
+- **E2 — parcial** (`provado`): sessão de 07:29 (7,9 min, mesma rota do save, 3 flags):
+  I/O de transição 5,2 → 3,8 s = **−27 %** (alvo ≥30 %), contagem 12 → 8, sem hitch novo
+  noutra causa. A um passo do critério.
+- **E3 — CUMPRIDO** (`provado`): com `DM_MEM_FB_PREFETCH=1` em 07:29, majflt
+  74 673 → 7 975 (−89 % vs. a sessão FADV que revelou o efeito colateral; footprint
+  +1,6 % ≤ 10 %); gaps "nada ocupado" caíram junto (21 → 8).
+- **E4 — opcional**: os gaps caíram 106 → 34 → 21 → 8 (24,8 → 2,3 s); H7 residual não
+  é mais alvo principal.
+- **Acumulado 22/11**: 30,4 → 7,9 hitches ≥100 ms/min (−74 %); meta ≤6,1/min (−80 %);
+  tempo perdido −83 %; dropped 11,5 % → 2,4 %. H9 (replay recording) = 65 % do tempo
+  perdido, alvo nº 1 da rodada 3.
 
 ## Métrica de sucesso (por flag)
 
