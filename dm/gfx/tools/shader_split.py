@@ -3976,6 +3976,10 @@ def main():
         # Shaders the host saved because the map did not have them (DM_NVN_SHDUMP, nvn_dumps): <version dir>/nvn_shdump, or DM_NVN_SHDUMP_DIR. Taken last, after every
         # file (below): a saved copy has only the control bytes the host keeps, so a shader a file also holds takes the file's copy
         dumps += nvn_dumps(os.environ.get('DM_NVN_SHDUMP_DIR') or os.path.join(os.path.dirname(os.path.abspath(romfs)), 'nvn_shdump'))
+        # The same folder beside the game: next to a GLSLC capture the caller named, and beside a .nup's file (both are what dm.h dm_capture_beside_game writes)
+        cap0 = os.environ.get('DM_GLSLC_CAPTURE')
+        if cap0: dumps += nvn_dumps(os.path.join(os.path.dirname(os.path.abspath(cap0)), 'nvn_shdump'))
+        if ':' in romfs: dumps += nvn_dumps(os.path.join(os.path.dirname(os.path.abspath(romfs.split(':')[0])), 'nvn_shdump'))
         # Unreal Engine shader code archives decoded on the Mac (uepak.py): <version dir>/ue_shaders, or DM_UE_SHADERS; needed when the RomFS has Unreal paks
         ued = os.environ.get('DM_UE_SHADERS') or os.path.join(os.path.dirname(os.path.abspath(romfs)), 'ue_shaders')
         names = sorted(f for f in os.listdir(ued) if f.endswith('.ushaderbytecode') and not f.startswith('._')) if os.path.isdir(ued) else []   # PEANUTS(upstream-candidate): AppleDouble metadata, not decoded shader archives
