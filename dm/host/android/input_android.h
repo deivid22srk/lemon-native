@@ -65,6 +65,13 @@ typedef int (*nxhost_text_input_fn)(void *ctx, const char *title, const char *su
 NXHOST_API void nxhost_text_input_callback(nxhost_text_input_fn fn, void *ctx);
 // Host-internal (front_android.c): asks the callback (-1 without one), with the input held around it
 int android_text_input(const char *title, const char *sub, const char *guide, const char *initial, int max_chars, int min_chars, char *out, int out_cap);
+// The offline HTML page applet (nn::web::ShowOfflineHtmlPage): fn(ctx, doc, out_url, out_cap) shows the page the game named (doc: a path in its HtmlDocument content,
+// query included; "" = the front end's default document) over the game and blocks until the player leaves it, returning the applet's exit reason (3 = exited with a URL,
+// which out_url holds as UTF-8, at most out_cap bytes with the terminating 0; 0 = cancelled). -1 without a callback: the caller answers the applet as failed (the launcher
+// menu aborts, as before this applet existed). The input the game saw is held while the page is up.
+typedef int (*nxhost_web_page_fn)(void *ctx, const char *doc, char *out_url, int out_cap);
+NXHOST_API void nxhost_web_page_callback(nxhost_web_page_fn fn, void *ctx);
+int android_web_page(const char *doc, char *out_url, int out_cap);   // host-internal (front_android.c): -1 without a callback
 // The user selector (nn::account::ShowUserSelector): fn shows the launcher's picker over the game with the n users' names (UTF-8), offered[i] = whether user i may be
 // picked, def = the preselected user, and returns the picked index or -1 for a cancel. Without a callback the host takes the preselected user. The input is held as for text
 typedef int (*nxhost_user_select_fn)(void *ctx, const char *const *names, const int *offered, int n, int def);

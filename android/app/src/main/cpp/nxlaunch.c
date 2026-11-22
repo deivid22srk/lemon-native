@@ -80,6 +80,7 @@ void nxhost_fps_hold60_set(int on);   // hle_fpslock.c: a steps framework held a
 #pragma weak nxhost_ctrl_callback
 #pragma weak nxhost_ctrl_state
 #pragma weak nxhost_ctrl_button
+#pragma weak nxhost_web_page_callback
 
 // ---- Log: the host's stdout and stderr go straight into the log file (nothing is lost when the process dies), and a thread copies new lines to logcat ----
 // At the end of the file the thread sleeps until the file is written (inotify IN_MODIFY), not on a 20 ms timer: the timer woke it 50 times a second for the whole game,
@@ -305,6 +306,42 @@ JNIEXPORT jbyteArray JNICALL Java_dev_nxnative_android_Native_ctrlState(JNIEnv *
 }
 JNIEXPORT void JNICALL Java_dev_nxnative_android_Native_ctrlButton(JNIEnv *env, jclass cls, jint what) { (void)env; (void)cls; if (nxhost_ctrl_button) nxhost_ctrl_button(what); }
 
+// ---- The offline HTML page applet (nxhost_web_page_callback): WebApplet.ask shows the page in a WebView over the game and blocks until the player leaves it, called
+// the way the input box is (a thread of this shim attached for the call while the guest thread waits). The result crosses as "<exit reason>\t<last URL>" in UTF-8 ----
+static jclass g_wa_class; static jmethodID g_wa_ask;
+typedef struct { const char *doc; char *out; int cap, reason; } web_req;
+static void *web_thread(void *p) {
+    web_req *q = p; JNIEnv *env = NULL; q->reason = -1;
+    JavaVMAttachArgs a = {JNI_VERSION_1_6, "nxweb", NULL};
+    if ((*g_vm)->AttachCurrentThread(g_vm, &env, &a) != JNI_OK) { fprintf(stderr, "[RED] [nxlaunch] web applet: cannot attach to the VM: it fails\n"); return NULL; }
+    jbyteArray d = jbytes(env, q->doc);
+    jbyteArray r = (*env)->CallStaticObjectMethod(env, g_wa_class, g_wa_ask, d);
+    if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionDescribe(env); (*env)->ExceptionClear(env); fprintf(stderr, "[RED] [nxlaunch] web applet: WebApplet.ask threw: it fails\n"); r = NULL; }
+    if (r && q->cap > 0) {
+        jsize n = (*env)->GetArrayLength(env, r); if (n > q->cap - 1) n = q->cap - 1;
+        (*env)->GetByteArrayRegion(env, r, 0, n, (jbyte *)q->out); q->out[n] = 0;
+        char *tab = strchr(q->out, '\t');
+        if (tab) { *tab = 0; q->reason = atoi(q->out); memmove(q->out, tab + 1, strlen(tab + 1) + 1); }
+    }
+    (*g_vm)->DetachCurrentThread(g_vm);
+    return NULL;
+}
+static int web_page(void *ctx, const char *doc, char *out, int cap) {
+    (void)ctx; web_req q = {doc, out, cap, -1};
+    pthread_t t; int e = pthread_create(&t, NULL, web_thread, &q);
+    if (e) { fprintf(stderr, "[RED] [nxlaunch] web applet: cannot start its thread: %s: it fails\n", strerror(e)); return -1; }
+    pthread_join(t, NULL);
+    return q.reason;
+}
+static void web_setup(JNIEnv *env) {
+    if (!nxhost_web_page_callback) { fprintf(stderr, "[nxlaunch] web applet: not in this host (the applet fails)\n"); return; }
+    jclass k = (*env)->FindClass(env, "dev/nxnative/android/WebApplet");
+    jmethodID m = k ? (*env)->GetStaticMethodID(env, k, "ask", "([B)[B") : NULL;
+    if (!m || (!g_vm && (*env)->GetJavaVM(env, &g_vm) != JNI_OK)) { (*env)->ExceptionClear(env); fprintf(stderr, "[RED] [nxlaunch] web applet: no WebApplet.ask: it fails\n"); return; }
+    g_wa_class = (*env)->NewGlobalRef(env, k); g_wa_ask = m;
+    nxhost_web_page_callback(web_page, NULL);
+}
+
 // A surface can arrive while the readiness dialog is still up, before Native.start opens the log file and applies env.txt / env-<id>.txt (DM_VK_DRIVER, DM_VK_GPL,
 // DM_VK_MESH, DM_VK_VALIDATE, ...). Hold the window here and hand it to nxhost_set_window only once Native.start has set the environment
 static ANativeWindow *g_window;
@@ -343,6 +380,7 @@ JNIEXPORT jint JNICALL Java_dev_nxnative_android_Native_start(JNIEnv *env, jclas
     text_input_setup(env);
     user_select_setup(env);
     ctrl_setup(env);
+    web_setup(env);
     pthread_attr_t a; pthread_attr_init(&a); pthread_attr_setstacksize(&a, HOST_STACK);
     pthread_t t; int r = pthread_create(&t, &a, host_thread, NULL); pthread_attr_destroy(&a);
     if (r) { fprintf(stderr, "[nxlaunch] cannot start the host thread: %s\n", strerror(r)); return -3; }

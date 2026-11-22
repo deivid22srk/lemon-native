@@ -38,6 +38,11 @@ int front_user_select(const char *const *names, const int *offered, int n, int d
 // blocks until it ends; the joined controllers are then the game's players (dm_pad_players). 1 OK with *count players, 0 canceled, -2 when the front end has no join screen
 // (the host then answers at once with the controllers already connected). Android: the launcher's screen (front_android.c); elsewhere a weak default returns -2
 int front_controller_support(const void *arg, int *count);   // arg: a const ctrl_arg *
+// The offline HTML page applet (nn::web::ShowOfflineHtmlPage, hle_offline.c): the front end shows the page the game named (doc: a path in its HtmlDocument content, the
+// query it built included; "" = the front end's default document) and the calling thread blocks until the player leaves it. Returns the applet's exit reason (3 = it
+// exited with a URL, which out_url holds as UTF-8, at most out_cap bytes with the terminating 0; 0 = cancelled), or -1 when the front end has no web applet (the host
+// then answers the applet as failed, as before). Android: the launcher's WebView (front_android.c); the other front ends use the weak default in hle_offline.c
+int front_web_page(const char *doc, char *out_url, int out_cap);
 
 // Early start of host loading (main.c): reading the NSO / relocation / forced takeover / prefetch start are moved to a background thread, in parallel with the front end (UIKit launch chain, Metal view);
 // the dm_main / main called afterwards waits for it to finish. For call timing and preconditions see the comments in main.c (set DM_ROMFS and the other environment variables and the cwd first; arguments identical item by item to those of the later main).

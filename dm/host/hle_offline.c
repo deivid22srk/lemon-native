@@ -3,6 +3,7 @@
 // Return convention as in hle_friends.c: Result returns RES_FAIL ("saved / submitted" kinds return RES_OK so the game does not retry); bool returns false; events get a bound SystemEvent that never fires.
 #include "hle.h"
 #include "hle_coop.h"
+#include "front.h"
 
 static _Alignas(16) uint8_t g_ev_ldn[0x100];
 
@@ -186,9 +187,36 @@ HLE_FORCE("_ZN2nn3pdm30QueryApplicationPlayStatisticsEPNS0_25ApplicationPlayStat
 HLE_FORCE("_ZN2nn3web13ShowLobbyPageEPNS0_20LobbyPageReturnValueERKNS0_16ShowLobbyPageArgE", "online lobby web applet (cut)", Result, h_web_Lobby, void *rv, const void *arg) { (void)rv; (void)arg; LOG("web::ShowLobbyPage (cut)"); return RES_FAIL; }
 // Tears of the Kingdom imports the general web page applet too (the game constructs the return value itself, so it stays as constructed)
 HLE_FORCE("_ZN2nn3web11ShowWebPageEPNS0_18WebPageReturnValueERKNS0_14ShowWebPageArgE", "web page applet (cut)", Result, h_web_Page, void *rv, const void *arg) { (void)rv; (void)arg; LOG("web::ShowWebPage (cut)"); return RES_FAIL; }
-// Octopath Traveler 0 imports the offline HTML page applet too (pages shipped in the game's HTML document NCA, which the host does not extract)
-HLE_FORCE("_ZN2nn3web19ShowOfflineHtmlPageEPNS0_26OfflineHtmlPageReturnValueERKNS0_22ShowOfflineHtmlPageArgE", "offline HTML page applet (cut)", Result, h_web_Offline, void *rv, const void *arg) {
-    (void)rv; (void)arg; LOG("web::ShowOfflineHtmlPage (cut)"); return RES_FAIL;
+// The offline HTML page applet: the page the game ships as its HtmlDocument content (a launcher menu, a manual). The front end shows it (Android: the launcher's
+// WebView, front_android.c) and the guest thread waits; the launcher reads the result back with OfflineHtmlPageReturnValue's getters. Without a web applet the weak
+// default below returns -1 and the applet fails as it did before (a game that needs it takes its error path; Assassin's Creed III Remastered's launcher aborts).
+// The document path inside ShowOfflineHtmlPageArg: the struct's layout is not public and the game hands the path in with the query it built (Assassin's Creed III
+// Remastered: "menu.htdocs/index.html?menu=en&audio=en&acl=true&..."). The arg's constructor copies it into an inline buffer, so take the NUL-terminated string that
+// ends in "index.html"; bounded, and a game that stores it otherwise leaves the front end's default document.
+static const char *web_arg_doc(const void *arg) {
+    const uint8_t *p = arg;
+    if (!p) return NULL;
+    for (size_t i = 0; i + 10 <= 0x1200; i++) {
+        if (memcmp(p + i, "index.html", 10)) continue;
+        size_t s = i; while (s > 0 && i - s < 0x300 && p[s - 1] >= 0x20 && p[s - 1] < 0x7f) s--;
+        return (const char *)p + s;
+    }
+    return NULL;
+}
+__attribute__((weak)) int front_web_page(const char *doc, char *out_url, int out_cap) { (void)doc; (void)out_url; (void)out_cap; return -1; }
+HLE_FORCE("_ZN2nn3web19ShowOfflineHtmlPageEPNS0_26OfflineHtmlPageReturnValueERKNS0_22ShowOfflineHtmlPageArgE", "offline HTML page applet (the launcher's web menu; the Android launcher shows it in its WebView)", Result, h_web_Offline, void *rv, const void *arg) {
+    const char *doc = web_arg_doc(arg);
+    char url[0x800]; url[0] = 0;
+    int reason = front_web_page(doc, url, sizeof url);
+    if (reason < 0) { LOG("web::ShowOfflineHtmlPage (cut: no web applet on this front end)"); return RES_FAIL; }
+    if (rv) {   // OfflineHtmlPageReturnValue (nnSdk 5.4.0's getters): exit reason u32 at +0, the last URL inline at +0x20, its size u64 at +0x900
+        uint8_t *o = rv; uint32_t r = (uint32_t)reason; memcpy(o, &r, 4);
+        size_t n = strlen(url); if (n > 0x8df) n = 0x8df;
+        memcpy(o + 0x20, url, n); o[0x20 + n] = 0;
+        uint64_t sz = n; memcpy(o + 0x900, &sz, 8);
+    }
+    LOG("web::ShowOfflineHtmlPage: the applet returned reason %d, last URL \"%s\"", reason, url);
+    return RES_OK;
 }
 
 // ---------- C interface (nnsocket* / nnssl*): offline as well. The arguments are all in registers and the host does not look at them ----------

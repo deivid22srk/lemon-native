@@ -285,6 +285,22 @@ int android_text_input(const char *title, const char *sub, const char *guide, co
     if (r > 0 && out_cap > 0) out[out_cap - 1] = 0;
     return r > 0 ? 1 : 0;
 }
+// ---- The offline HTML page applet (nn::web::ShowOfflineHtmlPage, front_web_page): the launcher's web view over the game, the input held around it as for the input box ----
+static nxhost_web_page_fn _Atomic g_wp_fn; static void *_Atomic g_wp_ctx;
+void nxhost_web_page_callback(nxhost_web_page_fn fn, void *ctx) {
+    atomic_store(&g_wp_ctx, ctx); atomic_store(&g_wp_fn, fn);
+    LOG("input: the offline HTML page applet goes to the launcher's web view%s", fn ? "" : " (none: it fails)");
+}
+int android_web_page(const char *doc, char *out_url, int out_cap) {
+    nxhost_web_page_fn fn = atomic_load(&g_wp_fn);
+    if (!fn) return -1;
+    if (out_cap > 0 && out_url) out_url[0] = 0;
+    input_hold(1);
+    int r = fn(atomic_load(&g_wp_ctx), doc ? doc : "", out_url, out_cap);
+    input_hold(0);
+    if (out_cap > 0 && out_url) out_url[out_cap - 1] = 0;
+    return r;
+}
 // ---- User selector: the launcher's picker (front_user_select), the input held around it as for the input box ----
 static nxhost_user_select_fn _Atomic g_us_fn; static void *_Atomic g_us_ctx;
 void nxhost_user_select_callback(nxhost_user_select_fn fn, void *ctx) {
