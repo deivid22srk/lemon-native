@@ -169,6 +169,58 @@ to 0 for this game (it must, if the handle form above is present in this build's
 symptom remains once both this fix and the streamed-texture fix above are in the same build — that would mean a third cause.
 
 
+## "O conteúdo do jogo não foi totalmente instalado" — the day-one update is missing (not a host bug)
+
+<!-- PEANUTS: device report 2026-11-22 (Banana Native) — diagnosis, no code change -->
+
+Reported by the tester (2026-11-22) on Banana Native (`peanuts-native-0.1.5-dev`,
+`c823a1c50426`): over the game's menu the game shows "O conteúdo do jogo não foi
+totalmente instalado. Visita a Nintendo eShop para fazer o download do conteúdo mais
+recente do jogo." with an "Ir para a Nintendo eShop" button (B = back to the main
+menu). The tester asks whether this is a Lemon Native bug, the game demanding an
+update, or something else.
+
+Measurements from `0100F7E00C70E000-20261122-080206.log` (the session's screenshot,
+`Screenshot_20261122-082942.png`, shows the dialog):
+
+- The pack mounts the **base package only**: `DM_ROMFS=…/2Hogwarts/Hogwarts
+  Legacy.nup:base/romfs`, and the host reports the title as
+  `Hogwarts Legacy 0100F7E00C70E000 version 0`; `DLC: 0 links in DM_AOC_DIR` and
+  `aoc: reporting 0 add-on contents {}` (the tester owns no add-on content — the
+  correct answer, and the game queries aoc once at boot only).
+- The game **runs and plays with the base content**: ~29 minutes of real gameplay
+  (pace lines at 30 fps, 1,700–2,700 draws a frame, GPU 13–24 ms busy) with 20
+  autosave commits spread over the session; the gate appears at the end, blocking
+  further story progress.
+- Clicking "Ir para a Nintendo eShop" six times: each click reaches the host as
+  `ec::ShowShopApplicationInformation (cut): the host has no shop` — the game's own
+  dialog, and the offline host correctly has no shop to open (the button can do
+  nothing here).
+- **No content service is involved in the gate**: no arp, no nim (0 matches in the
+  host and the log), no repeated aoc query; and no `[RED]` line about a missing
+  file or a failed open — the base RomFS is complete and the host mounted it
+  cleanly. Whatever the game found missing was never in the dump.
+
+Why this is the game by design: the Switch release ships **~7 GB on the cart and
+requires an 8 GB day-one download** ("Hogwarts Legacy Physical & Digital Switch
+Release Will Require 8GB Day 1 Update", NintendoLife, 2023-10-02; r/HarryPotterGame:
+"Yes, you have to update. The disc doesn't have the full game"). The base package
+alone is not the whole game; on a real console with the cart and no download the
+same screen appears. The game's own check (pak presence or its version, the log
+cannot distinguish) is **hipótese**; the data side — the update content is absent
+from this dump — is **provado**. Lemon Native will show the same screen with the
+same pack: it is the data, not the app version.
+
+Next step: the tester supplies the update content (the ~8 GB patch, title
+`0100F7E00C70E000` version > 0 — e.g. an NSP-Box plaintext NSP of the update beside
+the game in its folder, then re-add/Prepare; a folder dump as `updates/<v>/` works
+too). The pack then mounts the update's own full RomFS (android/NUP.md DumpLayout:
+"an update alone that carries the whole game"). One open item on our side: the
+profile knows the **v0 build only** ("Base game v0 only" above); if the update's
+main build IDs differ (a day-one patch that size almost certainly changed code),
+the profile needs those builds added (shader tables from the update's modules,
+`display_versions` rows) before the pack accepts the update.
+
 ## Audio reported muffled ("abafado", like a cinema recording)
 
 <!-- PEANUTS: device report 2026-11-22; no fix yet — measure first (DM_AUDIO_DUMP) -->
