@@ -209,11 +209,11 @@ HLE_FORCE("_ZN2nn3web19ShowOfflineHtmlPageEPNS0_26OfflineHtmlPageReturnValueERKN
     char url[0x800]; url[0] = 0;
     int reason = front_web_page(doc, url, sizeof url);
     if (reason < 0) { LOG("web::ShowOfflineHtmlPage (cut: no web applet on this front end)"); return RES_FAIL; }
-    if (rv) {   // OfflineHtmlPageReturnValue (nnSdk 5.4.0's getters): exit reason u32 at +0, the last URL inline at +0x20, its size u64 at +0x900
+    if (rv) {   // OfflineHtmlPageReturnValue (nnSdk 5.4.0's getters): exit reason u32 at +0, the last URL inline at +0x8, its size u64 at +0x1008
         uint8_t *o = rv; uint32_t r = (uint32_t)reason; memcpy(o, &r, 4);
-        size_t n = strlen(url); if (n > 0x8df) n = 0x8df;
-        memcpy(o + 0x20, url, n); o[0x20 + n] = 0;
-        uint64_t sz = n; memcpy(o + 0x900, &sz, 8);
+        size_t n = strlen(url); if (n > 0xfff) n = 0xfff;
+        memcpy(o + 0x8, url, n); o[0x8 + n] = 0;
+        uint64_t sz = n; memcpy(o + 0x1008, &sz, 8);
     }
     LOG("web::ShowOfflineHtmlPage: the applet returned reason %d, last URL \"%s\"", reason, url);
     return RES_OK;
